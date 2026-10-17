@@ -1,24 +1,58 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Redress — Complaints management for payment providers" },
+      { name: "description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
+      { property: "og:title", content: "Redress — Complaints management for payment providers" },
+      { property: "og:description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+const points = [
+  ["15 / 35", "PSD2 business-day clocks, per customer country calendar"],
+  ["Immutable", "Audit trail of every action, enforced at database level"],
+  ["Regulator-ready", "Reporting pack by product, category and outcome"],
+];
+
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <Logo />
+        <div className="flex gap-2">
+          <Button asChild variant="ghost"><Link to="/auth">Sign in</Link></Button>
+          <Button asChild><Link to="/auth" search={{ mode: "signup" }}>Start free trial</Link></Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-6 pb-24 pt-16 md:pt-28">
+        <p className="text-sm font-medium uppercase tracking-widest text-primary">For payment and e-money institutions</p>
+        <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-tight text-foreground md:text-6xl">
+          Every complaint answered fairly, and on time.
+        </h1>
+        <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+          Redress helps complaints teams log, track and resolve customer complaints within regulatory deadlines, with a full audit trail.
+        </p>
+        <div className="mt-10 flex flex-wrap gap-3">
+          <Button asChild size="lg"><Link to="/auth" search={{ mode: "signup" }}>Start 14-day free trial</Link></Button>
+          <span className="self-center text-sm text-muted-foreground">No card required.</span>
+        </div>
+        <div className="mt-20 grid gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-3">
+          {points.map(([k, v]) => (
+            <div key={k} className="bg-card p-6">
+              <div className="font-display text-2xl font-semibold text-foreground tabular">{k}</div>
+              <p className="mt-2 text-sm text-muted-foreground">{v}</p>
+            </div>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

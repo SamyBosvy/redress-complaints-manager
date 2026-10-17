@@ -55,9 +55,9 @@ function Setup() {
   }
 
   function next() {
-    if (step === 0 && (!entity.name.trim() || !entity.home)) return toast.error("Legal entity name and home country are required.");
-    if (step === 1 && countries.length === 0) return toast.error("Select at least one country.");
-    if (step === 4 && !(rules.final > 0 && rules.extended >= rules.final)) return toast.error("Extended deadline must be at least the final response deadline.");
+    if (step === 0 && (!entity.name.trim() || !entity.home)) { toast.error("Legal entity name and home country are required."); return; }
+    if (step === 1 && countries.length === 0) { toast.error("Select at least one country."); return; }
+    if (step === 4 && !(rules.final > 0 && rules.extended >= rules.final)) { toast.error("Extended deadline must be at least the final response deadline."); return; }
     if (step < STEPS.length - 1) setStep(step + 1);
     else void finish();
   }
@@ -192,7 +192,7 @@ function Setup() {
                   <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => setHolidays(holidays.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={() => setHolidays([...holidays, { country: countries[0], date: "", name: "" }])}>
+              <Button variant="outline" size="sm" onClick={() => setHolidays([...holidays, { country: countries[0] ?? "", date: "", name: "" }])}>
                 <Plus className="h-4 w-4" /> Add holiday
               </Button>
             </>

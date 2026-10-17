@@ -42,7 +42,7 @@ function AppLayout() {
             className="mt-3 inline-flex items-center gap-1.5 hover:text-sidebar-accent-foreground"
             onClick={async () => {
               await supabase.auth.signOut();
-              navigate({ to: "/auth", search: { mode: undefined } });
+              navigate({ to: "/auth", search: {} });
             }}
           >
             <LogOut className="h-3.5 w-3.5" /> Sign out

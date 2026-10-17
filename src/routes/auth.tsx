@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({ mode: s.mode === "signup" ? ("signup" as const) : undefined }),
+  validateSearch: (s: Record<string, unknown>): { mode?: "signup" } => (s["mode"] === "signup" ? { mode: "signup" } : {}),
   head: () => ({
     meta: [
       { title: "Sign in — Redress" },
@@ -38,7 +38,7 @@ function AuthPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Invalid input"); return; }
     setBusy(true);
     try {
       if (signup) {
@@ -66,7 +66,7 @@ function AuthPage() {
 
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) return toast.error("Google sign-in failed");
+    if (result.error) { toast.error("Google sign-in failed"); return; }
     if (result.redirected) return;
     navigate({ to: "/app" });
   }

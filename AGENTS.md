@@ -16,3 +16,7 @@
 - Signed-in pages live under src/routes/_authenticated/; /app requires a completed setup, otherwise redirects to /setup.
 - Complaint reference and deadline dates are set by DB triggers on insert; remaining business days come from the complaint_queue view. Why: one source of truth for regulatory clocks.
 - Clock colour/at-risk thresholds live in src/lib/complaints.ts (clockTone, isAtRisk) with tests next to it.
+- Case timeline = complaint_events, written by DB triggers on complaints/letters; clients may only insert 'note' and 'attachment' events, never update/delete. Why: tamper-proof history.
+- Attachments live in the private 'attachments' bucket under <org_id>/<complaint_id>/; storage RLS keys on the first folder.
+- Letter merge/ADR check/status-after-send rules live in src/lib/letters.ts with tests.
+- PWA: service worker registers only outside iframes/preview hosts; it never caches /~oauth or /api.

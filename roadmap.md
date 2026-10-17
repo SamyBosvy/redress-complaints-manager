@@ -5,7 +5,7 @@
 - [x] Phase 2: complaints, rule sets, business-day calendars, queue, new complaint form
 - [x] Phase 3: case view, timeline, templates + letter generation, holding response clock
 - [x] Installable app + "Download the app" button (landing, sign-in, in-app) — workspace rule
-- [ ] Phase 4: immutable audit log (DB-enforced) + viewer/CSV
+- [x] Phase 4: immutable audit log (DB-enforced) + viewer/CSV
 - [ ] Phase 5: public web form per organisation
 - [ ] Phase 6: QA module + sampling, in-app alerts, daily email digest
 - [ ] Phase 7: reporting dashboard, breakdowns, regulatory pack (CSV/PDF)

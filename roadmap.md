@@ -2,7 +2,7 @@
 
 - [x] Enable Lovable Cloud
 - [x] Phase 1: design system, auth, organisations + roles (RLS), first-run wizard
-- [ ] Phase 2: complaints, rule sets, business-day calendars, queue, new complaint form
+- [x] Phase 2: complaints, rule sets, business-day calendars, queue, new complaint form
 - [ ] Phase 3: case view, timeline, templates + letter generation, holding response clock
 - [ ] Phase 4: immutable audit log (DB-enforced) + viewer/CSV
 - [ ] Phase 5: public web form per organisation

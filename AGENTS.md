@@ -14,3 +14,5 @@
 - Roles live in org_members (one role per user per org), never on profiles. Why: prevents privilege escalation.
 - Organisation creation goes through the create_organisation RPC, which also seeds the default rule set. Why: atomic setup, creator becomes Org Admin.
 - Signed-in pages live under src/routes/_authenticated/; /app requires a completed setup, otherwise redirects to /setup.
+- Complaint reference and deadline dates are set by DB triggers on insert; remaining business days come from the complaint_queue view. Why: one source of truth for regulatory clocks.
+- Clock colour/at-risk thresholds live in src/lib/complaints.ts (clockTone, isAtRisk) with tests next to it.

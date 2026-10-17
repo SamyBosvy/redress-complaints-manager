@@ -3,6 +3,7 @@ import { FilePlus, FileText, Inbox, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
 import { Logo } from "@/components/logo";
+import { InstallAppButton } from "@/components/install-app";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -71,6 +72,7 @@ function AppLayout() {
             Free trial: <span className="tabular font-medium">{trialDays}</span> days remaining. All Growth features included.
           </div>
         )}
+        <div className="flex justify-end border-b px-4 py-2"><InstallAppButton variant="ghost" /></div>
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

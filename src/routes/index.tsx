@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { InstallAppButton } from "@/components/install-app";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +28,8 @@ function Index() {
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Logo />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <InstallAppButton variant="ghost" />
           <Button asChild variant="ghost"><Link to="/auth">Sign in</Link></Button>
           <Button asChild><Link to="/auth" search={{ mode: "signup" }}>Start free trial</Link></Button>
         </div>

@@ -261,7 +261,7 @@ function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave:
         <div className="mt-4 flex justify-end">
           <Button variant="outline" onClick={async () => {
             if (await onSave({
-              outcome: (v.outcome || null) as Patch["outcome"], redress_amount: num(v.redress_amount), redress_currency: v.redress_currency || null,
+              outcome: (v.outcome || null) as Status extends never ? never : ("upheld" | "partially_upheld" | "not_upheld" | "withdrawn" | null), redress_amount: num(v.redress_amount), redress_currency: v.redress_currency || null,
               goodwill_amount: num(v.goodwill_amount), goodwill_currency: v.goodwill_currency || null,
               root_cause_category: v.root_cause_category || null, root_cause_note: v.root_cause_note || null,
             })) toast.success("Outcome saved.");
@@ -309,7 +309,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
     if (error) { toast.error(error.message); return; }
     const next = statusAfterLetter(kind, c.status);
     const patch: Patch = {};
-    if (next) patch.status = next as Patch["status"];
+    if (next) patch.status = next as Status;
     if (kind === "holding" && !c.holding_sent_at) { patch.holding_sent_at = new Date().toISOString(); patch.holding_reason = reason.trim().slice(0, 1000); }
     if (Object.keys(patch).length) {
       const { error: e2 } = await supabase.from("complaints").update(patch).eq("id", c.id);

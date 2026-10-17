@@ -1,8 +1,9 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { Inbox, LogOut } from "lucide-react";
+import { FilePlus, FileText, Inbox, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
 import { Logo } from "@/components/logo";
+import { InstallAppButton } from "@/components/install-app";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -42,6 +43,14 @@ function AppLayout() {
               <FilePlus className="h-4 w-4" /> New complaint
             </Link>
           )}
+          {m?.role && m.role !== "read_only" && (
+            <Link
+              to="/app/templates"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+            >
+              <FileText className="h-4 w-4" /> Templates
+            </Link>
+          )}
         </nav>
         <div className="mt-auto hidden border-t border-sidebar-border p-4 text-xs md:block">
           <p className="truncate text-sidebar-accent-foreground">{m?.user.email}</p>
@@ -63,6 +72,7 @@ function AppLayout() {
             Free trial: <span className="tabular font-medium">{trialDays}</span> days remaining. All Growth features included.
           </div>
         )}
+        <div className="flex justify-end border-b px-4 py-2"><InstallAppButton variant="ghost" /></div>
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

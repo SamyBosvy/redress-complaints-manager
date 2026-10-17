@@ -14,6 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
+      complaints: {
+        Row: {
+          ack_due: string | null
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["complaint_category"]
+          channel: Database["public"]["Enums"]["complaint_channel"]
+          closed_at: string | null
+          complainant_email: string | null
+          complainant_name: string
+          complainant_phone: string | null
+          country_code: string
+          created_at: string
+          created_by: string | null
+          customer_ref: string | null
+          desired_outcome: string | null
+          extended_due: string | null
+          final_due: string | null
+          goodwill_amount: number | null
+          goodwill_currency: string | null
+          holding_reason: string | null
+          holding_sent_at: string | null
+          id: string
+          language: string
+          org_id: string
+          outcome: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority: Database["public"]["Enums"]["complaint_priority"]
+          product: Database["public"]["Enums"]["complaint_product"]
+          received_at: string
+          redress_amount: number | null
+          redress_currency: string | null
+          reference: string
+          root_cause_category: string | null
+          root_cause_note: string | null
+          rule_set_id: string | null
+          seq: number
+          status: Database["public"]["Enums"]["complaint_status"]
+          summary: string
+          updated_at: string
+          vulnerable: boolean
+          vulnerable_note: string | null
+        }
+        Insert: {
+          ack_due?: string | null
+          assigned_to?: string | null
+          category: Database["public"]["Enums"]["complaint_category"]
+          channel: Database["public"]["Enums"]["complaint_channel"]
+          closed_at?: string | null
+          complainant_email?: string | null
+          complainant_name: string
+          complainant_phone?: string | null
+          country_code: string
+          created_at?: string
+          created_by?: string | null
+          customer_ref?: string | null
+          desired_outcome?: string | null
+          extended_due?: string | null
+          final_due?: string | null
+          goodwill_amount?: number | null
+          goodwill_currency?: string | null
+          holding_reason?: string | null
+          holding_sent_at?: string | null
+          id?: string
+          language?: string
+          org_id: string
+          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          product: Database["public"]["Enums"]["complaint_product"]
+          received_at?: string
+          redress_amount?: number | null
+          redress_currency?: string | null
+          reference?: string
+          root_cause_category?: string | null
+          root_cause_note?: string | null
+          rule_set_id?: string | null
+          seq?: number
+          status?: Database["public"]["Enums"]["complaint_status"]
+          summary: string
+          updated_at?: string
+          vulnerable?: boolean
+          vulnerable_note?: string | null
+        }
+        Update: {
+          ack_due?: string | null
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["complaint_category"]
+          channel?: Database["public"]["Enums"]["complaint_channel"]
+          closed_at?: string | null
+          complainant_email?: string | null
+          complainant_name?: string
+          complainant_phone?: string | null
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_ref?: string | null
+          desired_outcome?: string | null
+          extended_due?: string | null
+          final_due?: string | null
+          goodwill_amount?: number | null
+          goodwill_currency?: string | null
+          holding_reason?: string | null
+          holding_sent_at?: string | null
+          id?: string
+          language?: string
+          org_id?: string
+          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority?: Database["public"]["Enums"]["complaint_priority"]
+          product?: Database["public"]["Enums"]["complaint_product"]
+          received_at?: string
+          redress_amount?: number | null
+          redress_currency?: string | null
+          reference?: string
+          root_cause_category?: string | null
+          root_cause_note?: string | null
+          rule_set_id?: string | null
+          seq?: number
+          status?: Database["public"]["Enums"]["complaint_status"]
+          summary?: string
+          updated_at?: string
+          vulnerable?: boolean
+          vulnerable_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           country_code: string
@@ -261,9 +399,160 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      complaint_queue: {
+        Row: {
+          ack_due: string | null
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["complaint_category"] | null
+          channel: Database["public"]["Enums"]["complaint_channel"] | null
+          closed_at: string | null
+          complainant_email: string | null
+          complainant_name: string | null
+          complainant_phone: string | null
+          country_code: string | null
+          created_at: string | null
+          created_by: string | null
+          current_due: string | null
+          customer_ref: string | null
+          days_left: number | null
+          desired_outcome: string | null
+          extended_due: string | null
+          final_due: string | null
+          goodwill_amount: number | null
+          goodwill_currency: string | null
+          holding_reason: string | null
+          holding_sent_at: string | null
+          id: string | null
+          language: string | null
+          org_id: string | null
+          outcome: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority: Database["public"]["Enums"]["complaint_priority"] | null
+          product: Database["public"]["Enums"]["complaint_product"] | null
+          received_at: string | null
+          redress_amount: number | null
+          redress_currency: string | null
+          reference: string | null
+          root_cause_category: string | null
+          root_cause_note: string | null
+          rule_set_id: string | null
+          seq: number | null
+          status: Database["public"]["Enums"]["complaint_status"] | null
+          summary: string | null
+          updated_at: string | null
+          vulnerable: boolean | null
+          vulnerable_note: string | null
+        }
+        Insert: {
+          ack_due?: string | null
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["complaint_category"] | null
+          channel?: Database["public"]["Enums"]["complaint_channel"] | null
+          closed_at?: string | null
+          complainant_email?: string | null
+          complainant_name?: string | null
+          complainant_phone?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_due?: never
+          customer_ref?: string | null
+          days_left?: never
+          desired_outcome?: string | null
+          extended_due?: string | null
+          final_due?: string | null
+          goodwill_amount?: number | null
+          goodwill_currency?: string | null
+          holding_reason?: string | null
+          holding_sent_at?: string | null
+          id?: string | null
+          language?: string | null
+          org_id?: string | null
+          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority?: Database["public"]["Enums"]["complaint_priority"] | null
+          product?: Database["public"]["Enums"]["complaint_product"] | null
+          received_at?: string | null
+          redress_amount?: number | null
+          redress_currency?: string | null
+          reference?: string | null
+          root_cause_category?: string | null
+          root_cause_note?: string | null
+          rule_set_id?: string | null
+          seq?: number | null
+          status?: Database["public"]["Enums"]["complaint_status"] | null
+          summary?: string | null
+          updated_at?: string | null
+          vulnerable?: boolean | null
+          vulnerable_note?: string | null
+        }
+        Update: {
+          ack_due?: string | null
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["complaint_category"] | null
+          channel?: Database["public"]["Enums"]["complaint_channel"] | null
+          closed_at?: string | null
+          complainant_email?: string | null
+          complainant_name?: string | null
+          complainant_phone?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_due?: never
+          customer_ref?: string | null
+          days_left?: never
+          desired_outcome?: string | null
+          extended_due?: string | null
+          final_due?: string | null
+          goodwill_amount?: number | null
+          goodwill_currency?: string | null
+          holding_reason?: string | null
+          holding_sent_at?: string | null
+          id?: string | null
+          language?: string | null
+          org_id?: string | null
+          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
+          priority?: Database["public"]["Enums"]["complaint_priority"] | null
+          product?: Database["public"]["Enums"]["complaint_product"] | null
+          received_at?: string | null
+          redress_amount?: number | null
+          redress_currency?: string | null
+          reference?: string | null
+          root_cause_category?: string | null
+          root_cause_note?: string | null
+          rule_set_id?: string | null
+          seq?: number | null
+          status?: Database["public"]["Enums"]["complaint_status"] | null
+          summary?: string | null
+          updated_at?: string | null
+          vulnerable?: boolean | null
+          vulnerable_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      add_business_days: {
+        Args: { _country: string; _n: number; _org: string; _start: string }
+        Returns: string
+      }
+      business_days_between: {
+        Args: { _country: string; _from: string; _org: string; _to: string }
+        Returns: number
+      }
       create_organisation: { Args: { _legal_name: string }; Returns: string }
       has_org_role: {
         Args: {
@@ -272,7 +561,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_business_day: {
+        Args: { _country: string; _d: string; _org: string }
+        Returns: boolean
+      }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      resolve_rule_set: {
+        Args: { _country: string; _org: string; _product: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
@@ -281,6 +578,47 @@ export type Database = {
         | "agent"
         | "qa_reviewer"
         | "read_only"
+      complaint_category:
+        | "unauthorised_transaction"
+        | "fraud_or_scam"
+        | "fees_and_charges"
+        | "account_blocked_or_closed"
+        | "payment_delay_or_failure"
+        | "refund_or_chargeback"
+        | "customer_service"
+        | "data_protection"
+        | "other"
+      complaint_channel:
+        | "email"
+        | "phone"
+        | "chat"
+        | "letter"
+        | "web_form"
+        | "social_media"
+        | "in_person"
+      complaint_outcome:
+        | "upheld"
+        | "partially_upheld"
+        | "not_upheld"
+        | "withdrawn"
+      complaint_priority: "standard" | "high"
+      complaint_product:
+        | "payment_account"
+        | "card"
+        | "credit_transfer"
+        | "direct_debit"
+        | "e_money_wallet"
+        | "merchant_acquiring"
+        | "other"
+      complaint_status:
+        | "received"
+        | "acknowledged"
+        | "under_investigation"
+        | "holding_response_sent"
+        | "final_response_sent"
+        | "closed"
+        | "escalated_to_adr"
+        | "reopened"
       licence_type:
         | "payment_institution"
         | "e_money_institution"
@@ -419,6 +757,52 @@ export const Constants = {
         "agent",
         "qa_reviewer",
         "read_only",
+      ],
+      complaint_category: [
+        "unauthorised_transaction",
+        "fraud_or_scam",
+        "fees_and_charges",
+        "account_blocked_or_closed",
+        "payment_delay_or_failure",
+        "refund_or_chargeback",
+        "customer_service",
+        "data_protection",
+        "other",
+      ],
+      complaint_channel: [
+        "email",
+        "phone",
+        "chat",
+        "letter",
+        "web_form",
+        "social_media",
+        "in_person",
+      ],
+      complaint_outcome: [
+        "upheld",
+        "partially_upheld",
+        "not_upheld",
+        "withdrawn",
+      ],
+      complaint_priority: ["standard", "high"],
+      complaint_product: [
+        "payment_account",
+        "card",
+        "credit_transfer",
+        "direct_debit",
+        "e_money_wallet",
+        "merchant_acquiring",
+        "other",
+      ],
+      complaint_status: [
+        "received",
+        "acknowledged",
+        "under_investigation",
+        "holding_response_sent",
+        "final_response_sent",
+        "closed",
+        "escalated_to_adr",
+        "reopened",
       ],
       licence_type: [
         "payment_institution",

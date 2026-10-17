@@ -20,3 +20,5 @@
 - Attachments live in the private 'attachments' bucket under <org_id>/<complaint_id>/; storage RLS keys on the first folder.
 - Letter merge/ADR check/status-after-send rules live in src/lib/letters.ts with tests.
 - PWA: service worker registers only outside iframes/preview hosts; it never caches /~oauth or /api.
+- Audit: public.audit_log is filled only by the audit_capture() trigger on every app table; UPDATE/DELETE/TRUNCATE are blocked by triggers and no client grants exist beyond SELECT. Add the trigger to every new app table. audit_log has no FK to organisations so entries survive org deletion.
+- CSV exports go through src/lib/csv.ts (formula-injection safe).

@@ -114,8 +114,8 @@ function Queue() {
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40">
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
-                  {r.reference}
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs"><Link to="/app/c/$id" params={{ id: r.id! }} className="text-primary hover:underline">
+                  {r.reference}</Link>
                   {r.priority === "high" && <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 font-sans text-destructive">High</span>}
                 </td>
                 <td className="px-4 py-3">

@@ -16,6 +16,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
 import { TEMPLATE_KINDS, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
 import { templatesQuery } from "./app.templates";
+import type { Database } from "@/integrations/supabase/types";
 
 const caseQuery = (id: string) =>
   queryOptions({
@@ -46,6 +47,9 @@ export const Route = createFileRoute("/_authenticated/app/c/$id")({
   component: CaseView,
 });
 
+type Patch = Database["public"]["Tables"]["complaints"]["Update"];
+type Detail = { channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; path?: string; name?: string };
+
 const OUTCOMES = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" } as const;
 
 function CaseView() {
@@ -62,7 +66,7 @@ function CaseView() {
 
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["case", id] }), qc.invalidateQueries({ queryKey: ["queue"] })]);
 
-  async function update(patch: Record<string, unknown>) {
+  async function update(patch: Patch) {
     const { error } = await supabase.from("complaints").update(patch).eq("id", id);
     if (error) { toast.error(error.message); return false; }
     await refresh();
@@ -112,7 +116,7 @@ function CaseView() {
           <Card title="Handling">
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Status">
-                <Select value={status} disabled={!canEdit} onValueChange={(v) => update({ status: v })}>
+                <Select value={status} disabled={!canEdit} onValueChange={(v) => update({ status: v as Status })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(STATUSES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
@@ -127,7 +131,7 @@ function CaseView() {
                 </Select>
               </Field>
               <Field label="Priority">
-                <Select value={c.priority!} disabled={!canEdit} onValueChange={(v) => update({ priority: v })}>
+                <Select value={c.priority!} disabled={!canEdit} onValueChange={(v) => update({ priority: v as "standard" | "high" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="standard">Standard</SelectItem><SelectItem value="high">High</SelectItem></SelectContent>
                 </Select>
@@ -207,7 +211,7 @@ function CaseView() {
 
 type Ev = { kind: string; detail: unknown };
 function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void }) {
-  const d = (e.detail ?? {}) as Record<string, any>;
+  const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
     case "created": return <p>Complaint logged via {CHANNELS[d.channel as keyof typeof CHANNELS] ?? d.channel}</p>;
     case "status": return <p>Status: {STATUSES[d.before as Status]} → <strong>{STATUSES[d.after as Status]}</strong></p>;
@@ -217,12 +221,12 @@ function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) =>
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
     case "letter_sent": return <p>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></p>;
     case "note": return <p className="whitespace-pre-wrap rounded bg-muted px-2 py-1">{d.text}</p>;
-    case "attachment": return <p>Attachment: <button className="text-primary hover:underline" onClick={() => onOpen(d.path)}>{d.name}</button></p>;
+    case "attachment": return <p>Attachment: <button className="text-primary hover:underline" onClick={() => onOpen(d.path!)}>{d.name}</button></p>;
     default: return <p>{e.kind}</p>;
   }
 }
 
-function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave: (p: Record<string, unknown>) => Promise<boolean> }) {
+function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave: (p: Patch) => Promise<boolean> }) {
   const [v, setV] = useState({
     outcome: c.outcome ?? "", redress_amount: c.redress_amount ?? "", redress_currency: c.redress_currency ?? "EUR",
     goodwill_amount: c.goodwill_amount ?? "", goodwill_currency: c.goodwill_currency ?? "EUR",
@@ -257,7 +261,7 @@ function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave:
         <div className="mt-4 flex justify-end">
           <Button variant="outline" onClick={async () => {
             if (await onSave({
-              outcome: v.outcome || null, redress_amount: num(v.redress_amount), redress_currency: v.redress_currency || null,
+              outcome: (v.outcome || null) as Patch["outcome"], redress_amount: num(v.redress_amount), redress_currency: v.redress_currency || null,
               goodwill_amount: num(v.goodwill_amount), goodwill_currency: v.goodwill_currency || null,
               root_cause_category: v.root_cause_category || null, root_cause_note: v.root_cause_note || null,
             })) toast.success("Outcome saved.");
@@ -304,8 +308,8 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
     const { error } = await supabase.from("letters").insert({ org_id: orgId, complaint_id: c.id, kind, language: lang, subject, body, sent_by: m.user.id });
     if (error) { toast.error(error.message); return; }
     const next = statusAfterLetter(kind, c.status);
-    const patch: Record<string, unknown> = {};
-    if (next) patch.status = next;
+    const patch: Patch = {};
+    if (next) patch.status = next as Patch["status"];
     if (kind === "holding" && !c.holding_sent_at) { patch.holding_sent_at = new Date().toISOString(); patch.holding_reason = reason.trim().slice(0, 1000); }
     if (Object.keys(patch).length) {
       const { error: e2 } = await supabase.from("complaints").update(patch).eq("id", c.id);

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { FilePlus, FileText, Inbox, LogOut } from "lucide-react";
+import { FilePlus, FileText, History, Inbox, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
 import { Logo } from "@/components/logo";
@@ -49,6 +49,14 @@ function AppLayout() {
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
             >
               <FileText className="h-4 w-4" /> Templates
+            </Link>
+          )}
+          {m?.role && ["org_admin", "complaints_manager", "read_only"].includes(m.role) && (
+            <Link
+              to="/app/audit"
+              className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+            >
+              <History className="h-4 w-4" /> Audit log
             </Link>
           )}
         </nav>

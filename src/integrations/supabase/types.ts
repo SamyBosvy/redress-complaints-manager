@@ -14,6 +14,58 @@ export type Database = {
   }
   public: {
     Tables: {
+      complaint_events: {
+        Row: {
+          actor: string | null
+          complaint_id: string
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          org_id: string
+        }
+        Insert: {
+          actor?: string | null
+          complaint_id: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          org_id: string
+        }
+        Update: {
+          actor?: string | null
+          complaint_id?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_events_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_events_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           ack_due: string | null
@@ -177,6 +229,64 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "holidays_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      letters: {
+        Row: {
+          body: string
+          complaint_id: string
+          id: string
+          kind: Database["public"]["Enums"]["template_kind"]
+          language: string
+          org_id: string
+          sent_at: string
+          sent_by: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          complaint_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["template_kind"]
+          language: string
+          org_id: string
+          sent_at?: string
+          sent_by?: string
+          subject?: string
+        }
+        Update: {
+          body?: string
+          complaint_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["template_kind"]
+          language?: string
+          org_id?: string
+          sent_at?: string
+          sent_by?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letters_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letters_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letters_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
@@ -397,6 +507,44 @@ export type Database = {
           },
         ]
       }
+      templates: {
+        Row: {
+          body: string
+          id: string
+          kind: Database["public"]["Enums"]["template_kind"]
+          language: string
+          org_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          id?: string
+          kind: Database["public"]["Enums"]["template_kind"]
+          language: string
+          org_id: string
+          subject?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["template_kind"]
+          language?: string
+          org_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       complaint_queue: {
@@ -570,6 +718,7 @@ export type Database = {
         Args: { _country: string; _org: string; _product: string }
         Returns: string
       }
+      seed_templates: { Args: { _org: string }; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -624,6 +773,14 @@ export type Database = {
         | "e_money_institution"
         | "credit_institution"
         | "other"
+      template_kind:
+        | "acknowledgement"
+        | "holding"
+        | "final_upheld"
+        | "final_partially_upheld"
+        | "final_not_upheld"
+        | "information_request"
+        | "closure"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -809,6 +966,15 @@ export const Constants = {
         "e_money_institution",
         "credit_institution",
         "other",
+      ],
+      template_kind: [
+        "acknowledgement",
+        "holding",
+        "final_upheld",
+        "final_partially_upheld",
+        "final_not_upheld",
+        "information_request",
+        "closure",
       ],
     },
   },

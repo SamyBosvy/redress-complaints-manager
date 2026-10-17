@@ -60,7 +60,7 @@ export function InstallAppButton({ className, variant = "outline" }: { className
     }
     setOpen(true);
   }
-  const p = typeof navigator !== "undefined" ? STEPS[platform()]! : STEPS.desktop!;
+  const p = typeof navigator !== "undefined" ? STEPS[platform()]! : STEPS["desktop"]!;
 
   return (
     <>

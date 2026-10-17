@@ -14,16 +14,278 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      holidays: {
+        Row: {
+          country_code: string
+          holiday_date: string
+          id: string
+          name: string
+          org_id: string
+        }
+        Insert: {
+          country_code: string
+          holiday_date: string
+          id?: string
+          name: string
+          org_id: string
+        }
+        Update: {
+          country_code?: string
+          holiday_date?: string
+          id?: string
+          name?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holidays_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_countries: {
+        Row: {
+          adr_contact: string | null
+          adr_name: string | null
+          adr_website: string | null
+          country_code: string
+          id: string
+          org_id: string
+        }
+        Insert: {
+          adr_contact?: string | null
+          adr_name?: string | null
+          adr_website?: string | null
+          country_code: string
+          id?: string
+          org_id: string
+        }
+        Update: {
+          adr_contact?: string | null
+          adr_name?: string | null
+          adr_website?: string | null
+          country_code?: string
+          id?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_countries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisations: {
+        Row: {
+          created_at: string
+          created_by: string
+          home_country: string | null
+          id: string
+          legal_name: string
+          licence_type: Database["public"]["Enums"]["licence_type"]
+          qa_required: boolean
+          qa_sample_pct: number
+          regulator: string | null
+          retention_years: number
+          setup_complete: boolean
+          trial_ends_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          home_country?: string | null
+          id?: string
+          legal_name: string
+          licence_type?: Database["public"]["Enums"]["licence_type"]
+          qa_required?: boolean
+          qa_sample_pct?: number
+          regulator?: string | null
+          retention_years?: number
+          setup_complete?: boolean
+          trial_ends_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          home_country?: string | null
+          id?: string
+          legal_name?: string
+          licence_type?: Database["public"]["Enums"]["licence_type"]
+          qa_required?: boolean
+          qa_sample_pct?: number
+          regulator?: string | null
+          retention_years?: number
+          setup_complete?: boolean
+          trial_ends_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      rule_set_assignments: {
+        Row: {
+          country_code: string | null
+          id: string
+          org_id: string
+          product: string | null
+          rule_set_id: string
+        }
+        Insert: {
+          country_code?: string | null
+          id?: string
+          org_id: string
+          product?: string | null
+          rule_set_id: string
+        }
+        Update: {
+          country_code?: string | null
+          id?: string
+          org_id?: string
+          product?: string | null
+          rule_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rule_set_assignments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rule_set_assignments_rule_set_id_fkey"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rule_sets: {
+        Row: {
+          ack_days: number
+          created_at: string
+          extended_days: number
+          final_days: number
+          id: string
+          is_default: boolean
+          name: string
+          org_id: string
+        }
+        Insert: {
+          ack_days?: number
+          created_at?: string
+          extended_days?: number
+          final_days?: number
+          id?: string
+          is_default?: boolean
+          name: string
+          org_id: string
+        }
+        Update: {
+          ack_days?: number
+          created_at?: string
+          extended_days?: number
+          final_days?: number
+          id?: string
+          is_default?: boolean
+          name?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rule_sets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_organisation: { Args: { _legal_name: string }; Returns: string }
+      has_org_role: {
+        Args: {
+          _org: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+        }
+        Returns: boolean
+      }
+      is_org_member: { Args: { _org: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "org_admin"
+        | "complaints_manager"
+        | "agent"
+        | "qa_reviewer"
+        | "read_only"
+      licence_type:
+        | "payment_institution"
+        | "e_money_institution"
+        | "credit_institution"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +412,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "org_admin",
+        "complaints_manager",
+        "agent",
+        "qa_reviewer",
+        "read_only",
+      ],
+      licence_type: [
+        "payment_institution",
+        "e_money_institution",
+        "credit_institution",
+        "other",
+      ],
+    },
   },
 } as const

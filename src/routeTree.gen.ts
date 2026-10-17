@@ -14,8 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
+import { Route as ComplainFormIdRouteImport } from './routes/complain.$formId'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticated/app.audit'
+import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
@@ -44,6 +46,11 @@ const AuthenticatedSetupRoute = AuthenticatedSetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ComplainFormIdRoute = ComplainFormIdRouteImport.update({
+  id: '/complain/$formId',
+  path: '/complain/$formId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,6 +59,11 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
 const AuthenticatedAppAuditRoute = AuthenticatedAppAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppFormsRoute = AuthenticatedAppFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
@@ -76,7 +88,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/setup': typeof AuthenticatedSetupRoute
+  '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
+  '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -86,7 +100,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof AuthenticatedSetupRoute
+  '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
+  '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -99,7 +115,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
+  '/complain/$formId': typeof ComplainFormIdRoute
   '/_authenticated/app/audit': typeof AuthenticatedAppAuditRoute
+  '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -112,7 +130,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app'
     | '/setup'
+    | '/complain/$formId'
     | '/app/audit'
+    | '/app/forms'
     | '/app/new'
     | '/app/templates'
     | '/app/'
@@ -122,7 +142,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/setup'
+    | '/complain/$formId'
     | '/app/audit'
+    | '/app/forms'
     | '/app/new'
     | '/app/templates'
     | '/app'
@@ -134,7 +156,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/app'
     | '/_authenticated/setup'
+    | '/complain/$formId'
     | '/_authenticated/app/audit'
+    | '/_authenticated/app/forms'
     | '/_authenticated/app/new'
     | '/_authenticated/app/templates'
     | '/_authenticated/app/'
@@ -145,6 +169,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ComplainFormIdRoute: typeof ComplainFormIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -184,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSetupRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/complain/$formId': {
+      id: '/complain/$formId'
+      path: '/complain/$formId'
+      fullPath: '/complain/$formId'
+      preLoaderRoute: typeof ComplainFormIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
       path: '/'
@@ -196,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/app/audit'
       preLoaderRoute: typeof AuthenticatedAppAuditRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/forms': {
+      id: '/_authenticated/app/forms'
+      path: '/forms'
+      fullPath: '/app/forms'
+      preLoaderRoute: typeof AuthenticatedAppFormsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/new': {
@@ -224,6 +263,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
+  AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
@@ -232,6 +272,7 @@ interface AuthenticatedAppRouteChildren {
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAuditRoute: AuthenticatedAppAuditRoute,
+  AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
@@ -258,6 +299,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ComplainFormIdRoute: ComplainFormIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

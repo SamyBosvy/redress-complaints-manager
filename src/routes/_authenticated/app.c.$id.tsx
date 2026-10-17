@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/app/c/$id")({
       context.queryClient.ensureQueryData(countriesQuery(orgId)),
     ]);
   },
-  head: () => ({ meta: [{ title: "Complaint — Redress" }] }),
+  head: () => ({ meta: [{ title: "Complaint — Redress" }, { name: "description", content: "Review complaint details, correspondence and the case timeline." }, { property: "og:title", content: "Complaint — Redress" }, { property: "og:description", content: "Review complaint details, correspondence and the case timeline." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: CaseView,
 });
 

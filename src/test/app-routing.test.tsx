@@ -14,4 +14,10 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+  it("matches public complaint links without the signed-in layout", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const matches = router.matchRoutes("/complain/10000000-0000-4000-8000-000000000001");
+    expect(matches.at(-1)?.routeId).toBe("/complain/$formId");
+    expect(matches.some((match) => match.routeId === "/_authenticated")).toBe(false);
+  });
 });

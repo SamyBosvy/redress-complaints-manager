@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/app/templates")({
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     await context.queryClient.ensureQueryData(templatesQuery(m!.org!.id));
   },
-  head: () => ({ meta: [{ title: "Templates — Redress" }] }),
+  head: () => ({ meta: [{ title: "Templates — Redress" }, { name: "description", content: "Manage complaint response templates and language versions." }, { property: "og:title", content: "Templates — Redress" }, { property: "og:description", content: "Manage complaint response templates and language versions." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Templates,
 });
 

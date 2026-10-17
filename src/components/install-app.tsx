@@ -12,9 +12,18 @@ if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e as BIP; listeners.forEach((l) => l()); });
   window.addEventListener("appinstalled", () => { deferred = null; listeners.forEach((l) => l()); });
   const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-  const preview = /id-preview--|lovableproject\.com|localhost/.test(window.location.hostname);
-  if ("serviceWorker" in navigator && !inIframe && !preview) {
-    window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js"); });
+  const h = window.location.hostname;
+  const preview =
+    h.startsWith("id-preview--") || h.startsWith("preview--") || h === "localhost" ||
+    /(^|\.)lovableproject(-dev)?\.com$/.test(h) || /(^|\.)beta\.lovable\.dev$/.test(h);
+  const off = new URLSearchParams(window.location.search).get("sw") === "off";
+  if ("serviceWorker" in navigator) {
+    if (import.meta.env.PROD && !inIframe && !preview && !off) {
+      window.addEventListener("load", () => { void navigator.serviceWorker.register("/sw.js"); });
+    } else {
+      void navigator.serviceWorker.getRegistrations().then((rs) =>
+        rs.filter((r) => r.active?.scriptURL.endsWith("/sw.js")).forEach((r) => void r.unregister()));
+    }
   }
 }
 

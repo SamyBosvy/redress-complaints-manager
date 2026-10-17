@@ -1,6 +1,7 @@
 {
   "name": "Redress — Complaints management",
   "short_name": "Redress",
+  "id": "/app",
   "start_url": "/app",
   "scope": "/",
   "display": "standalone",

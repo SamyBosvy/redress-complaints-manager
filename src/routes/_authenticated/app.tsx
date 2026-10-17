@@ -34,6 +34,14 @@ function AppLayout() {
           >
             <Inbox className="h-4 w-4" /> Queue
           </Link>
+          {m?.role && m.role !== "read_only" && (
+            <Link
+              to="/app/new"
+              className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+            >
+              <FilePlus className="h-4 w-4" /> New complaint
+            </Link>
+          )}
         </nav>
         <div className="mt-auto hidden border-t border-sidebar-border p-4 text-xs md:block">
           <p className="truncate text-sidebar-accent-foreground">{m?.user.email}</p>

@@ -18,6 +18,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Sign in to Redress or start your 14-day free trial." },
       { property: "og:title", content: "Sign in — Redress" },
       { property: "og:description", content: "Sign in to Redress or start your 14-day free trial." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,

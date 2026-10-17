@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/app/audit")({
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     await context.queryClient.ensureQueryData(membersQuery(m!.org!.id));
   },
-  head: () => ({ meta: [{ title: "Audit log — Redress" }] }),
+  head: () => ({ meta: [{ title: "Audit log — Redress" }, { name: "description", content: "Review the immutable audit history for your firm." }, { property: "og:title", content: "Audit log — Redress" }, { property: "og:description", content: "Review the immutable audit history for your firm." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Audit,
 });
 

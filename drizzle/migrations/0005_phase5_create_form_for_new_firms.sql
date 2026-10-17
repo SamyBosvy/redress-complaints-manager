@@ -1,0 +1,3 @@
+CREATE OR REPLACE FUNCTION public.create_public_form_for_org() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN INSERT INTO public.public_complaint_forms(org_id) VALUES(NEW.id) ON CONFLICT(org_id) DO NOTHING; RETURN NEW; END; $$;
+REVOKE ALL ON FUNCTION public.create_public_form_for_org() FROM PUBLIC;
+CREATE TRIGGER organisation_public_form AFTER INSERT ON public.organisations FOR EACH ROW EXECUTE FUNCTION public.create_public_form_for_org();

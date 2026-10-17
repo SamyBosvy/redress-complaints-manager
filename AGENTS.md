@@ -22,3 +22,7 @@
 - PWA: service worker registers only outside iframes/preview hosts; it never caches /~oauth or /api.
 - Audit: public.audit_log is filled only by the audit_capture() trigger on every app table; UPDATE/DELETE/TRUNCATE are blocked by triggers and no client grants exist beyond SELECT. Add the trigger to every new app table. audit_log has no FK to organisations so entries survive org deletion.
 - CSV exports go through src/lib/csv.ts (formula-injection safe).
+
+- Public intake uses narrow SECURITY DEFINER RPCs: details expose only public firm fields, submission validates and writes Received/web_form atomically with a privacy receipt; no anonymous table reads or generic complaint inserts. Why: isolate tenants and avoid exposing complaint data.
+- Public form retries reuse a submission UUID and return the original reference. Why: prevent duplicate complaints after connection failures.
+- Firm logos use private storage with SELECT restricted to the currently published logo path and Org Admin upload policies. Why: workspace disallows public buckets while public forms still need a safe logo.

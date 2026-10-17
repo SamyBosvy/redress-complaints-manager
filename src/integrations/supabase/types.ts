@@ -463,6 +463,90 @@ export type Database = {
         }
         Relationships: []
       }
+      public_complaint_forms: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          logo_path: string | null
+          org_id: string
+          privacy_notice: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          logo_path?: string | null
+          org_id: string
+          privacy_notice?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          logo_path?: string | null
+          org_id?: string
+          privacy_notice?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_complaint_forms_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_form_submissions: {
+        Row: {
+          complaint_id: string
+          created_at: string
+          id: string
+          org_id: string
+          privacy_notice: string
+        }
+        Insert: {
+          complaint_id: string
+          created_at?: string
+          id: string
+          org_id: string
+          privacy_notice: string
+        }
+        Update: {
+          complaint_id?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          privacy_notice?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_form_submissions_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_form_submissions_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_form_submissions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rule_set_assignments: {
         Row: {
           country_code: string | null
@@ -750,11 +834,17 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
+      public_form_details: { Args: { _id: string }; Returns: Json }
       resolve_rule_set: {
         Args: { _country: string; _org: string; _product: string }
         Returns: string
       }
       seed_templates: { Args: { _org: string }; Returns: undefined }
+      submit_public_complaint: {
+        Args: { _data: Json; _form_id: string; _submission_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:

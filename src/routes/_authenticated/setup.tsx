@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/setup")({
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     if (m?.org?.setup_complete) throw redirect({ to: "/app" });
   },
-  head: () => ({ meta: [{ title: "Set up your organisation — Redress" }] }),
+  head: () => ({ meta: [{ title: "Set up your organisation — Redress" }, { name: "description", content: "Set up your firm’s countries, calendars and complaint deadlines." }, { property: "og:title", content: "Set up your organisation — Redress" }, { property: "og:description", content: "Set up your firm’s countries, calendars and complaint deadlines." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Setup,
 });
 

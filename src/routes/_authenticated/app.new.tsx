@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/app/new")({
       context.queryClient.ensureQueryData(membersQuery(m!.org!.id)),
     ]);
   },
-  head: () => ({ meta: [{ title: "New complaint — Redress" }] }),
+  head: () => ({ meta: [{ title: "New complaint — Redress" }, { name: "description", content: "Log a customer complaint for your firm." }, { property: "og:title", content: "New complaint — Redress" }, { property: "og:description", content: "Log a customer complaint for your firm." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: NewComplaint,
 });
 

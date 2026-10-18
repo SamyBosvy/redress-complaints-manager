@@ -824,6 +824,7 @@ export type Database = {
       complaint_queue: {
         Row: {
           ack_due: string | null
+          anonymised_at: string | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["complaint_category"] | null
           channel: Database["public"]["Enums"]["complaint_channel"] | null
@@ -846,6 +847,7 @@ export type Database = {
           holding_sent_at: string | null
           id: string | null
           language: string | null
+          legal_hold: boolean | null
           org_id: string | null
           outcome: Database["public"]["Enums"]["complaint_outcome"] | null
           priority: Database["public"]["Enums"]["complaint_priority"] | null
@@ -866,6 +868,7 @@ export type Database = {
         }
         Insert: {
           ack_due?: string | null
+          anonymised_at?: string | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["complaint_category"] | null
           channel?: Database["public"]["Enums"]["complaint_channel"] | null
@@ -888,6 +891,7 @@ export type Database = {
           holding_sent_at?: string | null
           id?: string | null
           language?: string | null
+          legal_hold?: boolean | null
           org_id?: string | null
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"] | null
@@ -908,6 +912,7 @@ export type Database = {
         }
         Update: {
           ack_due?: string | null
+          anonymised_at?: string | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["complaint_category"] | null
           channel?: Database["public"]["Enums"]["complaint_channel"] | null
@@ -930,6 +935,7 @@ export type Database = {
           holding_sent_at?: string | null
           id?: string | null
           language?: string | null
+          legal_hold?: boolean | null
           org_id?: string | null
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"] | null

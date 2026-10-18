@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export type PrivacyValue = string | number | boolean | null | PrivacyValue[] | { [key: string]: PrivacyValue };
+export type PrivacyRow = Record<string, PrivacyValue>;
+
 export const retentionYearsSchema = z.number().int().min(1).max(50);
 export const erasureSchema = z.object({ caseId: z.string().uuid(), reference: z.string().min(1), lawfulBasis: z.string().trim().min(10).max(1000), reviewed: z.literal(true), auditAcknowledged: z.literal(true) });
 export function retentionDate(closedAt: string, years: number) {

@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { erasureSchema, retentionYearsSchema } from './privacy';
+import { erasureSchema, retentionYearsSchema, type PrivacyRow } from './privacy';
 
 export const getPrivacyOverview = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const { privacyAdmin, allRows } = await import('./privacy.server');
@@ -49,7 +49,7 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
   if (!selected) throw new Error('Complaint not found.');
   const complaints = all.filter(c => c['id'] === data.caseId || (selected['customer_ref'] && c['customer_ref'] === selected['customer_ref']) || (selected['complainant_email'] && String(c['complainant_email']).toLowerCase() === String(selected['complainant_email']).toLowerCase()));
   const ids = new Set(complaints.map(c => String(c['id'])));
-  const tables: Record<string, Record<string, unknown>[]> = { complaints };
+  const tables: Record<string, PrivacyRow[]> = { complaints };
   for (const table of ['complaint_events','letters','qa_reviews','public_form_submissions'] as const) tables[table] = (await allRows(context.supabase, table, org.id)).filter(r => ids.has(String(r['complaint_id'])));
   tables['audit_log'] = (await allRows(context.supabase, 'audit_log', org.id)).filter(r => ids.has(String(r['row_id'])) || ids.has(String((r['after'] as Record<string, unknown> | null)?.['complaint_id'])) || ids.has(String((r['before'] as Record<string, unknown> | null)?.['complaint_id'])));
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -61,7 +61,7 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
 export const exportOrganisationData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const { privacyAdmin, allRows, exportFiles } = await import('./privacy.server');
   const org = await privacyAdmin(context.supabase, context.userId);
-  const tables: Record<string, Record<string, unknown>[]> = { organisations: [org] };
+  const tables: Record<string, PrivacyRow[]> = { organisations: [org] };
   for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','audit_log'] as const) tables[table] = await allRows(context.supabase, table, org.id);
   const userIds = (tables['org_members'] ?? []).map(r => String(r['user_id']));
   tables['profiles'] = [];

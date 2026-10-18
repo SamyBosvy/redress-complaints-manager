@@ -330,6 +330,61 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          complaint_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          org_id: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          complaint_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          org_id: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          complaint_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_countries: {
         Row: {
           adr_contact: string | null
@@ -540,6 +595,67 @@ export type Database = {
           },
           {
             foreignKeyName: "public_form_submissions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qa_reviews: {
+        Row: {
+          comments: string | null
+          complaint_id: string
+          created_at: string
+          decided_at: string | null
+          id: string
+          kind: string
+          org_id: string
+          reviewer: string | null
+          scorecard: Json | null
+          status: string
+        }
+        Insert: {
+          comments?: string | null
+          complaint_id: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          kind: string
+          org_id: string
+          reviewer?: string | null
+          scorecard?: Json | null
+          status?: string
+        }
+        Update: {
+          comments?: string | null
+          complaint_id?: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          kind?: string
+          org_id?: string
+          reviewer?: string | null
+          scorecard?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qa_reviews_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
@@ -894,6 +1010,7 @@ export type Database = {
         | "closed"
         | "escalated_to_adr"
         | "reopened"
+        | "pending_qa"
       licence_type:
         | "payment_institution"
         | "e_money_institution"
@@ -1086,6 +1203,7 @@ export const Constants = {
         "closed",
         "escalated_to_adr",
         "reopened",
+        "pending_qa",
       ],
       licence_type: [
         "payment_institution",

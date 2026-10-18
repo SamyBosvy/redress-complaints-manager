@@ -20,7 +20,7 @@ export const CATEGORIES: Record<E["complaint_category"], string> = {
 };
 export const STATUSES: Record<Status, string> = {
   received: "Received", acknowledged: "Acknowledged", under_investigation: "Under investigation",
-  holding_response_sent: "Holding response sent", final_response_sent: "Final response sent", closed: "Closed",
+  holding_response_sent: "Holding response sent", pending_qa: "Pending QA", final_response_sent: "Final response sent", closed: "Closed",
   escalated_to_adr: "Escalated to ADR", reopened: "Reopened",
 };
 export const LANGUAGES = { en: "English", fr: "French", es: "Spanish", pt: "Portuguese", pl: "Polish", nl: "Dutch" } as const;

@@ -35,11 +35,12 @@ export function hasAdrBlock(body: string) {
   return body.includes("{adr_body_name}") && body.includes("{adr_body_contact}");
 }
 
-/** Status the complaint moves to when a letter of this kind is marked sent (null = no change). */
-export function statusAfterLetter(kind: TemplateKind, current: string) {
+/** Status the complaint moves to when a letter of this kind is marked sent (null = no change).
+ *  When the org requires QA, final responses go to pending_qa instead of final_response_sent. */
+export function statusAfterLetter(kind: TemplateKind, current: string, qaRequired = false) {
   if (kind === "acknowledgement") return current === "received" ? "acknowledged" : null;
   if (kind === "holding") return "holding_response_sent";
-  if (isFinal(kind)) return "final_response_sent";
+  if (isFinal(kind)) return qaRequired ? "pending_qa" : "final_response_sent";
   if (kind === "closure") return "closed";
   return null;
 }

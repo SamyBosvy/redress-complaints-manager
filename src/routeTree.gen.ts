@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DpaRouteImport } from './routes/dpa'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 import { Route as ComplainFormIdRouteImport } from './routes/complain.$formId'
@@ -19,10 +21,12 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticated/app.audit'
 import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
+import { Route as AuthenticatedAppPrivacyRouteImport } from './routes/_authenticated/app.privacy'
 import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
+import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +40,16 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DpaRoute = DpaRouteImport.update({
+  id: '/dpa',
+  path: '/dpa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
@@ -73,6 +87,11 @@ const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppPrivacyRoute = AuthenticatedAppPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppQaRoute = AuthenticatedAppQaRouteImport.update({
   id: '/qa',
   path: '/qa',
@@ -94,106 +113,138 @@ const AuthenticatedAppCIdRoute = AuthenticatedAppCIdRouteImport.update({
   path: '/c/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const ApiPublicJobsPrivacyRoute = ApiPublicJobsPrivacyRouteImport.update({
+  id: '/api/public/jobs/privacy',
+  path: '/api/public/jobs/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
   '/_authenticated/app/audit': typeof AuthenticatedAppAuditRoute
   '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
+  '/_authenticated/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
   '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/dpa'
+    | '/privacy'
     | '/app'
     | '/setup'
     | '/complain/$formId'
     | '/app/audit'
     | '/app/forms'
     | '/app/new'
+    | '/app/privacy'
     | '/app/qa'
     | '/app/reports'
     | '/app/templates'
     | '/app/'
     | '/app/c/$id'
+    | '/api/public/jobs/privacy'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/dpa'
+    | '/privacy'
     | '/setup'
     | '/complain/$formId'
     | '/app/audit'
     | '/app/forms'
     | '/app/new'
+    | '/app/privacy'
     | '/app/qa'
     | '/app/reports'
     | '/app/templates'
     | '/app'
     | '/app/c/$id'
+    | '/api/public/jobs/privacy'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/dpa'
+    | '/privacy'
     | '/_authenticated/app'
     | '/_authenticated/setup'
     | '/complain/$formId'
     | '/_authenticated/app/audit'
     | '/_authenticated/app/forms'
     | '/_authenticated/app/new'
+    | '/_authenticated/app/privacy'
     | '/_authenticated/app/qa'
     | '/_authenticated/app/reports'
     | '/_authenticated/app/templates'
     | '/_authenticated/app/'
     | '/_authenticated/app/c/$id'
+    | '/api/public/jobs/privacy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DpaRoute: typeof DpaRoute
+  PrivacyRoute: typeof PrivacyRoute
   ComplainFormIdRoute: typeof ComplainFormIdRoute
+  ApiPublicJobsPrivacyRoute: typeof ApiPublicJobsPrivacyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,6 +268,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dpa': {
+      id: '/dpa'
+      path: '/dpa'
+      fullPath: '/dpa'
+      preLoaderRoute: typeof DpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app': {
@@ -268,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppNewRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/privacy': {
+      id: '/_authenticated/app/privacy'
+      path: '/privacy'
+      fullPath: '/app/privacy'
+      preLoaderRoute: typeof AuthenticatedAppPrivacyRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/qa': {
       id: '/_authenticated/app/qa'
       path: '/qa'
@@ -296,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/jobs/privacy': {
+      id: '/api/public/jobs/privacy'
+      path: '/api/public/jobs/privacy'
+      fullPath: '/api/public/jobs/privacy'
+      preLoaderRoute: typeof ApiPublicJobsPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -303,6 +382,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
+  AuthenticatedAppPrivacyRoute: typeof AuthenticatedAppPrivacyRoute
   AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
@@ -314,6 +394,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAuditRoute: AuthenticatedAppAuditRoute,
   AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
+  AuthenticatedAppPrivacyRoute: AuthenticatedAppPrivacyRoute,
   AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
@@ -341,7 +422,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DpaRoute: DpaRoute,
+  PrivacyRoute: PrivacyRoute,
   ComplainFormIdRoute: ComplainFormIdRoute,
+  ApiPublicJobsPrivacyRoute: ApiPublicJobsPrivacyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

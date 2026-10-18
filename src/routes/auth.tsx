@@ -106,6 +106,7 @@ function AuthPage() {
         <button className="mt-6 text-sm text-primary hover:underline" onClick={() => setSignup(!signup)}>
           {signup ? "Already have an account? Sign in" : "New to Redress? Start a free trial"}
         </button>
+        <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground"><Link to="/privacy" className="hover:text-primary">Privacy policy</Link><Link to="/dpa" className="hover:text-primary">Data processing agreement</Link></div>
       </div>
     </div>
   );

@@ -1,0 +1,11 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { PolicyDocument } from '@/components/policy-document';
+import { privacyHead } from '@/lib/privacy';
+export const Route=createFileRoute('/dpa')({head:()=>privacyHead('Data processing agreement','Draft data processing agreement for firms using Redress.'),component:()=> <PolicyDocument title="Data processing agreement" sections={[
+  {heading:'Parties and instructions',text:'[Insert controller and processor legal entities, addresses, effective date and signatures.] The customer firm acts as controller of complaint data; Redress processes that data only under documented instructions and applicable law.'},
+  {heading:'Processing scope',text:'The service records complaints, correspondence, evidence, outcomes, statutory deadlines and audit history. Data subjects include complainants, representatives and authorised staff. [Specify sensitive-data categories, purposes and duration.]'},
+  {heading:'Security and confidentiality',text:'Access is authenticated, role-scoped and organisation-isolated. Files are held in private storage. Audit entries are append-only. [Add the verified technical and organisational measures, incident response obligations and breach notification deadlines.]'},
+  {heading:'Subprocessors and transfers',text:'Lovable Cloud provides application infrastructure. [Insert the complete approved subprocessor list, change-notification process, verified locations and transfer mechanisms.]'},
+  {heading:'Rights assistance and retention',text:'Redress provides subject-access review exports and working-record erasure tools. The controller must review identity, third-party rights and legal retention duties. Historical audit data and backups require a separately approved lawful retention and disposal policy; the tools do not establish complete erasure.'},
+  {heading:'Termination, audit and liability',text:'Organisation export is available to Org Admins. Deletion requires verified billing cancellation and a 30-day grace period; immutable audit records remain. [Insert final return/deletion arrangements, backup schedules, audit rights, assistance fees, liability terms and governing law.]'},
+]}/>});

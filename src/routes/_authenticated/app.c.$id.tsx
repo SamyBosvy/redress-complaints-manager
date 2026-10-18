@@ -60,7 +60,7 @@ function CaseView() {
   const { data: { c, events } } = useSuspenseQuery(caseQuery(id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const nameOf = (u: string | null | undefined) => (u ? members.find((x) => x.user_id === u)?.name ?? "Unknown user" : "Unassigned");
-  const canEdit = m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
+  const canEdit = !c.anonymised_at && m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
   const [note, setNote] = useState("");
   const [letterOpen, setLetterOpen] = useState(false);
 
@@ -106,6 +106,8 @@ function CaseView() {
         <div>
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
           <h1 className="text-2xl font-semibold">{c.complainant_name}</h1>
+          {c.anonymised_at && <p className="mt-1 text-sm text-muted-foreground">Working records anonymised · Historical audit retained</p>}
+          {c.legal_hold && <p className="mt-1 text-sm text-warning">Legal hold · Excluded from retention anonymisation</p>}
           <p className="mt-1 text-sm text-muted-foreground">{CATEGORIES[c.category!]} · {PRODUCTS[c.product!]} · {COUNTRIES[c.country_code!] ?? c.country_code}</p>
         </div>
         {canEdit && <Button onClick={() => setLetterOpen(true)}>Generate letter</Button>}

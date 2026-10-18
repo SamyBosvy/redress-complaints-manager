@@ -35,10 +35,10 @@ export function useMembership() {
 
 /** Sidebar items visible per role. */
 export function navFor(role: AppRole) {
-  const all = ["queue", "new", "reports", "audit", "templates", "settings"] as const;
+  const all = ["queue", "new", "qa", "reports", "audit", "templates", "settings"] as const;
   if (role === "agent") return ["queue", "new", "templates"];
   if (role === "read_only") return ["queue", "reports", "audit"];
-  if (role === "qa_reviewer") return ["queue", "templates"];
-  if (role === "complaints_manager") return ["queue", "new", "reports", "audit", "templates"];
+  if (role === "qa_reviewer") return ["queue", "qa", "templates"];
+  if (role === "complaints_manager") return ["queue", "new", "qa", "reports", "audit", "templates"];
   return [...all];
 }

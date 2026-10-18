@@ -20,13 +20,13 @@ export const CATEGORIES: Record<E["complaint_category"], string> = {
 };
 export const STATUSES: Record<Status, string> = {
   received: "Received", acknowledged: "Acknowledged", under_investigation: "Under investigation",
-  holding_response_sent: "Holding response sent", final_response_sent: "Final response sent", closed: "Closed",
+  holding_response_sent: "Holding response sent", pending_qa: "Pending QA", final_response_sent: "Final response sent", closed: "Closed",
   escalated_to_adr: "Escalated to ADR", reopened: "Reopened",
 };
 export const LANGUAGES = { en: "English", fr: "French", es: "Spanish", pt: "Portuguese", pl: "Polish", nl: "Dutch" } as const;
 
 /** Statuses where the final-response clock is still running. */
-export const CLOCK_RUNNING: Status[] = ["received", "acknowledged", "under_investigation", "holding_response_sent", "reopened"];
+export const CLOCK_RUNNING: Status[] = ["received", "acknowledged", "under_investigation", "holding_response_sent", "pending_qa", "reopened"];
 
 export type ClockTone = "ok" | "risk" | "overdue" | "stopped";
 /** Green > 5 business days, amber 0–5, red when overdue. */

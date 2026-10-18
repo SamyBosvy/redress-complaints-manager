@@ -15,4 +15,8 @@ describe("letters", () => {
     expect(statusAfterLetter("holding", "under_investigation")).toBe("holding_response_sent"));
   it("sending a final response sets final response sent", () =>
     expect(statusAfterLetter("final_not_upheld", "holding_response_sent")).toBe("final_response_sent"));
+  it("routes final responses to QA when the org requires approval", () =>
+    expect(statusAfterLetter("final_upheld", "under_investigation", true)).toBe("pending_qa"));
+  it("non-final letters ignore the QA requirement", () =>
+    expect(statusAfterLetter("holding", "under_investigation", true)).toBe("holding_response_sent"));
 });

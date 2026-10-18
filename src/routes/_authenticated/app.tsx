@@ -1,9 +1,10 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { FilePlus, FileText, History, Inbox, LogOut, Globe } from "lucide-react";
+import { CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
 import { Logo } from "@/components/logo";
 import { InstallAppButton } from "@/components/install-app";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -51,6 +52,14 @@ function AppLayout() {
               <FileText className="h-4 w-4" /> Templates
             </Link>
           )}
+          {m?.role && ["org_admin", "complaints_manager", "qa_reviewer"].includes(m.role) && (
+            <Link
+              to="/app/qa"
+              className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+            >
+              <CheckCheck className="h-4 w-4" /> QA review
+            </Link>
+          )}
           {m?.role && ["org_admin", "complaints_manager", "read_only"].includes(m.role) && (
             <Link
               to="/app/audit"
@@ -81,7 +90,7 @@ function AppLayout() {
             Free trial: <span className="tabular font-medium">{trialDays}</span> days remaining. All Growth features included.
           </div>
         )}
-        <div className="flex justify-end border-b px-4 py-2"><InstallAppButton variant="ghost" /></div>
+        <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><NotificationBell /><InstallAppButton variant="ghost" /></div>
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

@@ -58,7 +58,7 @@ function Reports() {
       for (const c of Object.keys(CATEGORIES)) {
         const rs = rows.filter((r) => r.product === p && r.category === c);
         if (!rs.length) continue;
-        const b = breakdown(rs, () => "x")[0];
+        const b = breakdown(rs, () => "x")[0]!;
         const count = (o: string) => rs.filter((r) => r.outcome === o).length;
         out.push([PRODUCTS[p as keyof typeof PRODUCTS], CATEGORIES[c as keyof typeof CATEGORIES], rs.length, count("upheld"), count("partially_upheld"), count("not_upheld"), count("withdrawn"), b.withinPct ?? "", b.redress]);
       }
@@ -156,7 +156,7 @@ function Reports() {
                       <Tooltip />
                       <Legend />
                       {trendKeys.map((k, i) => (
-                        <Line key={k} type="monotone" dataKey={k} name={k.replace(/_/g, " ")} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} dot={false} />
+                        <Line key={k} type="monotone" dataKey={k} name={k.replace(/_/g, " ")} stroke={CHART_COLORS[i % CHART_COLORS.length] ?? "#0F766E"} strokeWidth={2} dot={false} />
                       ))}
                     </LineChart>
                   </ResponsiveContainer>

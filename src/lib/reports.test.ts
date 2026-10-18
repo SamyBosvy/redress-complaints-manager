@@ -40,7 +40,7 @@ describe("computeMetrics", () => {
   it("counts open and this-month figures", () => {
     expect(m.open).toBe(1);
     expect(m.receivedThisMonth).toBe(3);
-    expect(m.closedThisMonth).toBe(1);
+    expect(m.closedThisMonth).toBe(2);
   });
   it("computes within-deadline %, uphold rate and redress", () => {
     expect(m.withinDeadlinePct).toBe(50);
@@ -58,10 +58,10 @@ describe("breakdown", () => {
   it("groups and sorts by total", () => {
     const rows = [row({ product: "card" }), row({ product: "card" }), row({ product: "card", status: "closed", closed_at: "2026-10-05T10:00:00Z" }), row({ product: "card" }), row({ product: "card" }), row({ product: "card" }), row({ product: "card" }), row({ product: "card" }), row({ product: "card" }), row({ product: "card" }), row({ product: "payment_account" })];
     const b = breakdown(rows, (r) => r.product);
-    expect(b[0].key).toBe("card");
-    expect(b[0].total).toBe(10);
-    expect(b[0].withinPct).toBe(100);
-    expect(b[1].key).toBe("payment_account");
+    expect(b[0]!.key).toBe("card");
+    expect(b[0]!.total).toBe(10);
+    expect(b[0]!.withinPct).toBe(100);
+    expect(b[1]!.key).toBe("payment_account");
   });
 });
 

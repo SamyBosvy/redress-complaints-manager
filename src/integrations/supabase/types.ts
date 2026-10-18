@@ -1043,6 +1043,10 @@ export type Database = {
         Args: { _org: string }
         Returns: undefined
       }
+      privacy_change_hold: {
+        Args: { _actor: string; _case: string; _held: boolean; _org: string }
+        Returns: undefined
+      }
       privacy_claim_case: {
         Args: { _case: string; _org: string; _retention?: boolean }
         Returns: undefined
@@ -1051,6 +1055,13 @@ export type Database = {
       privacy_request_org_deletion: {
         Args: { _confirm: string; _org: string }
         Returns: undefined
+      }
+      privacy_retention_candidates: {
+        Args: never
+        Returns: {
+          org_id: string
+          retention_years: number
+        }[]
       }
       privacy_set_retention: {
         Args: { _org: string; _years: number }

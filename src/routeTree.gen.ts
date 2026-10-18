@@ -20,6 +20,7 @@ import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
 import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
+import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
 
@@ -77,6 +78,11 @@ const AuthenticatedAppQaRoute = AuthenticatedAppQaRouteImport.update({
   path: '/qa',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppReportsRoute = AuthenticatedAppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppTemplatesRoute =
   AuthenticatedAppTemplatesRouteImport.update({
     id: '/templates',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
+  '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
+  '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
   '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
+  '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/app/forms'
     | '/app/new'
     | '/app/qa'
+    | '/app/reports'
     | '/app/templates'
     | '/app/'
     | '/app/c/$id'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/app/forms'
     | '/app/new'
     | '/app/qa'
+    | '/app/reports'
     | '/app/templates'
     | '/app'
     | '/app/c/$id'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/forms'
     | '/_authenticated/app/new'
     | '/_authenticated/app/qa'
+    | '/_authenticated/app/reports'
     | '/_authenticated/app/templates'
     | '/_authenticated/app/'
     | '/_authenticated/app/c/$id'
@@ -263,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppQaRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/reports': {
+      id: '/_authenticated/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AuthenticatedAppReportsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/templates': {
       id: '/_authenticated/app/templates'
       path: '/templates'
@@ -285,6 +304,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
   AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
+  AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppCIdRoute: typeof AuthenticatedAppCIdRoute
@@ -295,6 +315,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
   AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,
+  AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppCIdRoute: AuthenticatedAppCIdRoute,

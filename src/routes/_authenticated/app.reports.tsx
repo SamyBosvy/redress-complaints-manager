@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/app/reports")({
   component: Reports,
 });
 
-const countryName = (code: string) => COUNTRIES.find((c) => c.code === code)?.name ?? code;
+const countryName = (code: string) => COUNTRIES[code] ?? code;
 const OUTCOMES: Record<string, string> = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" };
 const CHART_COLORS = ["#0F766E", "#14213D", "#D97706", "#B91C1C", "#15803D", "#6B7280"];
 

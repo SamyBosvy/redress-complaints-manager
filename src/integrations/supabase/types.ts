@@ -130,6 +130,7 @@ export type Database = {
           org_id: string
           outcome: Database["public"]["Enums"]["complaint_outcome"] | null
           priority: Database["public"]["Enums"]["complaint_priority"]
+          privacy_processing: boolean
           product: Database["public"]["Enums"]["complaint_product"]
           received_at: string
           redress_amount: number | null
@@ -172,6 +173,7 @@ export type Database = {
           org_id: string
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"]
+          privacy_processing?: boolean
           product: Database["public"]["Enums"]["complaint_product"]
           received_at?: string
           redress_amount?: number | null
@@ -214,6 +216,7 @@ export type Database = {
           org_id?: string
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"]
+          privacy_processing?: boolean
           product?: Database["public"]["Enums"]["complaint_product"]
           received_at?: string
           redress_amount?: number | null
@@ -532,6 +535,36 @@ export type Database = {
           retention_years?: number
           setup_complete?: boolean
           trial_ends_at?: string
+        }
+        Relationships: []
+      }
+      privacy_operations: {
+        Row: {
+          actor: string | null
+          complaint_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          org_id: string
+        }
+        Insert: {
+          actor?: string | null
+          complaint_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          org_id: string
+        }
+        Update: {
+          actor?: string | null
+          complaint_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          org_id?: string
         }
         Relationships: []
       }
@@ -1008,6 +1041,10 @@ export type Database = {
       }
       privacy_cancel_org_deletion: {
         Args: { _org: string }
+        Returns: undefined
+      }
+      privacy_claim_case: {
+        Args: { _case: string; _org: string; _retention?: boolean }
         Returns: undefined
       }
       privacy_purge_org: { Args: { _org: string }; Returns: undefined }

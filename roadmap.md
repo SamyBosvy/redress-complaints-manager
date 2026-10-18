@@ -10,6 +10,6 @@
 - [ ] Verify Org Admin sharing/logo controls and queue readback with a real signed-in account — blocked: no auth users; owner must sign up/sign in
 - [x] Phase 6: QA module + sampling, in-app alerts (daily email digest blocked: no email domain configured)
 - [x] Phase 7: reporting dashboard, breakdowns, regulatory pack (CSV/PDF)
-- [ ] Phase 8: Stripe billing (trial, Starter/Growth/Scale), soft feature locks only — in progress; payments enabled, pricing and subscription terms needed
+- [ ] Phase 8: Stripe billing (trial, Starter/Growth/Scale), soft feature locks only — paused at owner's request until back in Europe; test payments connected, no prices or checkout implemented
 - [ ] Phase 9: GDPR — retention/anonymisation, SAR export, erasure, org export/deletion, policy pages
 - [ ] Settings pages: organisation, users/invites, rule sets, calendars, ADR bodies

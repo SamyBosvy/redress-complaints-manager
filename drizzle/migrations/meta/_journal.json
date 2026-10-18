@@ -50,6 +50,13 @@
       "when": 1792283034775,
       "tag": "0006_phase6_qa_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792283093562,
+      "tag": "0007_phase6_notifications_insert",
+      "breakpoints": true
     }
   ]
 }

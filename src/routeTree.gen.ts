@@ -19,6 +19,7 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticated/app.audit'
 import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
+import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
 
@@ -71,6 +72,11 @@ const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppQaRoute = AuthenticatedAppQaRouteImport.update({
+  id: '/qa',
+  path: '/qa',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppTemplatesRoute =
   AuthenticatedAppTemplatesRouteImport.update({
     id: '/templates',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/_authenticated/app/audit': typeof AuthenticatedAppAuditRoute
   '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
+  '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/forms'
     | '/app/new'
+    | '/app/qa'
     | '/app/templates'
     | '/app/'
     | '/app/c/$id'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/forms'
     | '/app/new'
+    | '/app/qa'
     | '/app/templates'
     | '/app'
     | '/app/c/$id'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/audit'
     | '/_authenticated/app/forms'
     | '/_authenticated/app/new'
+    | '/_authenticated/app/qa'
     | '/_authenticated/app/templates'
     | '/_authenticated/app/'
     | '/_authenticated/app/c/$id'
@@ -244,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppNewRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/qa': {
+      id: '/_authenticated/app/qa'
+      path: '/qa'
+      fullPath: '/app/qa'
+      preLoaderRoute: typeof AuthenticatedAppQaRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/templates': {
       id: '/_authenticated/app/templates'
       path: '/templates'
@@ -265,6 +284,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
+  AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppCIdRoute: typeof AuthenticatedAppCIdRoute
@@ -274,6 +294,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAuditRoute: AuthenticatedAppAuditRoute,
   AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
+  AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppCIdRoute: AuthenticatedAppCIdRoute,

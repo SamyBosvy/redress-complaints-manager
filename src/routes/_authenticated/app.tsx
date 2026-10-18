@@ -62,6 +62,14 @@ function AppLayout() {
           )}
           {m?.role && ["org_admin", "complaints_manager", "read_only"].includes(m.role) && (
             <Link
+              to="/app/reports"
+              className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+            >
+              <BarChart3 className="h-4 w-4" /> Reports
+            </Link>
+          )}
+          {m?.role && ["org_admin", "complaints_manager", "read_only"].includes(m.role) && (
+            <Link
               to="/app/audit"
               className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
             >

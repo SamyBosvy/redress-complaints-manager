@@ -28,5 +28,6 @@
 - Firm logos use private storage with SELECT restricted to the currently published logo path and Org Admin upload policies. Why: workspace disallows public buckets while public forms still need a safe logo.
 - Privacy mutations and exports use authenticated Org Admin server functions, while service-only routines perform anonymisation/purge. Why: client permissions must not allow unrestricted personal-data deletion.
 - Privacy working-record erasure preserves immutable historical audit snapshots; future audit capture minimises customer free text. Why: preserve existing audit integrity without falsely claiming full GDPR erasure.
-- Retention and organisation deletion run through a managed authenticated scheduled route; organisation deletion requires server-verified billing cancellation. Why: preserve legal holds and the grace period without resuming paused billing.
+- Retention runs through a managed authenticated scheduled route; organisation purge automation stays disabled until server-verified billing cancellation is implemented. Why: preserve the payment setup hold and avoid premature deletion.
+- Privacy processing claims closed complaints before removing files; claimed cases cannot be reopened or receive attachments. Why: avoid irreversible erasure races with legal holds and handling.
 - Privacy exports paginate all records and include private file contents; multilingual PDFs embed a local Unicode font. Why: avoid silent row truncation and unreadable subject-access packs.

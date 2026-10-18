@@ -22,10 +22,8 @@ export const setCaseLegalHold = createServerFn({ method: 'POST' }).middleware([r
   const { privacyAdmin } = await import('./privacy.server');
   const org = await privacyAdmin(context.supabase, context.userId);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const { data: updated, error } = await supabaseAdmin.from('complaints').update({ legal_hold: data.held }).eq('org_id', org.id).eq('id', data.caseId).is('anonymised_at', null).select('id').single();
-  if (error || !updated) throw new Error('Could not change the legal hold.');
-  const { error: auditError } = await supabaseAdmin.from('audit_log').insert({ org_id: org.id, actor: context.userId, table_name: 'privacy', row_id: data.caseId, action: data.held ? 'legal_hold_added' : 'legal_hold_released' });
-  if (auditError) throw auditError;
+  const { error } = await supabaseAdmin.rpc('privacy_change_hold', { _org: org.id, _case: data.caseId, _held: data.held, _actor: context.userId });
+  if (error) throw new Error('Could not change the legal hold; privacy processing may already be in progress.');
   return { ok: true };
 });
 export const eraseWorkingRecords = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => erasureSchema.parse(v)).handler(async ({ context, data }) => {
@@ -35,6 +33,8 @@ export const eraseWorkingRecords = createServerFn({ method: 'POST' }).middleware
   if (error || !c || c.reference !== data.reference) throw new Error('Enter the exact complaint reference.');
   if (c.status !== 'closed' || !c.closed_at || c.legal_hold || c.anonymised_at) throw new Error('Only closed, non-anonymised complaints without a legal hold are eligible.');
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { error: claimError } = await supabaseAdmin.rpc('privacy_claim_case', { _org: org.id, _case: data.caseId, _retention: false });
+  if (claimError) throw new Error('The complaint is no longer eligible for erasure.');
   // Erase file contents first. A failed removal must not be reported as successful erasure.
   await removeFiles(supabaseAdmin, 'attachments', `${org.id}/${data.caseId}`);
   const { error: erased } = await supabaseAdmin.rpc('privacy_anonymise_case', { _org: org.id, _case: data.caseId, _reason: data.lawfulBasis, _actor: context.userId, _retention: false });
@@ -54,25 +54,25 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
   tables['audit_log'] = (await allRows(context.supabase, 'audit_log', org.id)).filter(r => ids.has(String(r['row_id'])) || ids.has(String((r['after'] as Record<string, unknown> | null)?.['complaint_id'])) || ids.has(String((r['before'] as Record<string, unknown> | null)?.['complaint_id'])));
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const attachments = await exportFiles(supabaseAdmin, 'attachments', [...ids].map(id => `${org.id}/${id}`));
-  const { error } = await supabaseAdmin.from('audit_log').insert({ org_id: org.id, actor: context.userId, table_name: 'privacy', row_id: data.caseId, action: 'subject_access_export', after: { case_count: ids.size } });
+  const { error } = await supabaseAdmin.from('privacy_operations').insert({ org_id: org.id, actor: context.userId, complaint_id: data.caseId, kind: 'subject_access_export', detail: { case_count: ids.size } });
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, scope: 'Selected complaint plus exact matching customer ID or email; review identity matches and redact third-party/internal information before disclosure.', tables, attachments };
 });
 export const exportOrganisationData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const { privacyAdmin, allRows, exportFiles } = await import('./privacy.server');
   const org = await privacyAdmin(context.supabase, context.userId);
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const tables: Record<string, PrivacyRow[]> = { organisations: [org] };
-  for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','audit_log'] as const) tables[table] = await allRows(context.supabase, table, org.id);
+  for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','privacy_operations','audit_log'] as const) tables[table] = await allRows(supabaseAdmin, table, org.id);
   const userIds = (tables['org_members'] ?? []).map(r => String(r['user_id']));
   tables['profiles'] = [];
   for (let i=0;i<userIds.length;i+=100) {
-    const { data, error } = await context.supabase.from('profiles').select('*').in('id',userIds.slice(i,i+100));
+    const { data, error } = await supabaseAdmin.from('profiles').select('*').in('id',userIds.slice(i,i+100));
     if(error) throw error;
     tables['profiles'].push(...data);
   }
-  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const attachments = [...await exportFiles(supabaseAdmin,'attachments',[org.id]), ...await exportFiles(supabaseAdmin,'firm-logos',[org.id])];
-  const { error } = await supabaseAdmin.from('audit_log').insert({ org_id: org.id, actor: context.userId, table_name: 'privacy', row_id: org.id, action: 'organisation_export' });
+  const { error } = await supabaseAdmin.from('privacy_operations').insert({ org_id: org.id, actor: context.userId, kind: 'organisation_export' });
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, tables, attachments };
 });

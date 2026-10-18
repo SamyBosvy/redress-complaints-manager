@@ -307,7 +307,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
     if (kind === "holding" && !reason.trim()) { toast.error("Record the reason for the delay."); return; }
     const { error } = await supabase.from("letters").insert({ org_id: orgId, complaint_id: c.id, kind, language: lang, subject, body, sent_by: m.user.id });
     if (error) { toast.error(error.message); return; }
-    const next = statusAfterLetter(kind, c.status);
+    const next = statusAfterLetter(kind, c.status, m.org!.qa_required);
     const patch: Patch = {};
     if (next) patch.status = next as Status;
     if (kind === "holding" && !c.holding_sent_at) { patch.holding_sent_at = new Date().toISOString(); patch.holding_reason = reason.trim().slice(0, 1000); }
@@ -316,7 +316,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
       if (e2) toast.error(e2.message);
     }
     await onSent();
-    toast.success("Letter recorded as sent.");
+    toast.success(next === "pending_qa" ? "Final response sent to QA for approval." : "Letter recorded as sent.");
     onClose();
   }
 

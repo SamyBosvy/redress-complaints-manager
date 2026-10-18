@@ -26,7 +26,7 @@ export const STATUSES: Record<Status, string> = {
 export const LANGUAGES = { en: "English", fr: "French", es: "Spanish", pt: "Portuguese", pl: "Polish", nl: "Dutch" } as const;
 
 /** Statuses where the final-response clock is still running. */
-export const CLOCK_RUNNING: Status[] = ["received", "acknowledged", "under_investigation", "holding_response_sent", "reopened"];
+export const CLOCK_RUNNING: Status[] = ["received", "acknowledged", "under_investigation", "holding_response_sent", "pending_qa", "reopened"];
 
 export type ClockTone = "ok" | "risk" | "overdue" | "stopped";
 /** Green > 5 business days, amber 0–5, red when overdue. */

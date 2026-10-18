@@ -55,6 +55,7 @@ function Index() {
           ))}
         </div>
       </main>
+      <footer className="mx-auto flex max-w-6xl flex-wrap gap-5 border-t px-6 py-6 text-sm"><Link to="/privacy" className="text-muted-foreground hover:text-primary">Privacy policy</Link><Link to="/dpa" className="text-muted-foreground hover:text-primary">Data processing agreement</Link></footer>
     </div>
   );
 }

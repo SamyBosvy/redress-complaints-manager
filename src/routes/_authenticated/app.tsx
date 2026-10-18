@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe } from "lucide-react";
+import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
 import { Logo } from "@/components/logo";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/app")({
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     if (!m?.org || !m.org.setup_complete) throw redirect({ to: "/setup" });
   },
-  head: () => ({ meta: [{ title: "Redress" }] }),
+  head: () => ({ meta: [{ title: "Workspace — Redress" }, { name: "description", content: "Manage your firm’s customer complaints." }, { property: "og:title", content: "Workspace — Redress" }, { property: "og:description", content: "Manage your firm’s customer complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: AppLayout,
 });
 
@@ -77,6 +77,7 @@ function AppLayout() {
             </Link>
           )}
           {m?.role === "org_admin" && <Link to="/app/forms" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><Globe className="h-4 w-4" /> Public form</Link>}
+          {m?.role === "org_admin" && <Link to="/app/privacy" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><ShieldCheck className="h-4 w-4" /> Privacy & data</Link>}
         </nav>
         <div className="mt-auto hidden border-t border-sidebar-border p-4 text-xs md:block">
           <p className="truncate text-sidebar-accent-foreground">{m?.user.email}</p>

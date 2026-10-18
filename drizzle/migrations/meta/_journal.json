@@ -57,6 +57,13 @@
       "when": 1792283093562,
       "tag": "0007_phase6_notifications_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792359503169,
+      "tag": "0008_phase9_privacy_controls",
+      "breakpoints": true
     }
   ]
 }

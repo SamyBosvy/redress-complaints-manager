@@ -105,6 +105,7 @@ export type Database = {
       complaints: {
         Row: {
           ack_due: string | null
+          anonymised_at: string | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["complaint_category"]
           channel: Database["public"]["Enums"]["complaint_channel"]
@@ -125,6 +126,7 @@ export type Database = {
           holding_sent_at: string | null
           id: string
           language: string
+          legal_hold: boolean
           org_id: string
           outcome: Database["public"]["Enums"]["complaint_outcome"] | null
           priority: Database["public"]["Enums"]["complaint_priority"]
@@ -145,6 +147,7 @@ export type Database = {
         }
         Insert: {
           ack_due?: string | null
+          anonymised_at?: string | null
           assigned_to?: string | null
           category: Database["public"]["Enums"]["complaint_category"]
           channel: Database["public"]["Enums"]["complaint_channel"]
@@ -165,6 +168,7 @@ export type Database = {
           holding_sent_at?: string | null
           id?: string
           language?: string
+          legal_hold?: boolean
           org_id: string
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"]
@@ -185,6 +189,7 @@ export type Database = {
         }
         Update: {
           ack_due?: string | null
+          anonymised_at?: string | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
           channel?: Database["public"]["Enums"]["complaint_channel"]
@@ -205,6 +210,7 @@ export type Database = {
           holding_sent_at?: string | null
           id?: string
           language?: string
+          legal_hold?: boolean
           org_id?: string
           outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
           priority?: Database["public"]["Enums"]["complaint_priority"]
@@ -447,6 +453,38 @@ export type Database = {
             foreignKeyName: "org_members_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_privacy_settings: {
+        Row: {
+          billing_cancellation_verified_at: string | null
+          deletion_due_at: string | null
+          deletion_requested_at: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_cancellation_verified_at?: string | null
+          deletion_due_at?: string | null
+          deletion_requested_at?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_cancellation_verified_at?: string | null
+          deletion_due_at?: string | null
+          deletion_requested_at?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_privacy_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
             referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
@@ -933,6 +971,7 @@ export type Database = {
         Args: { _country: string; _n: number; _org: string; _start: string }
         Returns: string
       }
+      audit_minimise: { Args: { _row: Json; _table: string }; Returns: Json }
       business_days_between: {
         Args: { _country: string; _from: string; _org: string; _to: string }
         Returns: number
@@ -951,6 +990,29 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
+      privacy_anonymise_case: {
+        Args: {
+          _actor: string
+          _case: string
+          _org: string
+          _reason: string
+          _retention?: boolean
+        }
+        Returns: undefined
+      }
+      privacy_cancel_org_deletion: {
+        Args: { _org: string }
+        Returns: undefined
+      }
+      privacy_purge_org: { Args: { _org: string }; Returns: undefined }
+      privacy_request_org_deletion: {
+        Args: { _confirm: string; _org: string }
+        Returns: undefined
+      }
+      privacy_set_retention: {
+        Args: { _org: string; _years: number }
+        Returns: undefined
+      }
       public_form_details: { Args: { _id: string }; Returns: Json }
       resolve_rule_set: {
         Args: { _country: string; _org: string; _product: string }

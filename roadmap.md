@@ -16,4 +16,8 @@
 - [ ] Verify privacy controls with a real signed-in Org Admin — blocked: no auth users; owner must sign up/sign in
 - [ ] Enable organisation purge automation after billing cancellation verification is implemented — blocked: Phase 8 remains paused; 30-day request/cancel controls are built but unavailable
 - [ ] Replace draft privacy/DPA and public privacy notice; approve historical audit/backup retention and disposal — blocked: owner/legal review
-- [ ] Settings pages: organisation, users/invites, rule sets, calendars, ADR bodies — outside the Phase 9 request, deferred to a separate phase
+- [ ] Multi-user phase: Users/invites, 7-day acceptance, active memberships, role changes and last-admin protection
+- [ ] Post-setup Settings: organisation/address/currency, countries/ADR, calendars, rule sets/assignments and audited deadline recalculation
+- [ ] Account security: verified email, password reset/change, TOTP/required 2FA, recovery and all-session sign-out
+- [ ] Email: invitations and daily digest; custom auth emails — sender domain required
+- [ ] Fix mobile sign-out redirect; test invite/role/admin/assignment rules and verify signed-in flows

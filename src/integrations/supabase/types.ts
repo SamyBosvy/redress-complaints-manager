@@ -429,8 +429,59 @@ export type Database = {
           },
         ]
       }
+      org_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string
+          id: string
+          org_id: string
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at?: string
+          id?: string
+          org_id: string
+          revoked_at?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          org_id?: string
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
+          active: boolean
           created_at: string
           id: string
           org_id: string
@@ -438,6 +489,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           id?: string
           org_id: string
@@ -445,6 +497,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           id?: string
           org_id?: string
@@ -495,8 +548,10 @@ export type Database = {
       }
       organisations: {
         Row: {
+          base_currency: string
           created_at: string
           created_by: string
+          firm_address: string
           home_country: string | null
           id: string
           legal_name: string
@@ -504,13 +559,16 @@ export type Database = {
           qa_required: boolean
           qa_sample_pct: number
           regulator: string | null
+          require_2fa: boolean
           retention_years: number
           setup_complete: boolean
           trial_ends_at: string
         }
         Insert: {
+          base_currency?: string
           created_at?: string
           created_by: string
+          firm_address?: string
           home_country?: string | null
           id?: string
           legal_name: string
@@ -518,13 +576,16 @@ export type Database = {
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
+          require_2fa?: boolean
           retention_years?: number
           setup_complete?: boolean
           trial_ends_at?: string
         }
         Update: {
+          base_currency?: string
           created_at?: string
           created_by?: string
+          firm_address?: string
           home_country?: string | null
           id?: string
           legal_name?: string
@@ -532,6 +593,7 @@ export type Database = {
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
+          require_2fa?: boolean
           retention_years?: number
           setup_complete?: boolean
           trial_ends_at?: string
@@ -1006,6 +1068,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_org_invite: { Args: { _hash: string }; Returns: string }
       add_business_days: {
         Args: { _country: string; _n: number; _org: string; _start: string }
         Returns: string
@@ -1014,6 +1077,24 @@ export type Database = {
       business_days_between: {
         Args: { _country: string; _from: string; _org: string; _to: string }
         Returns: number
+      }
+      change_org_member: {
+        Args: {
+          _active: boolean
+          _member: string
+          _org: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: undefined
+      }
+      create_org_invite: {
+        Args: {
+          _email: string
+          _hash: string
+          _org: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: string
       }
       create_organisation: { Args: { _legal_name: string }; Returns: string }
       has_org_role: {
@@ -1029,6 +1110,7 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
+      my_organisations: { Args: never; Returns: Json }
       privacy_anonymise_case: {
         Args: {
           _actor: string
@@ -1068,14 +1150,39 @@ export type Database = {
         Returns: undefined
       }
       public_form_details: { Args: { _id: string }; Returns: Json }
+      recalculate_complaint: {
+        Args: { _case: string; _org: string; _reason: string }
+        Returns: undefined
+      }
       resolve_rule_set: {
         Args: { _country: string; _org: string; _product: string }
         Returns: string
       }
+      revoke_org_invite: {
+        Args: { _invite: string; _org: string }
+        Returns: undefined
+      }
+      save_rule_assignment: {
+        Args: {
+          _country: string
+          _org: string
+          _product: string
+          _rule: string
+        }
+        Returns: undefined
+      }
       seed_templates: { Args: { _org: string }; Returns: undefined }
+      set_default_rule: {
+        Args: { _org: string; _rule: string }
+        Returns: undefined
+      }
       submit_public_complaint: {
         Args: { _data: Json; _form_id: string; _submission_id: string }
         Returns: string
+      }
+      transfer_org_admin: {
+        Args: { _member: string; _org: string }
+        Returns: undefined
       }
     }
     Enums: {

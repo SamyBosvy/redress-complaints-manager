@@ -92,6 +92,13 @@
       "when": 1792728299749,
       "tag": "0012_multi_user_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792803088254,
+      "tag": "0013_member_directory",
+      "breakpoints": true
     }
   ]
 }

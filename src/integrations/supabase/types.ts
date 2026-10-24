@@ -1111,6 +1111,18 @@ export type Database = {
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
       my_organisations: { Args: never; Returns: Json }
+      org_member_directory: {
+        Args: { _org: string }
+        Returns: {
+          active: boolean
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       privacy_anonymise_case: {
         Args: {
           _actor: string

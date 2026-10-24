@@ -1,0 +1,5 @@
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
+import { useMembership } from '@/lib/org';
+import { pageHead } from '@/lib/settings';
+export const Route = createFileRoute('/_authenticated/app/settings')({ head:()=>pageHead('Settings','Firm configuration and user access.'), component:Settings });
+function Settings(){ const m=useMembership(); if(!m?.role || !['org_admin','complaints_manager'].includes(m.role)) return <p>Settings are restricted to administrators and managers.</p>; return <div className="mx-auto max-w-6xl"><h1 className="text-2xl font-semibold">Settings</h1>{m.role==='complaints_manager' && <p className="mt-2 text-sm text-muted-foreground">Read-only access</p>}<nav className="my-6 flex flex-wrap gap-4 border-b pb-3">{[['/app/settings','Organisation'],['/app/settings/countries','Countries & ADR'],['/app/settings/calendars','Calendars'],['/app/settings/rules','Rule sets']].map(([p,l])=><Link key={p} to={p} className="text-sm text-primary" activeOptions={{exact:true}}>{l}</Link>)}{m.role==='org_admin'&&<Link to="/app/settings/users" className="text-sm text-primary">Users</Link>}</nav><Outlet/></div>; }

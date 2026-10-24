@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DpaRouteImport } from './routes/dpa'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
@@ -24,8 +25,14 @@ import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAppPrivacyRouteImport } from './routes/_authenticated/app.privacy'
 import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
+import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
+import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
+import { Route as AuthenticatedAppSettingsCalendarsRouteImport } from './routes/_authenticated/app.settings.calendars'
+import { Route as AuthenticatedAppSettingsCountriesRouteImport } from './routes/_authenticated/app.settings.countries'
+import { Route as AuthenticatedAppSettingsRulesRouteImport } from './routes/_authenticated/app.settings.rules'
+import { Route as AuthenticatedAppSettingsUsersRouteImport } from './routes/_authenticated/app.settings.users'
 import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
 
 const IndexRoute = IndexRouteImport.update({
@@ -45,6 +52,11 @@ const AuthRoute = AuthRouteImport.update({
 const DpaRoute = DpaRouteImport.update({
   id: '/dpa',
   path: '/dpa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -102,6 +114,12 @@ const AuthenticatedAppReportsRoute = AuthenticatedAppReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSettingsRoute =
+  AuthenticatedAppSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppTemplatesRoute =
   AuthenticatedAppTemplatesRouteImport.update({
     id: '/templates',
@@ -113,6 +131,36 @@ const AuthenticatedAppCIdRoute = AuthenticatedAppCIdRouteImport.update({
   path: '/c/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSettingsIndexRoute =
+  AuthenticatedAppSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsCalendarsRoute =
+  AuthenticatedAppSettingsCalendarsRouteImport.update({
+    id: '/calendars',
+    path: '/calendars',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsCountriesRoute =
+  AuthenticatedAppSettingsCountriesRouteImport.update({
+    id: '/countries',
+    path: '/countries',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsRulesRoute =
+  AuthenticatedAppSettingsRulesRouteImport.update({
+    id: '/rules',
+    path: '/rules',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
+const AuthenticatedAppSettingsUsersRoute =
+  AuthenticatedAppSettingsUsersRouteImport.update({
+    id: '/users',
+    path: '/users',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
 const ApiPublicJobsPrivacyRoute = ApiPublicJobsPrivacyRouteImport.update({
   id: '/api/public/jobs/privacy',
   path: '/api/public/jobs/privacy',
@@ -123,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dpa': typeof DpaRoute
+  '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/setup': typeof AuthenticatedSetupRoute
@@ -133,15 +182,22 @@ export interface FileRoutesByFullPath {
   '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
+  '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
+  '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dpa': typeof DpaRoute
+  '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
@@ -154,7 +210,12 @@ export interface FileRoutesByTo {
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
+  '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
+  '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -162,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/dpa': typeof DpaRoute
+  '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
@@ -172,10 +234,16 @@ export interface FileRoutesById {
   '/_authenticated/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
   '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
+  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
+  '/_authenticated/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
+  '/_authenticated/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/_authenticated/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
+  '/_authenticated/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -183,6 +251,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dpa'
+    | '/invite'
     | '/privacy'
     | '/app'
     | '/setup'
@@ -193,15 +262,22 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/qa'
     | '/app/reports'
+    | '/app/settings'
     | '/app/templates'
     | '/app/'
     | '/app/c/$id'
+    | '/app/settings/calendars'
+    | '/app/settings/countries'
+    | '/app/settings/rules'
+    | '/app/settings/users'
     | '/api/public/jobs/privacy'
+    | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/dpa'
+    | '/invite'
     | '/privacy'
     | '/setup'
     | '/complain/$formId'
@@ -214,13 +290,19 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app'
     | '/app/c/$id'
+    | '/app/settings/calendars'
+    | '/app/settings/countries'
+    | '/app/settings/rules'
+    | '/app/settings/users'
     | '/api/public/jobs/privacy'
+    | '/app/settings'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/dpa'
+    | '/invite'
     | '/privacy'
     | '/_authenticated/app'
     | '/_authenticated/setup'
@@ -231,10 +313,16 @@ export interface FileRouteTypes {
     | '/_authenticated/app/privacy'
     | '/_authenticated/app/qa'
     | '/_authenticated/app/reports'
+    | '/_authenticated/app/settings'
     | '/_authenticated/app/templates'
     | '/_authenticated/app/'
     | '/_authenticated/app/c/$id'
+    | '/_authenticated/app/settings/calendars'
+    | '/_authenticated/app/settings/countries'
+    | '/_authenticated/app/settings/rules'
+    | '/_authenticated/app/settings/users'
     | '/api/public/jobs/privacy'
+    | '/_authenticated/app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -242,6 +330,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DpaRoute: typeof DpaRoute
+  InviteRoute: typeof InviteRoute
   PrivacyRoute: typeof PrivacyRoute
   ComplainFormIdRoute: typeof ComplainFormIdRoute
   ApiPublicJobsPrivacyRoute: typeof ApiPublicJobsPrivacyRoute
@@ -275,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/dpa'
       fullPath: '/dpa'
       preLoaderRoute: typeof DpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -354,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppReportsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/settings': {
+      id: '/_authenticated/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/templates': {
       id: '/_authenticated/app/templates'
       path: '/templates'
@@ -368,6 +471,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/settings/': {
+      id: '/_authenticated/app/settings/'
+      path: '/'
+      fullPath: '/app/settings/'
+      preLoaderRoute: typeof AuthenticatedAppSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/calendars': {
+      id: '/_authenticated/app/settings/calendars'
+      path: '/calendars'
+      fullPath: '/app/settings/calendars'
+      preLoaderRoute: typeof AuthenticatedAppSettingsCalendarsRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/countries': {
+      id: '/_authenticated/app/settings/countries'
+      path: '/countries'
+      fullPath: '/app/settings/countries'
+      preLoaderRoute: typeof AuthenticatedAppSettingsCountriesRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/rules': {
+      id: '/_authenticated/app/settings/rules'
+      path: '/rules'
+      fullPath: '/app/settings/rules'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRulesRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
+    '/_authenticated/app/settings/users': {
+      id: '/_authenticated/app/settings/users'
+      path: '/users'
+      fullPath: '/app/settings/users'
+      preLoaderRoute: typeof AuthenticatedAppSettingsUsersRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
     '/api/public/jobs/privacy': {
       id: '/api/public/jobs/privacy'
       path: '/api/public/jobs/privacy'
@@ -378,6 +516,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAppSettingsRouteChildren {
+  AuthenticatedAppSettingsCalendarsRoute: typeof AuthenticatedAppSettingsCalendarsRoute
+  AuthenticatedAppSettingsCountriesRoute: typeof AuthenticatedAppSettingsCountriesRoute
+  AuthenticatedAppSettingsRulesRoute: typeof AuthenticatedAppSettingsRulesRoute
+  AuthenticatedAppSettingsUsersRoute: typeof AuthenticatedAppSettingsUsersRoute
+  AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
+}
+
+const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildren =
+  {
+    AuthenticatedAppSettingsCalendarsRoute:
+      AuthenticatedAppSettingsCalendarsRoute,
+    AuthenticatedAppSettingsCountriesRoute:
+      AuthenticatedAppSettingsCountriesRoute,
+    AuthenticatedAppSettingsRulesRoute: AuthenticatedAppSettingsRulesRoute,
+    AuthenticatedAppSettingsUsersRoute: AuthenticatedAppSettingsUsersRoute,
+    AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
+  }
+
+const AuthenticatedAppSettingsRouteWithChildren =
+  AuthenticatedAppSettingsRoute._addFileChildren(
+    AuthenticatedAppSettingsRouteChildren,
+  )
+
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
@@ -385,6 +547,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppPrivacyRoute: typeof AuthenticatedAppPrivacyRoute
   AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppCIdRoute: typeof AuthenticatedAppCIdRoute
@@ -397,6 +560,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppPrivacyRoute: AuthenticatedAppPrivacyRoute,
   AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppCIdRoute: AuthenticatedAppCIdRoute,
@@ -423,6 +587,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DpaRoute: DpaRoute,
+  InviteRoute: InviteRoute,
   PrivacyRoute: PrivacyRoute,
   ComplainFormIdRoute: ComplainFormIdRoute,
   ApiPublicJobsPrivacyRoute: ApiPublicJobsPrivacyRoute,

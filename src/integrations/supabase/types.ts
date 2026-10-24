@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_recovery: {
+        Row: {
+          attempts: number
+          hashes: Json
+          id: string
+          org_id: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          hashes?: Json
+          id?: string
+          org_id: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          attempts?: number
+          hashes?: Json
+          id?: string
+          org_id?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_recovery_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1111,6 +1149,18 @@ export type Database = {
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
       my_organisations: { Args: never; Returns: Json }
+      org_member_directory: {
+        Args: { _org: string }
+        Returns: {
+          active: boolean
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       privacy_anonymise_case: {
         Args: {
           _actor: string
@@ -1152,6 +1202,18 @@ export type Database = {
       public_form_details: { Args: { _id: string }; Returns: Json }
       recalculate_complaint: {
         Args: { _case: string; _org: string; _reason: string }
+        Returns: undefined
+      }
+      recovery_attempt: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
+      }
+      recovery_consume: {
+        Args: { _hash: string; _org: string; _user: string }
+        Returns: boolean
+      }
+      recovery_store: {
+        Args: { _hashes: Json; _org: string }
         Returns: undefined
       }
       resolve_rule_set: {

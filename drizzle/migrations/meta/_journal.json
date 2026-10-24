@@ -92,6 +92,20 @@
       "when": 1792728299749,
       "tag": "0012_multi_user_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792803088254,
+      "tag": "0013_member_directory",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792803208757,
+      "tag": "0014_account_recovery_and_settings_guards",
+      "breakpoints": true
     }
   ]
 }

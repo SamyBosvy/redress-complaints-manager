@@ -194,7 +194,7 @@ function CaseView() {
               <span className="text-muted-foreground">Business days remaining</span>
               <DeadlineClock daysLeft={c.days_left} status={status} />
             </div>
-            {canRecalculate(m.role,Boolean(c.anonymised_at),Boolean(c.privacy_processing)) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
+            {canRecalculate(m.role,Boolean(c.anonymised_at),false) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
           </Card>
 
           <Card title="Timeline">

@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeadlineClock } from "@/components/deadline-clock";
+import {DeadlineRecalculation} from '@/components/deadline-recalculation';
+import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
@@ -35,7 +37,8 @@ const caseQuery = (id: string) =>
 export const Route = createFileRoute("/_authenticated/app/c/$id")({
   loader: async ({ context, params }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
-    const orgId = m!.org!.id;
+    if(!m?.org)return;
+    const orgId = m.org.id;
     await Promise.all([
       context.queryClient.ensureQueryData(caseQuery(params.id)),
       context.queryClient.ensureQueryData(membersQuery(orgId)),
@@ -191,6 +194,7 @@ function CaseView() {
               <span className="text-muted-foreground">Business days remaining</span>
               <DeadlineClock daysLeft={c.days_left} status={status} />
             </div>
+            {canRecalculate(m.role,Boolean(c.anonymised_at),false) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
           </Card>
 
           <Card title="Timeline">
@@ -219,6 +223,7 @@ function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) =>
     case "status": return <p>Status: {STATUSES[d.before as Status]} → <strong>{STATUSES[d.after as Status]}</strong></p>;
     case "reassigned": return <p>Reassigned: {nameOf(d.before)} → <strong>{nameOf(d.after)}</strong></p>;
     case "deadline": return <p>Deadline: {formatDate(d.before)} → <strong>{formatDate(d.after)}</strong>{d.reason ? ` (${d.reason})` : ""}</p>;
+    case "deadline_recalculated": return <p>Deadlines recalculated{d.reason ? `: ${d.reason}` : ''}</p>;
     case "outcome": return <p>Outcome updated: {d.after?.outcome ? OUTCOMES[d.after.outcome as keyof typeof OUTCOMES] : "—"}</p>;
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
     case "letter_sent": return <p>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></p>;

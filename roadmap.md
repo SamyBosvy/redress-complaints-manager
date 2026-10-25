@@ -21,3 +21,9 @@
 - [ ] Account security: verified email, password reset/change, TOTP/required 2FA, recovery and all-session sign-out
 - [ ] Email: invitations and daily digest; custom auth emails — sender domain required
 - [ ] Fix mobile sign-out redirect; test invite/role/admin/assignment rules and verify signed-in flows
+
+## Current scoped completion
+- [x] Repair settings and password-reset preview errors; confirm clean preview
+- [x] Wire role-aware Settings, Account, organisation switching and verification/2FA redirects
+- [x] Add forgot-password email request and audited administrator deadline recalculation with date comparison
+- [x] Fix desktop/mobile sign-out with cache clearing and replacement navigation; run scoped tests

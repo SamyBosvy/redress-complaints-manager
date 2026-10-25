@@ -1,7 +1,12 @@
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
-import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { membershipQuery, useMembership, ROLE_LABELS } from "@/lib/org";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
+import {useQueryClient} from '@tanstack/react-query';
+import {useState} from 'react';
+import {toast} from 'sonner';
+import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck, Settings, UserRound } from "lucide-react";
+import { membershipQuery, useMembership, ROLE_LABELS, selectOrganisation } from "@/lib/org";
+import {clearAndSignOut} from '@/lib/sign-out';
+import {securityDestination, canViewSettings} from '@/lib/workspace-access';
+import {Pick} from '@/components/settings/controls';
 import { Logo } from "@/components/logo";
 import { InstallAppButton } from "@/components/install-app";
 import { NotificationBell } from "@/components/notification-bell";
@@ -10,6 +15,8 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authenticated/app")({
   beforeLoad: async ({ context }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
+    const destination = securityDestination(m);
+    if (destination) throw redirect({to: destination});
     if (!m?.org || !m.org.setup_complete) throw redirect({ to: "/setup" });
   },
   head: () => ({ meta: [{ title: "Workspace — Redress" }, { name: "description", content: "Manage your firm’s customer complaints." }, { property: "og:title", content: "Workspace — Redress" }, { property: "og:description", content: "Manage your firm’s customer complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -19,6 +26,28 @@ export const Route = createFileRoute("/_authenticated/app")({
 function AppLayout() {
   const m = useMembership();
   const navigate = useNavigate();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const organisations = m?.organisations.filter(x=>x.active) ?? [];
+  async function signOut() {
+    setBusy(true);
+    try {await clearAndSignOut(qc); await navigate({to:'/auth',search:{},replace:true});}
+    catch {toast.error('Could not sign out. Please try again.');}
+    finally {setBusy(false);}
+  }
+  async function switchOrganisation(id:string) {
+    if(busy || id === m?.org?.id)return;
+    setBusy(true);
+    try {
+      await qc.cancelQueries();
+      qc.clear();
+      selectOrganisation(id);
+      await router.invalidate();
+      await navigate({to:'/app',replace:true});
+    } catch {toast.error('Could not switch organisation. Please try again.');}
+    finally {setBusy(false);}
+  }
   const trialDays = m?.org ? Math.ceil((new Date(m.org.trial_ends_at).getTime() - Date.now()) / 86400000) : 0;
 
   return (
@@ -28,6 +57,7 @@ function AppLayout() {
           <Logo className="text-sidebar-accent-foreground" />
           <p className="mt-1 hidden truncate text-xs md:block">{m?.org?.legal_name}</p>
         </div>
+        {organisations.length>1 && <div className="px-3 pb-3"><Pick label="Organisation" disabled={busy} value={m?.access?.org_id??''} options={Object.fromEntries(organisations.map(x=>[x.org_id,x.legal_name]))} onChange={id=>{void switchOrganisation(id);}}/></div>}
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:pb-0">
           <Link
             to="/app"
@@ -78,19 +108,15 @@ function AppLayout() {
           )}
           {m?.role === "org_admin" && <Link to="/app/forms" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><Globe className="h-4 w-4" /> Public form</Link>}
           {m?.role === "org_admin" && <Link to="/app/privacy" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><ShieldCheck className="h-4 w-4" /> Privacy & data</Link>}
+          {canViewSettings(m?.role) && <Link to="/app/settings" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><Settings className="h-4 w-4"/> Settings</Link>}
+          <Link to="/account" className="flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"><UserRound className="h-4 w-4"/> Account</Link>
         </nav>
         <div className="mt-auto hidden border-t border-sidebar-border p-4 text-xs md:block">
           <p className="truncate text-sidebar-accent-foreground">{m?.user.email}</p>
           <p className="mt-0.5">{m?.role ? ROLE_LABELS[m.role] : ""}</p>
-          <button
-            className="mt-3 inline-flex items-center gap-1.5 hover:text-sidebar-accent-foreground"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              navigate({ to: "/auth", search: {} });
-            }}
-          >
+          <Button variant="ghost" size="sm" className="mt-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" disabled={busy} onClick={signOut}>
             <LogOut className="h-3.5 w-3.5" /> Sign out
-          </button>
+          </Button>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -104,7 +130,7 @@ function AppLayout() {
           <Outlet />
         </main>
         <div className="border-t p-3 md:hidden">
-          <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+          <Button variant="ghost" size="sm" disabled={busy} onClick={signOut}><LogOut className="h-4 w-4"/> Sign out</Button>
         </div>
       </div>
     </div>

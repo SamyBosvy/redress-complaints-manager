@@ -35,6 +35,8 @@ function AuthPage() {
   const { mode } = Route.useSearch();
   const [signup, setSignup] = useState(mode === "signup");
   const [busy, setBusy] = useState(false);
+  const [resetOpen,setResetOpen] = useState(false);
+  const [resetEmail,setResetEmail] = useState('');
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const navigate = useNavigate();
 
@@ -74,8 +76,22 @@ function AuthPage() {
     navigate({ to: "/app" });
   }
 
+  async function requestReset(e:React.FormEvent) {
+    e.preventDefault();
+    const parsed=z.string().trim().email('Enter a valid email').max(255).safeParse(resetEmail);
+    if(!parsed.success){toast.error('Enter a valid email.');return;}
+    setBusy(true);
+    try {
+      const {error}=await supabase.auth.resetPasswordForEmail(parsed.data,{redirectTo:window.location.origin+'/reset-password'});
+      if(error)throw error;
+      toast.success('If an account exists, a password-reset email will be sent.');
+      setResetOpen(false);
+    } catch {toast.error('Could not request a reset email. Please try again.');}
+    finally {setBusy(false);}
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-between"><Link to="/"><Logo /></Link><InstallAppButton variant="ghost" /></div>
         <h1 className="mt-8 text-2xl font-semibold">{signup ? "Start your free trial" : "Sign in"}</h1>
@@ -103,9 +119,11 @@ function AuthPage() {
           </div>
           <Button type="submit" className="w-full" disabled={busy}>{signup ? "Create account" : "Sign in"}</Button>
         </form>
-        <button className="mt-6 text-sm text-primary hover:underline" onClick={() => setSignup(!signup)}>
+        {!signup && <Button variant="link" className="mt-2 px-0" onClick={()=>{setResetEmail(form.email);setResetOpen(!resetOpen);}}>Forgot password?</Button>}
+        {resetOpen && !signup && <form onSubmit={requestReset} className="mt-3 space-y-3 border-t pt-4"><Label htmlFor="reset-email">Work email</Label><Input id="reset-email" required type="email" autoComplete="email" value={resetEmail} onChange={e=>setResetEmail(e.target.value)}/><Button className="min-h-12 w-full" disabled={busy}>Send reset email</Button></form>}
+        <Button variant="link" className="mt-6 h-auto whitespace-normal px-0 text-left" onClick={() => {setSignup(!signup);setResetOpen(false);}}>
           {signup ? "Already have an account? Sign in" : "New to Redress? Start a free trial"}
-        </button>
+        </Button>
         <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground"><Link to="/privacy" className="hover:text-primary">Privacy policy</Link><Link to="/dpa" className="hover:text-primary">Data processing agreement</Link></div>
       </div>
     </div>

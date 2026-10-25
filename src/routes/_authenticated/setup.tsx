@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership } from "@/lib/org";
+import { securityDestination } from '@/lib/workspace-access';
 import { COUNTRIES, LICENCE_LABELS } from "@/lib/countries";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/_authenticated/setup")({
   beforeLoad: async ({ context }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
+    const destination = securityDestination(m);
+    if (destination) throw redirect({to: destination});
     if (m?.org?.setup_complete) throw redirect({ to: "/app" });
   },
   head: () => ({ meta: [{ title: "Set up your organisation — Redress" }, { name: "description", content: "Set up your firm’s countries, calendars and complaint deadlines." }, { property: "og:title", content: "Set up your organisation — Redress" }, { property: "og:description", content: "Set up your firm’s countries, calendars and complaint deadlines." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),

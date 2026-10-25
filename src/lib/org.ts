@@ -16,6 +16,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 export type OrgAccess = { org_id: string; legal_name: string; role: AppRole; active: boolean; require_2fa: boolean; setup_complete: boolean };
 let selectedOrg: string | null = null;
 export function selectOrganisation(id: string) { selectedOrg = id; sessionStorage.setItem('redress-org', id); }
+export function clearSelectedOrganisation() { selectedOrg = null; sessionStorage.removeItem('redress-org'); }
 export const membershipQuery = queryOptions({
   queryKey: ['membership'],
   queryFn: async () => {

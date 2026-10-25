@@ -15,6 +15,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DpaRouteImport } from './routes/dpa'
 import { Route as InviteRouteImport } from './routes/invite'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TwoFactorRouteImport } from './routes/two-factor'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 import { Route as ComplainFormIdRouteImport } from './routes/complain.$formId'
@@ -63,6 +67,26 @@ const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TwoFactorRoute = TwoFactorRouteImport.update({
+  id: '/two-factor',
+  path: '/two-factor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
@@ -173,6 +197,10 @@ export interface FileRoutesByFullPath {
   '/dpa': typeof DpaRoute
   '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/two-factor': typeof TwoFactorRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
@@ -199,6 +227,10 @@ export interface FileRoutesByTo {
   '/dpa': typeof DpaRoute
   '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/two-factor': typeof TwoFactorRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
@@ -225,6 +257,10 @@ export interface FileRoutesById {
   '/dpa': typeof DpaRoute
   '/invite': typeof InviteRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/two-factor': typeof TwoFactorRoute
+  '/verify-email': typeof VerifyEmailRoute
+  '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/complain/$formId': typeof ComplainFormIdRoute
@@ -253,6 +289,10 @@ export interface FileRouteTypes {
     | '/dpa'
     | '/invite'
     | '/privacy'
+    | '/reset-password'
+    | '/two-factor'
+    | '/verify-email'
+    | '/account'
     | '/app'
     | '/setup'
     | '/complain/$formId'
@@ -279,6 +319,10 @@ export interface FileRouteTypes {
     | '/dpa'
     | '/invite'
     | '/privacy'
+    | '/reset-password'
+    | '/two-factor'
+    | '/verify-email'
+    | '/account'
     | '/setup'
     | '/complain/$formId'
     | '/app/audit'
@@ -304,6 +348,10 @@ export interface FileRouteTypes {
     | '/dpa'
     | '/invite'
     | '/privacy'
+    | '/reset-password'
+    | '/two-factor'
+    | '/verify-email'
+    | '/_authenticated/account'
     | '/_authenticated/app'
     | '/_authenticated/setup'
     | '/complain/$formId'
@@ -332,6 +380,9 @@ export interface RootRouteChildren {
   DpaRoute: typeof DpaRoute
   InviteRoute: typeof InviteRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  TwoFactorRoute: typeof TwoFactorRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ComplainFormIdRoute: typeof ComplainFormIdRoute
   ApiPublicJobsPrivacyRoute: typeof ApiPublicJobsPrivacyRoute
 }
@@ -379,6 +430,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/two-factor': {
+      id: '/two-factor'
+      path: '/two-factor'
+      fullPath: '/two-factor'
+      preLoaderRoute: typeof TwoFactorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app': {
       id: '/_authenticated/app'
@@ -570,11 +649,13 @@ const AuthenticatedAppRouteWithChildren =
   AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
   AuthenticatedSetupRoute: typeof AuthenticatedSetupRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
   AuthenticatedSetupRoute: AuthenticatedSetupRoute,
 }
@@ -589,6 +670,9 @@ const rootRouteChildren: RootRouteChildren = {
   DpaRoute: DpaRoute,
   InviteRoute: InviteRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  TwoFactorRoute: TwoFactorRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   ComplainFormIdRoute: ComplainFormIdRoute,
   ApiPublicJobsPrivacyRoute: ApiPublicJobsPrivacyRoute,
 }

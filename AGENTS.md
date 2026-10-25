@@ -31,3 +31,5 @@
 - Retention runs through a managed authenticated scheduled route; organisation purge automation stays disabled until server-verified billing cancellation is implemented. Why: preserve the payment setup hold and avoid premature deletion.
 - Privacy processing claims closed complaints before removing files; claimed cases cannot be reopened or receive attachments. Why: avoid irreversible erasure races with legal holds and handling.
 - Privacy exports paginate all records and include private file contents; multilingual PDFs embed a local Unicode font. Why: avoid silent row truncation and unreadable subject-access packs.
+
+- Workspace security redirects, Settings visibility and deadline-recalculation permission UI rules live in src/lib/workspace-access.ts with tests; database RPCs remain authoritative. Why: one consistent client gate without duplicating server enforcement.

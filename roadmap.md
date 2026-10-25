@@ -23,7 +23,7 @@
 - [ ] Fix mobile sign-out redirect; test invite/role/admin/assignment rules and verify signed-in flows
 
 ## Current scoped completion
-- [ ] Repair settings and password-reset preview errors; confirm clean preview
-- [ ] Wire role-aware Settings, Account, organisation switching and verification/2FA redirects
-- [ ] Add forgot-password email request and audited administrator deadline recalculation with date comparison
-- [ ] Fix desktop/mobile sign-out with cache clearing and replacement navigation; run scoped tests
+- [x] Repair settings and password-reset preview errors; confirm clean preview
+- [x] Wire role-aware Settings, Account, organisation switching and verification/2FA redirects
+- [x] Add forgot-password email request and audited administrator deadline recalculation with date comparison
+- [x] Fix desktop/mobile sign-out with cache clearing and replacement navigation; run scoped tests

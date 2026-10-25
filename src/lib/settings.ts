@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from './org';
+import type { Database } from '@/integrations/supabase/types';
 export function pageHead(title: string, description: string) { return { meta: [{ title: `${title} — Redress` }, { name: 'description', content: description }, { property: 'og:title', content: `${title} — Redress` }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' }] }; }
 export async function hashSecret(value: string) { const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)); return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join(''); }
 export function inviteState(i: {accepted_at: string|null; revoked_at: string|null; expires_at: string}, now = Date.now()) { return i.accepted_at ? 'Accepted' : i.revoked_at ? 'Revoked' : new Date(i.expires_at).getTime() <= now ? 'Expired' : 'Invited'; }
@@ -13,5 +14,5 @@ export const settingsQuery = (org: string) => queryOptions({queryKey:['settings'
 // Generated RPC types omit SQL nullability; null represents an unrestricted assignment.
 export function saveRuleAssignment(org: string, rule: string, country: string | null, product: string | null) {
   const args = {_org: org, _rule: rule, _country: country, _product: product};
-  return supabase.rpc('save_rule_assignment', args as Parameters<typeof supabase.rpc<'save_rule_assignment'>>[1]);
+  return supabase.rpc('save_rule_assignment', args as Database['public']['Functions']['save_rule_assignment']['Args']);
 }

@@ -27,7 +27,7 @@
 - [x] Use actual privacy_processing read from complaints for the case recalculation gate; fail closed on read errors
 - [x] No-send daily digest preparation: one active member, tenant/role-scoped clocks, at-risk 0–3 business days, overdue, pending final-response approvals; paginated server reads, no queue, schedule or sends
 - [x] Membership SQL and helper tests: seven-day expiry, resend, revoke, single-use, verified email matching, role changes, last-admin protection, transfer, handler eligibility and rule precedence — 84 tests passed
-- [ ] Final automatic full typecheck/build confirmation — checking after final edits
+- [x] Automatic full typecheck/build passed (build OK at 2026-10-26 01:33:24 UTC); 84 tests passed; public password-reset request screen verified with no runtime errors
 - [x] Repair settings and password-reset preview errors; confirm clean preview
 - [x] Wire role-aware Settings, Account, organisation switching and verification/2FA redirects
 - [x] Add forgot-password email request and audited administrator deadline recalculation with date comparison

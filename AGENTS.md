@@ -35,3 +35,4 @@
 - Workspace security redirects, Settings visibility and deadline-recalculation permission UI rules live in src/lib/workspace-access.ts with tests; database RPCs remain authoritative. Why: one consistent client gate without duplicating server enforcement.
 - Case loading reads privacy_processing directly from complaints under RLS and fails closed on read errors. Why: the queue view omits this field and claimed cases must not offer recalculation.
 - Daily digest selection is pure and single-recipient in src/lib/daily-digest.ts; a paginated server-only preparation helper reads one active membership without sending or scheduling. Why: prepare role-scoped data without email queues or bulk sending.
+- Membership regression tests execute repository SQL routines in isolated local PostgreSQL via PGlite, never against hosted tenant data. Why: verify invite and role safeguards without creating real users or changing production records.

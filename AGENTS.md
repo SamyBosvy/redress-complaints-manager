@@ -33,3 +33,5 @@
 - Privacy exports paginate all records and include private file contents; multilingual PDFs embed a local Unicode font. Why: avoid silent row truncation and unreadable subject-access packs.
 
 - Workspace security redirects, Settings visibility and deadline-recalculation permission UI rules live in src/lib/workspace-access.ts with tests; database RPCs remain authoritative. Why: one consistent client gate without duplicating server enforcement.
+- Case loading reads privacy_processing directly from complaints under RLS and fails closed on read errors. Why: the queue view omits this field and claimed cases must not offer recalculation.
+- Daily digest selection is pure and single-recipient in src/lib/daily-digest.ts; a paginated server-only preparation helper reads one active membership without sending or scheduling. Why: prepare role-scoped data without email queues or bulk sending.

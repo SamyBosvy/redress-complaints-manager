@@ -1,0 +1,10 @@
+import {describe,expect,it} from 'vitest';
+import {canChangeMember,effectiveRule,eligibleHandler,inviteState} from './settings';
+describe('Settings rules',()=>{
+  it('expires invites at the exact seven-day boundary',()=>{const i={accepted_at:null,revoked_at:null,expires_at:'2026-11-02T01:30:00Z'};expect(inviteState(i,Date.parse('2026-11-02T01:29:59Z'))).toBe('Invited');expect(inviteState(i,Date.parse(i.expires_at))).toBe('Expired');});
+  it('shows revoked and consumed invitations as unavailable',()=>{const i={accepted_at:null,revoked_at:'2026-10-26',expires_at:'2026-11-02'};expect(inviteState(i)).toBe('Revoked');expect(inviteState({...i,accepted_at:'2026-10-26'})).toBe('Accepted');});
+  it('prevents last-active-admin demotion and deactivation',()=>{const m={active:true,role:'org_admin' as const};expect(canChangeMember(m,'agent',true,1)).toBe(false);expect(canChangeMember(m,'org_admin',false,1)).toBe(false);expect(canChangeMember(m,'agent',true,2)).toBe(true);});
+  it.each(['org_admin','complaints_manager','agent','qa_reviewer'] as const)('allows active %s handlers only',role=>{expect(eligibleHandler({role,active:true})).toBe(true);expect(eligibleHandler({role,active:false})).toBe(false);});
+  it('never assigns Read-only members',()=>expect(eligibleHandler({role:'read_only',active:true})).toBe(false));
+  it('resolves exact > country > product > default without mutating assignments',()=>{const a=[{rule_set_id:'product',country_code:null,product:'card'},{rule_set_id:'country',country_code:'IE',product:null},{rule_set_id:'exact',country_code:'IE',product:'card'}];expect(effectiveRule(a,'IE','card','default')).toBe('exact');expect(effectiveRule(a.slice(0,2),'IE','card','default')).toBe('country');expect(effectiveRule(a,'FR','card','default')).toBe('product');expect(effectiveRule(a,'FR','other','default')).toBe('default');expect(a[0]?.rule_set_id).toBe('product');});
+});

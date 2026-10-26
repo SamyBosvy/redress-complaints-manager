@@ -30,7 +30,9 @@ const caseQuery = (id: string) =>
       ]);
       if (c.error) throw c.error;
       if (ev.error) throw ev.error;
-      return { c: c.data, events: ev.data };
+      const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
+      if(privacyError)throw privacyError;
+      return { c: {...c.data,privacy_processing:privacy.privacy_processing}, events: ev.data };
     },
   });
 
@@ -194,7 +196,7 @@ function CaseView() {
               <span className="text-muted-foreground">Business days remaining</span>
               <DeadlineClock daysLeft={c.days_left} status={status} />
             </div>
-            {canRecalculate(m.role,Boolean(c.anonymised_at),false) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
+            {canRecalculate(m.role,Boolean(c.anonymised_at),c.privacy_processing) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
           </Card>
 
           <Card title="Timeline">

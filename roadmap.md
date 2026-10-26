@@ -7,23 +7,27 @@
 - [x] Installable app + "Download the app" button (landing, sign-in, in-app) — workspace rule
 - [x] Phase 4: immutable audit log (DB-enforced) + viewer/CSV
 - [x] Phase 5: public web form per organisation — sharing/embed, firm logo, privacy notice, Received confirmation; public and embedded submissions verified
-- [ ] Verify Org Admin sharing/logo controls and queue readback with a real signed-in account — blocked: no auth users; owner must sign up/sign in
+- [ ] Verify Org Admin sharing/logo controls and queue readback with a real signed-in account — blocked: hosted database currently inaccessible; account/session availability cannot be confirmed
 - [x] Phase 6: QA module + sampling, in-app alerts (daily email digest blocked: no email domain configured)
 - [x] Phase 7: reporting dashboard, breakdowns, regulatory pack (CSV/PDF)
 - [ ] Phase 8: Stripe billing (trial, Starter/Growth/Scale), soft feature locks only — paused until owner explicitly signals settled back in Europe; test payments connected, no prices or checkout implemented
 - [x] Phase 9: Org Admin privacy page — retention with 30-day lookahead, legal holds, subject-access JSON/PDF review packs, working-record erasure with lawful-basis confirmation, organisation JSON/CSV export, draft policy/DPA pages
 - [x] Retention anonymisation — authenticated scheduled processing, database-enforced eligibility and case locks, future audit minimisation; historical immutable audit and backups retained
-- [ ] Verify privacy controls with a real signed-in Org Admin — blocked: no auth users; owner must sign up/sign in
+- [ ] Verify privacy controls with a real signed-in Org Admin — blocked: hosted database currently inaccessible; account/session availability cannot be confirmed
 - [ ] Enable organisation purge automation after billing cancellation verification is implemented — blocked: Phase 8 remains paused; 30-day request/cancel controls are built but unavailable
 - [ ] Replace draft privacy/DPA and public privacy notice; approve historical audit/backup retention and disposal — blocked: owner/legal review
-- [ ] Multi-user phase: Users/invites, 7-day acceptance, active memberships, role changes and last-admin protection
-- [ ] Post-setup Settings: organisation/address/currency, countries/ADR, calendars, rule sets/assignments and audited deadline recalculation
-- [ ] Account security: verified email, password reset/change, TOTP/required 2FA, recovery and all-session sign-out
+- [x] Multi-user implementation: Users/invites, 7-day acceptance, active memberships, role changes and last-admin protection; signed-in verification tracked separately
+- [x] Post-setup Settings implementation: organisation/address/currency, countries/ADR, calendars, rule sets/assignments and audited deadline recalculation; signed-in verification tracked separately
+- [x] Account security implementation: verified email, password reset/change, TOTP/required 2FA, recovery and all-session sign-out; signed-in verification tracked separately
 - [ ] Email: invitations and daily digest; custom auth emails — sender domain required
-- [ ] Fix mobile sign-out redirect; test invite/role/admin/assignment rules and verify signed-in flows
+- [x] Desktop/mobile sign-out implementation and invite/role/admin/handler/assignment tests
+- [ ] Verify Users/invite acceptance, Settings, switching, account/recovery/2FA, case recalculation and sign-out end-to-end — blocked: hosted database inaccessible and session minting fails; concurrency and hosted RLS/audit behavior remain unverified
 
 ## Current scoped completion
-- [ ] Final phase: verify preview checks, use actual privacy-processing state, prepare no-send daily digest selection, and expand membership/assignment tests
+- [x] Use actual privacy_processing read from complaints for the case recalculation gate; fail closed on read errors
+- [x] No-send daily digest preparation: one active member, tenant/role-scoped clocks, at-risk 0–3 business days, overdue, pending final-response approvals; paginated server reads, no queue, schedule or sends
+- [x] Membership SQL and helper tests: seven-day expiry, resend, revoke, single-use, verified email matching, role changes, last-admin protection, transfer, handler eligibility and rule precedence — 84 tests passed
+- [ ] Final automatic full typecheck/build confirmation — checking after final edits
 - [x] Repair settings and password-reset preview errors; confirm clean preview
 - [x] Wire role-aware Settings, Account, organisation switching and verification/2FA redirects
 - [x] Add forgot-password email request and audited administrator deadline recalculation with date comparison

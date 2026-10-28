@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { breakdown, businessDays, computeMetrics, resolvedWithinDeadline, rootCauseTrend, type ReportRow } from "./reports";
+import { breakdown, businessDays, computeMetrics, resolvedWithinDeadline, rootCauseTrend, paidByCurrency, formatCurrencyTotals, type ReportRow } from "./reports";
 
 const row = (over: Partial<ReportRow>): ReportRow => ({
   id: "1", reference: "RDR-2026-000001", status: "received", category: "fees_and_charges", product: "card",
   country_code: "FR", channel: "email", assigned_to: null, vulnerable: false, outcome: null,
-  redress_amount: null, redress_currency: null, goodwill_amount: null, root_cause_category: null,
+  redress_amount: null, redress_currency: null, goodwill_amount: null, goodwill_currency: null, root_cause_category: null,
   received_at: "2026-10-01T09:00:00Z", closed_at: null, final_due: "2026-10-22", extended_due: null,
   holding_sent_at: null, ...over,
 });
@@ -45,7 +45,7 @@ describe("computeMetrics", () => {
   it("computes within-deadline %, uphold rate and redress", () => {
     expect(m.withinDeadlinePct).toBe(50);
     expect(m.upholdRatePct).toBe(50);
-    expect(m.redressTotal).toBe(100);
+    expect(m.redressTotal).toEqual({ EUR: 100 });
     expect(m.vulnerableCount).toBe(1);
   });
   it("ranks top categories and root causes", () => {
@@ -75,5 +75,29 @@ describe("rootCauseTrend", () => {
       { month: "2026-09", pricing: 1 },
       { month: "2026-10", pricing: 1 },
     ]);
+  });
+});
+
+describe('per-currency payments', () => {
+  const rows = [
+    row({ redress_amount: 1000, redress_currency: 'EUR', goodwill_amount: 3500, goodwill_currency: 'PLN' }),
+    row({ redress_amount: 240, redress_currency: 'EUR', goodwill_amount: 12.25, goodwill_currency: 'GBP' }),
+  ];
+  it('keeps unlike redress and goodwill currencies separate, including on one case', () => {
+    expect(paidByCurrency(rows)).toEqual({ EUR: 1240, GBP: 12.25, PLN: 3500 });
+  });
+  it('uses the same currency totals in dashboard and every breakdown group', () => {
+    expect(computeMetrics(rows).redressTotal).toEqual({ EUR: 1240, GBP: 12.25, PLN: 3500 });
+    expect(breakdown(rows, r => r.product)[0]?.redress).toEqual({ EUR: 1240, GBP: 12.25, PLN: 3500 });
+  });
+  it('does not infer missing goodwill currency from redress currency', () => {
+    expect(paidByCurrency([row({ redress_amount: 10, redress_currency: 'EUR', goodwill_amount: 20 })])).toEqual({ EUR: 10, 'Unspecified currency': 20 });
+  });
+  it('retains decimals without floating-point drift', () => {
+    expect(paidByCurrency([row({ redress_amount: 0.1, redress_currency: 'EUR', goodwill_amount: 0.2, goodwill_currency: 'EUR' })])).toEqual({ EUR: 0.3 });
+  });
+  it('formats labelled figures for display and export without conversion', () => {
+    expect(formatCurrencyTotals({ EUR: 1240, PLN: 3500 })).toBe('EUR 1,240 · PLN 3,500');
+    expect(paidByCurrency([row({})])).toEqual({});
   });
 });

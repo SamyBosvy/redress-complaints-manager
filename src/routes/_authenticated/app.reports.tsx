@@ -6,7 +6,9 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsi
 import { membershipQuery, useMembership } from "@/lib/org";
 import { membersQuery, CATEGORIES, PRODUCTS, CHANNELS } from "@/lib/complaints";
 import { COUNTRIES } from "@/lib/countries";
-import { reportQuery, computeMetrics, breakdown, rootCauseTrend, type ReportRow } from "@/lib/reports";
+import { reportQuery, computeMetrics, breakdown, rootCauseTrend, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
+import { loadPdfFont } from '@/lib/pdf-font';
+import { toast } from 'sonner';
 import { downloadFile, toCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,9 +60,10 @@ function Reports() {
       for (const c of Object.keys(CATEGORIES)) {
         const rs = rows.filter((r) => r.product === p && r.category === c);
         if (!rs.length) continue;
-        const b = breakdown(rs, () => "x")[0]!;
+        const b = breakdown(rs, () => "x")[0];
+        if (!b) continue;
         const count = (o: string) => rs.filter((r) => r.outcome === o).length;
-        out.push([PRODUCTS[p as keyof typeof PRODUCTS], CATEGORIES[c as keyof typeof CATEGORIES], rs.length, count("upheld"), count("partially_upheld"), count("not_upheld"), count("withdrawn"), b.withinPct ?? "", b.redress]);
+        out.push([PRODUCTS[p as keyof typeof PRODUCTS], CATEGORIES[c as keyof typeof CATEGORIES], rs.length, count("upheld"), count("partially_upheld"), count("not_upheld"), count("withdrawn"), b.withinPct ?? "", formatCurrencyTotals(b.redress)]);
       }
     }
     return out;
@@ -71,23 +74,12 @@ function Reports() {
   }
 
   async function exportPackPdf() {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF();
-    let y = 20;
-    doc.setFontSize(16);
-    doc.text("Regulatory reporting pack", 14, y);
-    y += 8;
-    doc.setFontSize(10);
-    doc.text(`${m.org!.legal_name} — ${from} to ${to}`, 14, y);
-    y += 10;
-    const lines = packRows().slice(4);
-    doc.setFontSize(8);
-    for (const line of lines) {
-      if (y > 280) { doc.addPage(); y = 20; }
-      doc.text(line.map((v) => String(v)).join("  |  "), 14, y);
-      y += 5;
-    }
-    doc.save(`regulatory-pack-${from}-to-${to}.pdf`);
+    try {
+      if (!m.org) return;
+      const { regulatoryPackPdf } = await import('@/lib/regulatory-pdf');
+      const font = await loadPdfFont();
+      regulatoryPackPdf(m.org.legal_name, from, to, packRows().slice(4), font).save(`regulatory-pack-${from}-to-${to}.pdf`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not generate PDF.'); }
   }
 
   return (
@@ -112,7 +104,7 @@ function Reports() {
             <Stat label="Resolved within deadline" value={metrics.withinDeadlinePct === null ? "—" : metrics.withinDeadlinePct + "%"} />
             <Stat label="Avg business days to resolve" value={metrics.avgBusinessDaysToResolve ?? "—"} />
             <Stat label="Uphold rate" value={metrics.upholdRatePct === null ? "—" : metrics.upholdRatePct + "%"} />
-            <Stat label="Redress + goodwill paid" value={metrics.redressTotal.toLocaleString("en-GB")} />
+            <Stat label="Redress + goodwill paid" value={formatCurrencyTotals(metrics.redressTotal)} />
             <Stat label="Vulnerable customers" value={metrics.vulnerableCount} />
           </div>
 
@@ -199,7 +191,7 @@ function Reports() {
                       <td className="py-2.5 pr-4 tabular">{r.resolved}</td>
                       <td className="py-2.5 pr-4 tabular">{r.withinPct === null ? "—" : r.withinPct + "%"}</td>
                       <td className="py-2.5 pr-4 tabular">{r.upheldPct === null ? "—" : r.upheldPct + "%"}</td>
-                      <td className="py-2.5 tabular">{r.redress.toLocaleString("en-GB")}</td>
+                      <td className="py-2.5 tabular">{formatCurrencyTotals(r.redress)}</td>
                     </tr>
                   ))}
                   {bd.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No complaints in this period.</td></tr>}
@@ -228,7 +220,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
       <CardContent className="pt-5">
-        <p className="text-2xl font-semibold tabular">{value}</p>
+        <p className="break-words text-2xl font-semibold tabular">{value}</p>
         <p className="mt-1 text-xs text-muted-foreground">{label}</p>
       </CardContent>
     </Card>

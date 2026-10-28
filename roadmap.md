@@ -24,6 +24,10 @@
 - [ ] Verify Users/invite acceptance, Settings, switching, account/recovery/2FA, case recalculation and sign-out end-to-end — blocked: hosted database inaccessible and session minting fails; concurrency and hosted RLS/audit behavior remain unverified
 
 ## Current scoped completion
+- [x] Code-only PDF/currency work: shared Unicode font, firm-address letter header, per-currency report figures/CSV/PDF and Outcome currency selectors
+- [x] Local verification: all 92 tests passed; automatic full typecheck/build OK at 2026-10-28 02:43:54 UTC; Polish letter (1 page), French letter (2 pages) and regulatory pack (1 page) rendered to PNG and every page visually checked
+- [ ] Compliance workflow database/UI hardening — blocked: hosted database paused; staged sql/0015_compliance_hardening.sql remains untouched
+- [ ] Verify currency controls and report exports with a signed-in firm — blocked: hosted database paused
 - [x] Use actual privacy_processing read from complaints for the case recalculation gate; fail closed on read errors
 - [x] No-send daily digest preparation: one active member, tenant/role-scoped clocks, at-risk 0–3 business days, overdue, pending final-response approvals; paginated server reads, no queue, schedule or sends
 - [x] Membership SQL and helper tests: seven-day expiry, resend, revoke, single-use, verified email matching, role changes, last-admin protection, transfer, handler eligibility and rule precedence — 84 tests passed

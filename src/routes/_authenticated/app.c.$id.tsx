@@ -19,6 +19,8 @@ import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, me
 import { TEMPLATE_KINDS, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
 import { templatesQuery } from "./app.templates";
 import type { Database } from "@/integrations/supabase/types";
+import { CURRENCIES } from '@/lib/currencies';
+import { loadPdfFont } from '@/lib/pdf-font';
 
 const caseQuery = (id: string) =>
   queryOptions({
@@ -164,7 +166,7 @@ function CaseView() {
             </>}
           </Card>
 
-          <OutcomeCard c={c} canEdit={canEdit} onSave={update} />
+          <OutcomeCard c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
 
           <Card title="Internal notes and attachments">
             <p className="mb-2 text-xs text-muted-foreground">Never shown to the customer.</p>
@@ -235,10 +237,10 @@ function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) =>
   }
 }
 
-function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave: (p: Patch) => Promise<boolean> }) {
+function OutcomeCard({ c, baseCurrency, canEdit, onSave }: { c: any; baseCurrency: string; canEdit: boolean; onSave: (p: Patch) => Promise<boolean> }) {
   const [v, setV] = useState({
-    outcome: c.outcome ?? "", redress_amount: c.redress_amount ?? "", redress_currency: c.redress_currency ?? "EUR",
-    goodwill_amount: c.goodwill_amount ?? "", goodwill_currency: c.goodwill_currency ?? "EUR",
+    outcome: c.outcome ?? "", redress_amount: c.redress_amount ?? "", redress_currency: c.redress_currency ?? baseCurrency,
+    goodwill_amount: c.goodwill_amount ?? "", goodwill_currency: c.goodwill_currency ?? baseCurrency,
     root_cause_category: c.root_cause_category ?? "", root_cause_note: c.root_cause_note ?? "",
   });
   const num = (x: string | number) => (x === "" ? null : Math.max(0, Number(x)));
@@ -255,13 +257,19 @@ function OutcomeCard({ c, canEdit, onSave }: { c: any; canEdit: boolean; onSave:
         <Field label="Redress paid">
           <div className="flex gap-2">
             <Input type="number" min={0} step="0.01" className="tabular" disabled={!canEdit} value={v.redress_amount} onChange={(e) => setV({ ...v, redress_amount: e.target.value })} />
-            <Input className="w-20" maxLength={3} disabled={!canEdit} value={v.redress_currency} onChange={(e) => setV({ ...v, redress_currency: e.target.value.toUpperCase() })} />
+            <Select disabled={!canEdit} value={v.redress_currency} onValueChange={(currency) => setV({ ...v, redress_currency: currency })}>
+              <SelectTrigger className="w-24 shrink-0" aria-label="Redress currency"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURRENCIES.map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
         </Field>
         <Field label="Goodwill gesture">
           <div className="flex gap-2">
             <Input type="number" min={0} step="0.01" className="tabular" disabled={!canEdit} value={v.goodwill_amount} onChange={(e) => setV({ ...v, goodwill_amount: e.target.value })} />
-            <Input className="w-20" maxLength={3} disabled={!canEdit} value={v.goodwill_currency} onChange={(e) => setV({ ...v, goodwill_currency: e.target.value.toUpperCase() })} />
+            <Select disabled={!canEdit} value={v.goodwill_currency} onValueChange={(currency) => setV({ ...v, goodwill_currency: currency })}>
+              <SelectTrigger className="w-24 shrink-0" aria-label="Goodwill currency"><SelectValue /></SelectTrigger>
+              <SelectContent>{CURRENCIES.map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
         </Field>
         <div className="sm:col-span-2"><Field label="Root cause details"><Textarea rows={2} disabled={!canEdit} value={v.root_cause_note} maxLength={2000} onChange={(e) => setV({ ...v, root_cause_note: e.target.value })} /></Field></div>
@@ -330,18 +338,12 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   }
 
   async function pdf() {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    doc.setFontSize(11);
-    doc.text(m.org!.legal_name, 20, 20);
-    doc.text(new Date().toLocaleDateString("en-GB"), 190, 20, { align: "right" });
-    doc.setFont("helvetica", "bold");
-    doc.text(subject, 20, 36);
-    doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(body, 170) as string[];
-    let y = 46;
-    for (const line of lines) { if (y > 280) { doc.addPage(); y = 20; } doc.text(line, 20, y); y += 5.5; }
-    doc.save(`${c.reference}-${kind}.pdf`);
+    try {
+      if (!m.org) return;
+      const { letterPdf } = await import('@/lib/letter-pdf');
+      const font = await loadPdfFont();
+      letterPdf({ firm: m.org.legal_name, address: m.org.firm_address, date: new Date().toLocaleDateString('en-GB'), subject, body }, font).save(`${c.reference}-${kind}.pdf`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not generate PDF.'); }
   }
 
   return (

@@ -14,6 +14,7 @@ import { membershipQuery, useMembership } from '@/lib/org';
 import { privacyHead, PRIVACY_WARNING, retentionDate, retentionState } from '@/lib/privacy';
 import { getPrivacyOverview, setPrivacyRetention, setCaseLegalHold, eraseWorkingRecords, exportPersonalData, exportOrganisationData, requestOrganisationDeletion, cancelOrganisationDeletion } from '@/lib/privacy.functions';
 import { toCsv } from '@/lib/csv';
+import { loadPdfFont } from '@/lib/pdf-font';
 
 const overviewQuery=queryOptions({queryKey:['privacy-overview'],queryFn:()=>getPrivacyOverview()});
 export const Route=createFileRoute('/_authenticated/app/privacy')({
@@ -32,7 +33,7 @@ function PrivacyControls(){
   const saveRetention=useServerFn(setPrivacyRetention);const hold=useServerFn(setCaseLegalHold);const eraseFn=useServerFn(eraseWorkingRecords);
   const sar=useServerFn(exportPersonalData);const orgExport=useServerFn(exportOrganisationData);const deletion=useServerFn(requestOrganisationDeletion);const cancel=useServerFn(cancelOrganisationDeletion);
   async function run(action:()=>Promise<unknown>,message?:string){setBusy(true);try{await action();await qc.invalidateQueries();if(message)toast.success(message);}catch(e){toast.error(e instanceof Error?e.message:'Could not complete this request.');}finally{setBusy(false);}}
-  async function personalExport(id:string,pdf:boolean){const pack=await sar({data:{caseId:id}});if(pdf){const response=await fetch('/fonts/privacy-sans.ttf');if(!response.ok)throw new Error('PDF font unavailable.');const bytes=new Uint8Array(await response.arrayBuffer());let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);const {personalDataPdf}=await import('@/lib/privacy-pdf');personalDataPdf(pack,btoa(binary)).save('subject-access-review.pdf');}else saveFile('subject-access-review.json',JSON.stringify(pack,null,2));}
+  async function personalExport(id:string,pdf:boolean){const pack=await sar({data:{caseId:id}});if(pdf){const font=await loadPdfFont();const {personalDataPdf}=await import('@/lib/privacy-pdf');personalDataPdf(pack,font).save('subject-access-review.pdf');}else saveFile('subject-access-review.json',JSON.stringify(pack,null,2));}
   const now=new Date();const upcoming=data.cases.filter(c=>['upcoming','due'].includes(retentionState(c,data.org.retention_years,now)));
   const filtered=search.trim()?data.cases.filter(c=>[c.reference,c.complainant_name,c.complainant_email,c.customer_ref].some(v=>v?.toLowerCase().includes(search.toLowerCase()))):[];
   return <div className="mx-auto max-w-6xl">

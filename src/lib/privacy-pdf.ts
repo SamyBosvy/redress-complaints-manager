@@ -1,10 +1,9 @@
 import { jsPDF } from 'jspdf';
+import { embedPdfFont } from './pdf-font';
 type Pack = { firm: string; generatedAt: string; scope?: string; tables: Record<string, Record<string, unknown>[]>; attachments: { path: string; contentType: string }[] };
 export function personalDataPdf(pack: Pack, fontBase64: string) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  doc.addFileToVFS('privacy-sans.ttf',fontBase64);
-  doc.addFont('privacy-sans.ttf','PrivacySans','normal');
-  doc.setFont('PrivacySans','normal');
+  embedPdfFont(doc,fontBase64);
   let y=22;
   const write = (text: string, size=10) => {
     doc.setFontSize(size);

@@ -6,12 +6,12 @@ export type ReportRow = Pick<
   Database["public"]["Tables"]["complaints"]["Row"],
   | "id" | "reference" | "status" | "category" | "product" | "country_code" | "channel"
   | "assigned_to" | "vulnerable" | "outcome" | "redress_amount" | "redress_currency"
-  | "goodwill_amount" | "root_cause_category" | "received_at" | "closed_at"
+  | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "received_at" | "closed_at"
   | "final_due" | "extended_due" | "holding_sent_at"
 >;
 
 const COLS =
-  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, root_cause_category, received_at, closed_at, final_due, extended_due, holding_sent_at";
+  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, received_at, closed_at, final_due, extended_due, holding_sent_at";
 
 export const reportQuery = (orgId: string, from: string, to: string) =>
   queryOptions({
@@ -58,6 +58,25 @@ export function resolvedWithinDeadline(r: ReportRow) {
   return r.closed_at.slice(0, 10) <= due;
 }
 
+export type CurrencyTotals = Record<string, number>;
+
+/** Never infer a payment currency from the firm's base currency. */
+export function paidByCurrency(rows: ReportRow[]): CurrencyTotals {
+  const cents = new Map<string, number>();
+  for (const row of rows) {
+    for (const [amount, currency] of [[row.redress_amount, row.redress_currency], [row.goodwill_amount, row.goodwill_currency]] as const) {
+      if (amount === null || !Number.isFinite(amount) || amount === 0) continue;
+      const key = currency?.trim().toUpperCase() || 'Unspecified currency';
+      cents.set(key, (cents.get(key) ?? 0) + Math.round(amount * 100));
+    }
+  }
+  return Object.fromEntries([...cents].sort(([a], [b]) => a.localeCompare(b)).map(([currency, value]) => [currency, value / 100]));
+}
+
+export function formatCurrencyTotals(totals: CurrencyTotals): string {
+  return Object.entries(totals).map(([currency, value]) => `${currency} ${value.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`).join(' · ') || '—';
+}
+
 export interface Metrics {
   open: number;
   receivedThisMonth: number;
@@ -65,7 +84,7 @@ export interface Metrics {
   withinDeadlinePct: number | null;
   avgBusinessDaysToResolve: number | null;
   upholdRatePct: number | null;
-  redressTotal: number;
+  redressTotal: CurrencyTotals;
   vulnerableCount: number;
   topCategories: [string, number][];
   topRootCauses: [string, number][];
@@ -75,7 +94,7 @@ export function computeMetrics(rows: ReportRow[], now = new Date()): Metrics {
   const monthStart = now.toISOString().slice(0, 8) + "01";
   const resolved = rows.filter(isResolved);
   const withDeadline = resolved.map((r) => resolvedWithinDeadline(r)).filter((v): v is boolean => v !== null);
-  const durations = resolved.filter((r) => r.closed_at).map((r) => businessDays(r.received_at, r.closed_at!));
+  const durations = resolved.flatMap((r) => r.closed_at ? [businessDays(r.received_at, r.closed_at)] : []);
   const withOutcome = rows.filter((r) => r.outcome && r.outcome !== "withdrawn");
   const count = (key: (r: ReportRow) => string | null) => {
     const m = new Map<string, number>();
@@ -94,7 +113,7 @@ export function computeMetrics(rows: ReportRow[], now = new Date()): Metrics {
     upholdRatePct: withOutcome.length
       ? Math.round((withOutcome.filter((r) => r.outcome === "upheld" || r.outcome === "partially_upheld").length / withOutcome.length) * 100)
       : null,
-    redressTotal: rows.reduce((a, r) => a + (r.redress_amount ?? 0) + (r.goodwill_amount ?? 0), 0),
+    redressTotal: paidByCurrency(rows),
     vulnerableCount: rows.filter((r) => r.vulnerable).length,
     topCategories: count((r) => r.category).slice(0, 5),
     topRootCauses: count((r) => r.root_cause_category).slice(0, 5),
@@ -107,15 +126,16 @@ export interface BreakdownRow {
   resolved: number;
   withinPct: number | null;
   upheldPct: number | null;
-  redress: number;
+  redress: CurrencyTotals;
 }
 
 export function breakdown(rows: ReportRow[], key: (r: ReportRow) => string | null): BreakdownRow[] {
   const groups = new Map<string, ReportRow[]>();
   for (const r of rows) {
     const k = key(r) ?? "—";
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k)!.push(r);
+    const group = groups.get(k) ?? [];
+    group.push(r);
+    groups.set(k, group);
   }
   return [...groups.entries()]
     .map(([k, rs]) => {
@@ -130,7 +150,7 @@ export function breakdown(rows: ReportRow[], key: (r: ReportRow) => string | nul
         upheldPct: oc.length
           ? Math.round((oc.filter((r) => r.outcome === "upheld" || r.outcome === "partially_upheld").length / oc.length) * 100)
           : null,
-        redress: rs.reduce((a, r) => a + (r.redress_amount ?? 0) + (r.goodwill_amount ?? 0), 0),
+        redress: paidByCurrency(rs),
       };
     })
     .sort((a, b) => b.total - a.total);

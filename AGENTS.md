@@ -36,3 +36,5 @@
 - Case loading reads privacy_processing directly from complaints under RLS and fails closed on read errors. Why: the queue view omits this field and claimed cases must not offer recalculation.
 - Daily digest selection is pure and single-recipient in src/lib/daily-digest.ts; a paginated server-only preparation helper reads one active membership without sending or scheduling. Why: prepare role-scoped data without email queues or bulk sending.
 - Membership regression tests execute repository SQL routines in isolated local PostgreSQL via PGlite, never against hosted tenant data. Why: verify invite and role safeguards without creating real users or changing production records.
+- All PDF generators use the shared local Unicode font loader/embedding helper for normal and bold styles. Why: avoid standard-font fallback and preserve multilingual text.
+- Reporting aggregates redress and goodwill independently by their recorded currency, retaining missing-currency amounts as unspecified rather than inferring a currency. Why: never combine unlike currencies or silently omit payments.

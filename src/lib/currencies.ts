@@ -1,0 +1,1 @@
+export const CURRENCIES = ['EUR', 'GBP', 'PLN', 'CZK', 'HUF', 'RON', 'SEK', 'DKK', 'NOK', 'CHF', 'BGN', 'ISK', 'USD'] as const;

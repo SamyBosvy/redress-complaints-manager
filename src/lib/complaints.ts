@@ -41,21 +41,6 @@ export function isAtRisk(daysLeft: number | null, status: Status) {
   return CLOCK_RUNNING.includes(status) && daysLeft !== null && daysLeft >= 0 && daysLeft <= 3;
 }
 
-export const queueQuery = (orgId: string) =>
-  queryOptions({
-    queryKey: ["queue", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("complaint_queue")
-        .select("id, reference, complainant_name, customer_ref, category, product, country_code, status, assigned_to, vulnerable, priority, days_left, current_due, received_at")
-        .eq("org_id", orgId)
-        .order("received_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return data;
-    },
-  });
-
 export const membersQuery = (orgId: string) =>
   queryOptions({
     queryKey: ["members", orgId],

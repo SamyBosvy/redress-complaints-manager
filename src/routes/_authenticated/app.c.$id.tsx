@@ -112,7 +112,10 @@ function CaseView() {
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
-          <h1 className="text-2xl font-semibold">{c.complainant_name}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold">{c.complainant_name}</h1>
+            <StatusPill status={status} />
+          </div>
           {c.anonymised_at && <p className="mt-1 text-sm text-muted-foreground">Working records anonymised · Historical audit retained</p>}
           {c.legal_hold && <p className="mt-1 text-sm text-warning">Legal hold · Excluded from retention anonymisation</p>}
           <p className="mt-1 text-sm text-muted-foreground">{CATEGORIES[c.category!]} · {PRODUCTS[c.product!]} · {COUNTRIES[c.country_code!] ?? c.country_code}</p>
@@ -196,7 +199,7 @@ function CaseView() {
             </dl>
             <div className="mt-4 flex items-center justify-between border-t pt-3 text-sm">
               <span className="text-muted-foreground">Business days remaining</span>
-              <DeadlineClock daysLeft={c.days_left} status={status} />
+              <DeadlineClock daysLeft={c.days_left} status={status} due={c.holding_sent_at ? c.extended_due : c.final_due} receivedAt={c.received_at} />
             </div>
             {canRecalculate(m.role,Boolean(c.anonymised_at),c.privacy_processing) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
           </Card>

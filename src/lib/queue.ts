@@ -185,7 +185,7 @@ async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage>
   const size = PAGE_SIZE;
   if (p.sort === "time_left") {
     const stopped = stoppedStatuses();
-    const [runningCount, stoppedCount] = await Promise.all([countRows(p, CLOCK_RUNNING), countRows(p, stopped)]);
+    const [runningCount, stoppedCount] = await Promise.all([countRows(orgId, p, CLOCK_RUNNING), countRows(orgId, p, stopped)]);
     const slices = pageSlices(runningCount, stoppedCount, p.page, size);
     const parts = await Promise.all(
       slices.map(async (s) => {
@@ -224,9 +224,9 @@ export const queueCountsQuery = (orgId: string, userId: string) =>
     queryFn: async () => {
       const base = { userId, q: "", sort: "time_left", dir: "asc", page: 1 } as const;
       const [atRisk, overdue, ackOverdue] = await Promise.all([
-        countRows({ ...base, tab: "risk" }),
-        countRows({ ...base, tab: "overdue" }),
-        countRows({ ...base, tab: "ack" }),
+        countRows(orgId, { ...base, tab: "risk" }),
+        countRows(orgId, { ...base, tab: "overdue" }),
+        countRows(orgId, { ...base, tab: "ack" }),
       ]);
       return { atRisk, overdue, ackOverdue };
     },

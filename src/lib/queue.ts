@@ -172,8 +172,8 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function countRows(p: QueueParams, segment?: readonly Status[]): Promise<number> {
-  let q = supabase.from("complaint_queue").select("id", { count: "exact", head: true });
+async function countRows(orgId: string, p: QueueParams, segment?: readonly Status[]): Promise<number> {
+  let q = supabase.from("complaint_queue").select("id", { count: "exact", head: true }).eq("org_id", orgId);
   q = applyFilters(q, p);
   if (segment) q = q.in("status", segment);
   const { count, error } = await q;

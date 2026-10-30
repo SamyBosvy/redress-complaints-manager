@@ -170,7 +170,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (p.country) q = q.eq("country_code", p.country);
   if (p.agent) q = p.agent === "none" ? q.is("assigned_to", null) : q.eq("assigned_to", p.agent);
   if (p.vulnerable) q = q.eq("vulnerable", p.vulnerable === "true");
-  const needle = p.q.trim().replace(/[%,_()."\\]/g, " ").trim();
+  const needle = (p.q ?? "").trim().replace(/[%,_()."\\]/g, " ").trim();
   if (needle) q = q.or(`reference.ilike.%${needle}%,complainant_name.ilike.%${needle}%,customer_ref.ilike.%${needle}%`);
   return q;
 }

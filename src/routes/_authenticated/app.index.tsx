@@ -60,7 +60,7 @@ function Queue() {
     : COUNTRIES;
 
   const chips: { key: keyof QueueSearch; label: string }[] = [];
-  if (search.q.trim()) chips.push({ key: "q", label: `Search: ${search.q.trim()}` });
+  if ((search.q ?? "").trim()) chips.push({ key: "q", label: `Search: ${(search.q ?? "").trim()}` });
   if (search.status) chips.push({ key: "status", label: `Status: ${STATUSES[search.status as Status] ?? search.status}` });
   if (search.category) chips.push({ key: "category", label: `Category: ${CATEGORIES[search.category as keyof typeof CATEGORIES] ?? search.category}` });
   if (search.product) chips.push({ key: "product", label: `Product: ${PRODUCTS[search.product as keyof typeof PRODUCTS] ?? search.product}` });
@@ -75,8 +75,9 @@ function Queue() {
 
   const total = page.total;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = total === 0 ? 0 : (search.page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(total, search.page * PAGE_SIZE);
+  const currentPage = search.page ?? 1;
+  const from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(total, currentPage * PAGE_SIZE);
   const canLog = m.role !== "read_only";
 
   return (
@@ -107,7 +108,7 @@ function Queue() {
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Reference, name or customer ID" value={search.q}
+          <Input className="pl-8" placeholder="Reference, name or customer ID" value={search.q ?? ""}
             onChange={(e) => update({ q: e.target.value })} />
         </div>
         <Filter label="Status" value={search.status ?? ALL} onChange={(v) => update({ status: v === ALL ? undefined : v })} options={STATUSES} />
@@ -183,11 +184,11 @@ function Queue() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2.5 text-sm">
           <p className="text-muted-foreground tabular">{total === 0 ? "No complaints" : `Showing ${from}–${to} of ${total}`}</p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={search.page <= 1} onClick={() => update({ page: search.page - 1 })}>
+            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => update({ page: currentPage - 1 })}>
               <ChevronLeft className="h-4 w-4" /> Previous
             </Button>
-            <span className="tabular text-muted-foreground">Page {search.page} of {pages}</span>
-            <Button variant="outline" size="sm" disabled={search.page >= pages} onClick={() => update({ page: search.page + 1 })}>
+            <span className="tabular text-muted-foreground">Page {currentPage} of {pages}</span>
+            <Button variant="outline" size="sm" disabled={currentPage >= pages} onClick={() => update({ page: currentPage + 1 })}>
               Next <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

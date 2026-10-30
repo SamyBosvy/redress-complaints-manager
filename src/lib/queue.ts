@@ -25,34 +25,34 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
-  tab?: QueueTab;
-  q: string;
-  status?: string;
-  category?: string;
-  product?: string;
-  country?: string;
-  agent?: string;
-  vulnerable?: string;
-  sort: QueueSort;
-  dir: SortDir;
-  page: number;
+  tab?: QueueTab | undefined;
+  q?: string | undefined;
+  status?: string | undefined;
+  category?: string | undefined;
+  product?: string | undefined;
+  country?: string | undefined;
+  agent?: string | undefined;
+  vulnerable?: string | undefined;
+  sort?: QueueSort | undefined;
+  dir?: SortDir | undefined;
+  page?: number | undefined;
 }
 
 /** Validates raw URL search params into a typed, clamped QueueSearch; unknown values fall back to defaults. */
 export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
-  const page = Number(s.page);
+  const page = Number(s["page"]);
   return {
-    tab: (QUEUE_TABS as readonly string[]).includes(s.tab as string) ? (s.tab as QueueTab) : undefined,
-    q: typeof s.q === "string" ? s.q : "",
-    status: str(s.status),
-    category: str(s.category),
-    product: str(s.product),
-    country: str(s.country),
-    agent: str(s.agent),
-    vulnerable: str(s.vulnerable),
-    sort: (QUEUE_SORTS as readonly string[]).includes(s.sort as string) ? (s.sort as QueueSort) : "time_left",
-    dir: s.dir === "desc" ? "desc" : "asc",
+    tab: (QUEUE_TABS as readonly string[]).includes(s["tab"] as string) ? (s["tab"] as QueueTab) : undefined,
+    q: typeof s["q"] === "string" ? (s["q"] as string) : "",
+    status: str(s["status"]),
+    category: str(s["category"]),
+    product: str(s["product"]),
+    country: str(s["country"]),
+    agent: str(s["agent"]),
+    vulnerable: str(s["vulnerable"]),
+    sort: (QUEUE_SORTS as readonly string[]).includes(s["sort"] as string) ? (s["sort"] as QueueSort) : "time_left",
+    dir: s["dir"] === "desc" ? "desc" : "asc",
     page: Number.isInteger(page) && page >= 1 ? Math.min(page, 100_000) : 1,
   };
 }
@@ -61,8 +61,15 @@ export interface QueueParams extends QueueSearch {
   userId: string;
 }
 
+/** The complaint_queue columns selected for the queue table (see QUEUE_SELECT). */
+export type QueueItem = Pick<
+  QueueRow,
+  | "id" | "reference" | "complainant_name" | "customer_ref" | "category" | "product" | "country_code"
+  | "status" | "assigned_to" | "vulnerable" | "priority" | "days_left" | "current_due" | "ack_due" | "received_at"
+>;
+
 export interface QueuePage {
-  rows: QueueRow[];
+  rows: QueueItem[];
   total: number;
   page: number;
   pageSize: number;
@@ -163,7 +170,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (p.country) q = q.eq("country_code", p.country);
   if (p.agent) q = p.agent === "none" ? q.is("assigned_to", null) : q.eq("assigned_to", p.agent);
   if (p.vulnerable) q = q.eq("vulnerable", p.vulnerable === "true");
-  const needle = p.q.trim().replace(/[%,_()."\\]/g, " ").trim();
+  const needle = (p.q ?? "").trim().replace(/[%,_()."\\]/g, " ").trim();
   if (needle) q = q.or(`reference.ilike.%${needle}%,complainant_name.ilike.%${needle}%,customer_ref.ilike.%${needle}%`);
   return q;
 }
@@ -183,32 +190,35 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 
 async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
   const size = PAGE_SIZE;
-  if (p.sort === "time_left") {
+  const sort = p.sort ?? "time_left";
+  const dir = p.dir ?? "asc";
+  const page = p.page ?? 1;
+  if (sort === "time_left") {
     const stopped = stoppedStatuses();
     const [runningCount, stoppedCount] = await Promise.all([countRows(orgId, p, CLOCK_RUNNING), countRows(orgId, p, stopped)]);
-    const slices = pageSlices(runningCount, stoppedCount, p.page, size);
+    const slices = pageSlices(runningCount, stoppedCount, page, size);
     const parts = await Promise.all(
       slices.map(async (s) => {
         let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT), p).eq("org_id", orgId);
         q = q.in("status", s.segment === "running" ? CLOCK_RUNNING : stopped);
         const ordered =
           s.segment === "running"
-            ? q.order("days_left", { ascending: p.dir === "asc", nullsFirst: false }).order("id", { ascending: true })
+            ? q.order("days_left", { ascending: dir === "asc", nullsFirst: false }).order("id", { ascending: true })
             : q.order("received_at", { ascending: false }).order("id", { ascending: true });
         const { data, error } = await ordered.range(s.from, s.to);
         if (error) throw error;
         return data;
       }),
     );
-    return { rows: parts.flat(), total: runningCount + stoppedCount, page: p.page, pageSize: size };
+    return { rows: parts.flat(), total: runningCount + stoppedCount, page, pageSize: size };
   }
   let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT, { count: "exact" }), p).eq("org_id", orgId);
   const ordered = q
-    .order(SORT_COLUMNS[p.sort], { ascending: p.dir === "asc", nullsFirst: false })
+    .order(SORT_COLUMNS[sort], { ascending: dir === "asc", nullsFirst: false })
     .order("id", { ascending: true });
-  const { data, count, error } = await ordered.range((p.page - 1) * size, p.page * size - 1);
+  const { data, count, error } = await ordered.range((page - 1) * size, page * size - 1);
   if (error) throw error;
-  return { rows: data, total: count ?? 0, page: p.page, pageSize: size };
+  return { rows: data, total: count ?? 0, page, pageSize: size };
 }
 
 export const queueQuery = (orgId: string, p: QueueParams) =>

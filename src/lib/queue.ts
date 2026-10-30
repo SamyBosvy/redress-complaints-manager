@@ -190,32 +190,35 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 
 async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
   const size = PAGE_SIZE;
-  if (p.sort === "time_left") {
+  const sort = p.sort ?? "time_left";
+  const dir = p.dir ?? "asc";
+  const page = p.page ?? 1;
+  if (sort === "time_left") {
     const stopped = stoppedStatuses();
     const [runningCount, stoppedCount] = await Promise.all([countRows(orgId, p, CLOCK_RUNNING), countRows(orgId, p, stopped)]);
-    const slices = pageSlices(runningCount, stoppedCount, p.page, size);
+    const slices = pageSlices(runningCount, stoppedCount, page, size);
     const parts = await Promise.all(
       slices.map(async (s) => {
         let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT), p).eq("org_id", orgId);
         q = q.in("status", s.segment === "running" ? CLOCK_RUNNING : stopped);
         const ordered =
           s.segment === "running"
-            ? q.order("days_left", { ascending: p.dir === "asc", nullsFirst: false }).order("id", { ascending: true })
+            ? q.order("days_left", { ascending: dir === "asc", nullsFirst: false }).order("id", { ascending: true })
             : q.order("received_at", { ascending: false }).order("id", { ascending: true });
         const { data, error } = await ordered.range(s.from, s.to);
         if (error) throw error;
         return data;
       }),
     );
-    return { rows: parts.flat(), total: runningCount + stoppedCount, page: p.page, pageSize: size };
+    return { rows: parts.flat(), total: runningCount + stoppedCount, page, pageSize: size };
   }
   let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT, { count: "exact" }), p).eq("org_id", orgId);
   const ordered = q
-    .order(SORT_COLUMNS[p.sort], { ascending: p.dir === "asc", nullsFirst: false })
+    .order(SORT_COLUMNS[sort], { ascending: dir === "asc", nullsFirst: false })
     .order("id", { ascending: true });
-  const { data, count, error } = await ordered.range((p.page - 1) * size, p.page * size - 1);
+  const { data, count, error } = await ordered.range((page - 1) * size, page * size - 1);
   if (error) throw error;
-  return { rows: data, total: count ?? 0, page: p.page, pageSize: size };
+  return { rows: data, total: count ?? 0, page, pageSize: size };
 }
 
 export const queueQuery = (orgId: string, p: QueueParams) =>

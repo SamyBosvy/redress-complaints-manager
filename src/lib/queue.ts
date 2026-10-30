@@ -25,34 +25,34 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
-  tab?: QueueTab;
-  q: string;
-  status?: string;
-  category?: string;
-  product?: string;
-  country?: string;
-  agent?: string;
-  vulnerable?: string;
-  sort: QueueSort;
-  dir: SortDir;
-  page: number;
+  tab?: QueueTab | undefined;
+  q?: string | undefined;
+  status?: string | undefined;
+  category?: string | undefined;
+  product?: string | undefined;
+  country?: string | undefined;
+  agent?: string | undefined;
+  vulnerable?: string | undefined;
+  sort?: QueueSort | undefined;
+  dir?: SortDir | undefined;
+  page?: number | undefined;
 }
 
 /** Validates raw URL search params into a typed, clamped QueueSearch; unknown values fall back to defaults. */
 export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
-  const page = Number(s.page);
+  const page = Number(s["page"]);
   return {
-    tab: (QUEUE_TABS as readonly string[]).includes(s.tab as string) ? (s.tab as QueueTab) : undefined,
-    q: typeof s.q === "string" ? s.q : "",
-    status: str(s.status),
-    category: str(s.category),
-    product: str(s.product),
-    country: str(s.country),
-    agent: str(s.agent),
-    vulnerable: str(s.vulnerable),
-    sort: (QUEUE_SORTS as readonly string[]).includes(s.sort as string) ? (s.sort as QueueSort) : "time_left",
-    dir: s.dir === "desc" ? "desc" : "asc",
+    tab: (QUEUE_TABS as readonly string[]).includes(s["tab"] as string) ? (s["tab"] as QueueTab) : undefined,
+    q: typeof s["q"] === "string" ? (s["q"] as string) : "",
+    status: str(s["status"]),
+    category: str(s["category"]),
+    product: str(s["product"]),
+    country: str(s["country"]),
+    agent: str(s["agent"]),
+    vulnerable: str(s["vulnerable"]),
+    sort: (QUEUE_SORTS as readonly string[]).includes(s["sort"] as string) ? (s["sort"] as QueueSort) : "time_left",
+    dir: s["dir"] === "desc" ? "desc" : "asc",
     page: Number.isInteger(page) && page >= 1 ? Math.min(page, 100_000) : 1,
   };
 }

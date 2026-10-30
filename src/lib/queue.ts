@@ -61,8 +61,15 @@ export interface QueueParams extends QueueSearch {
   userId: string;
 }
 
+/** The complaint_queue columns selected for the queue table (see QUEUE_SELECT). */
+export type QueueItem = Pick<
+  QueueRow,
+  | "id" | "reference" | "complainant_name" | "customer_ref" | "category" | "product" | "country_code"
+  | "status" | "assigned_to" | "vulnerable" | "priority" | "days_left" | "current_due" | "ack_due" | "received_at"
+>;
+
 export interface QueuePage {
-  rows: QueueRow[];
+  rows: QueueItem[];
   total: number;
   page: number;
   pageSize: number;

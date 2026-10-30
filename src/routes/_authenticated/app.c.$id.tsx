@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeadlineClock } from "@/components/deadline-clock";
+import { StatusPill } from "@/components/status-pill";
 import {DeadlineRecalculation} from '@/components/deadline-recalculation';
 import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";

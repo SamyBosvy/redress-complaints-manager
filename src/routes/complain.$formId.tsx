@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { InstallAppButton } from '@/components/install-app';
 import { getPublicForm, submitPublicComplaint } from '@/lib/public-forms.functions';
 import { publicComplaintSchema } from '@/lib/public-forms';
 import { COUNTRIES } from '@/lib/countries';
@@ -51,7 +50,6 @@ function PublicComplaint() {
   return <div className="min-h-screen bg-background">
     <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4 border-b px-5 py-5">
       <div className="flex min-w-0 items-center gap-3">{firm.logo_url && <img src={firm.logo_url} alt={`${firm.firm_name} logo`} className="h-14 w-14 shrink-0 object-contain" />}<p className="break-words text-lg font-semibold">{firm.firm_name}</p></div>
-      {!embed && <InstallAppButton variant="ghost" />}
     </header>
     <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
       {reference ? <section aria-live="polite" className="py-8"><CheckCircle2 className="h-10 w-10 text-success" /><h1 className="mt-5 font-display text-3xl font-semibold">Complaint received</h1><p className="mt-3">Your complaint has been submitted to {firm.firm_name}.</p><p className="mt-6 text-sm text-muted-foreground">Your reference number</p><p className="mt-1 break-all font-mono text-2xl font-medium">{reference}</p><p className="mt-5 text-sm text-muted-foreground">Keep this reference for any correspondence with the firm.</p></section> : <form onSubmit={submit}>

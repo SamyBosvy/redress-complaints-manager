@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
-import { InstallAppButton } from "@/components/install-app";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { mode?: "signup" } => (s["mode"] === "signup" ? { mode: "signup" } : {}),
@@ -93,7 +92,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-between"><Link to="/"><Logo /></Link><InstallAppButton variant="ghost" /></div>
+        <div className="flex items-center justify-between"><Link to="/"><Logo /></Link></div>
         <h1 className="mt-8 text-2xl font-semibold">{signup ? "Start your free trial" : "Sign in"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {signup ? "14 days, all Growth features, no card required." : "Welcome back."}

@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
 import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck, Settings, UserRound, Menu, ChevronsUpDown } from "lucide-react";
 import { membershipQuery, useMembership, ROLE_LABELS, selectOrganisation } from "@/lib/org";
 import {clearAndSignOut} from '@/lib/sign-out';
 import {securityDestination} from '@/lib/workspace-access';
 import { appNavigation } from '@/lib/app-navigation';
+import { applyTheme, getThemePreference, setThemePreference, watchSystemTheme, type ThemePreference } from '@/lib/theme';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { Logo } from "@/components/logo";
@@ -32,6 +33,11 @@ function AppLayout() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemePreference>('system');
+  useEffect(() => {
+    setTheme(getThemePreference());
+    return watchSystemTheme(() => { if (getThemePreference() === 'system') applyTheme('system'); });
+  }, []);
   const organisations = m?.organisations.filter(x=>x.active) ?? [];
   async function signOut() {
     setBusy(true);
@@ -96,6 +102,13 @@ function AppLayout() {
               {organisations.map(org => <DropdownMenuRadioItem key={org.org_id} value={org.org_id} disabled={busy} className="min-h-11"><span className="min-w-0 break-words">{org.legal_name}</span></DropdownMenuRadioItem>)}
             </DropdownMenuRadioGroup>
           </>}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Theme</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={theme} onValueChange={v => { const t = v as ThemePreference; setTheme(t); setThemePreference(t); }}>
+            <DropdownMenuRadioItem value="light" className="min-h-11">Light</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="dark" className="min-h-11">Dark</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="system" className="min-h-11">System</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild className="min-h-11"><Link to="/account" onClick={() => setMenuOpen(false)}><UserRound aria-hidden="true" />Account</Link></DropdownMenuItem>
           <DropdownMenuItem className="min-h-11" disabled={busy} onSelect={() => { void signOut(); }}><LogOut aria-hidden="true" />Sign out</DropdownMenuItem>

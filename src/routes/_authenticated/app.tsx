@@ -55,8 +55,9 @@ function AppLayout() {
   const trialDays = m?.org ? Math.ceil((new Date(m.org.trial_ends_at).getTime() - Date.now()) / 86400000) : 0;
 
   const icons = { queue: Inbox, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
-  const displayName = typeof m?.user.user_metadata?.full_name === 'string' && m.user.user_metadata.full_name.trim()
-    ? m.user.user_metadata.full_name.trim() : m?.user.email ?? 'Account';
+  const fullName = m?.user.user_metadata?.['full_name'];
+  const displayName = typeof fullName === 'string' && fullName.trim()
+    ? fullName.trim() : m?.user.email ?? 'Account';
   const initials = displayName.includes('@') ? displayName.slice(0, 2).toUpperCase()
     : displayName.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join('').toUpperCase();
   const groupedNav = (

@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
 import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck, Settings, UserRound, Menu, ChevronsUpDown } from "lucide-react";
 import { membershipQuery, useMembership, ROLE_LABELS, selectOrganisation } from "@/lib/org";
 import {clearAndSignOut} from '@/lib/sign-out';
 import {securityDestination} from '@/lib/workspace-access';
 import { appNavigation } from '@/lib/app-navigation';
+import { applyTheme, getThemePreference, setThemePreference, watchSystemTheme, type ThemePreference } from '@/lib/theme';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { Logo } from "@/components/logo";

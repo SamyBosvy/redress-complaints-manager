@@ -39,3 +39,5 @@
 - [x] Queue upgrades (code-only): sortable columns with aria-sort, 50-per-page server pagination replacing the silent 1000-row cap, URL-search-param tab/search/filters/sort/page with removable chips, ack due/overdue badges + tab, coloured status pills in queue and case header, deadline tooltip + business-day progress bar, clickable keyboard-accessible rows; tenant-scoped count queries
 - [x] Queue verification: full typecheck clean, automatic build OK at 2026-10-30 00:31:29 UTC, 117 tests passed (25 queue tests incl. stopped-clocks-last paging, search-param validation, ack badge logic, status tones)
 - [ ] Verify queue sorting/paging/badges with a signed-in firm and mobile widths — blocked: hosted database paused
+- [x] Item #47: grouped role-aware Work/Insight/Admin navigation, shared user menu with organisation switching/Account/sign-out, mobile navigation Sheet closing on navigation; role visibility regression tests
+- [ ] Verify Item #47 signed-in navigation, switching/sign-out and mobile widths end-to-end — blocked: hosted database paused

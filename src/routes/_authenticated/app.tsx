@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/app")({
     if (!m?.org || !m.org.setup_complete) throw redirect({ to: "/setup" });
   },
   head: () => ({ meta: [{ title: "Workspace — Redress" }, { name: "description", content: "Manage your firm’s customer complaints." }, { property: "og:title", content: "Workspace — Redress" }, { property: "og:description", content: "Manage your firm’s customer complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  pendingComponent: () => <TableSkeleton />,
   component: AppLayout,
 });
 
@@ -146,7 +149,7 @@ function AppLayout() {
           </div>
         )}
         <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
-        <main className="min-w-0 flex-1 p-4 md:p-8"><Outlet /></main>
+        <main className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
     </div>
   );

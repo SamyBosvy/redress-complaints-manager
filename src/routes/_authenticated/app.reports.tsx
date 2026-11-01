@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/empty-state';
+import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/app/reports")({
     await context.queryClient.ensureQueryData(membersQuery(m!.org!.id));
   },
   head: () => ({ meta: [{ title: "Reports — Redress" }, { name: "description", content: "Complaints dashboard, breakdowns and the regulatory reporting pack." }, { property: "og:title", content: "Reports — Redress" }, { property: "og:description", content: "Complaints dashboard, breakdowns and the regulatory reporting pack." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  pendingComponent: () => <TableSkeleton columns={6} />,
   component: Reports,
 });
 
@@ -95,7 +98,7 @@ function Reports() {
         </div>
       </div>
 
-      {isLoading ? <p className="text-muted-foreground">Loading…</p> : (
+      {isLoading ? <TableSkeleton columns={6} /> : rows.length === 0 ? <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." /> : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Open complaints" value={metrics.open} />

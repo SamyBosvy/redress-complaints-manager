@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { STATUSES, type Status } from "./complaints";
 import {
   PAGE_SIZE, QUEUE_SORTS, SORT_COLUMNS, STATUS_TONES, ackState, businessDaysBetween,
-  clockProgress, pageSlices, parseQueueSearch, stoppedStatuses,
+  clockProgress, pageSlices, parseQueueSearch, stoppedStatuses, queueEmptyState,
 } from "./queue";
 
 describe("parseQueueSearch", () => {
@@ -130,3 +130,21 @@ describe("clockProgress", () => {
 });
 
 it("page size is 50", () => expect(PAGE_SIZE).toBe(50));
+
+describe('queue empty-state choice', () => {
+  it('offers first complaint and public form only to an admin on an empty firm', () => {
+    expect(queueEmptyState(0, 0, 'org_admin')).toEqual({ kind: 'empty', canLog: true, canShare: true });
+  });
+  it('hides both actions from read-only members', () => {
+    expect(queueEmptyState(0, 0, 'read_only')).toEqual({ kind: 'empty', canLog: false, canShare: false });
+  });
+  it.each(['agent', 'complaints_manager', 'qa_reviewer'] as const)('allows %s to log but not share', role => {
+    expect(queueEmptyState(0, 0, role)).toEqual({ kind: 'empty', canLog: true, canShare: false });
+  });
+  it('chooses filter clearing when firm data exists but none matches', () => {
+    expect(queueEmptyState(10, 0, 'org_admin')).toEqual({ kind: 'filtered', canLog: false, canShare: false });
+  });
+  it('has no empty state when matches exist', () => {
+    expect(queueEmptyState(10, 2, 'agent')).toBeNull();
+  });
+});

@@ -1,6 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CLOCK_RUNNING, STATUSES, type QueueRow, type Status } from "./complaints";
+import type { AppRole } from './org';
+
+export function queueEmptyState(orgTotal: number, matchingTotal: number, role: AppRole | null) {
+  if (orgTotal === 0) return { kind: 'empty' as const, canLog: role !== null && role !== 'read_only', canShare: role === 'org_admin' };
+  if (matchingTotal === 0) return { kind: 'filtered' as const, canLog: false, canShare: false };
+  return null;
+}
 
 export const PAGE_SIZE = 50;
 
@@ -233,11 +240,12 @@ export const queueCountsQuery = (orgId: string, userId: string) =>
     queryKey: ["queue-counts", orgId, userId],
     queryFn: async () => {
       const base = { userId, q: "", sort: "time_left", dir: "asc", page: 1 } as const;
-      const [atRisk, overdue, ackOverdue] = await Promise.all([
+      const [atRisk, overdue, ackOverdue, total] = await Promise.all([
         countRows(orgId, { ...base, tab: "risk" }),
         countRows(orgId, { ...base, tab: "overdue" }),
         countRows(orgId, { ...base, tab: "ack" }),
+        countRows(orgId, { ...base, tab: "all" }),
       ]);
-      return { atRisk, overdue, ackOverdue };
+      return { atRisk, overdue, ackOverdue, total };
     },
   });

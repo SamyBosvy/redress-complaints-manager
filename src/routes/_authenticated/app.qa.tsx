@@ -1,3 +1,6 @@
+import { EmptyState } from '@/components/empty-state';
+import { TableSkeleton } from '@/components/table-skeleton';
+import { CheckCheck } from 'lucide-react';
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/app/qa")({
     await context.queryClient.ensureQueryData(qaReviewsQuery(m!.org!.id));
   },
   head: () => ({ meta: [{ title: "QA review — Redress" }, { name: "description", content: "Approve final responses and review sampled complaints." }, { property: "og:title", content: "QA review — Redress" }, { property: "og:description", content: "Approve final responses and review sampled complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  pendingComponent: () => <TableSkeleton columns={5} />,
   component: QaPage,
 });
 
@@ -94,7 +98,7 @@ function QaPage() {
                 </td>
               </tr>
             ))}
-            {pending.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">Nothing awaiting review.</td></tr>}
+            {pending.length === 0 && <tr><td colSpan={5}><EmptyState icon={CheckCheck} title="Nothing awaiting review" description="There are no pending approvals or sample reviews." /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -115,7 +119,7 @@ function QaPage() {
                 <td className="hidden max-w-64 truncate px-4 py-3 text-muted-foreground md:table-cell">{r.comments ?? "—"}</td>
               </tr>
             ))}
-            {done.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No completed reviews yet.</td></tr>}
+            {done.length === 0 && <tr><td colSpan={5}><EmptyState icon={CheckCheck} title="No completed reviews yet" description="No review decisions have been recorded." /></td></tr>}
           </tbody>
         </table>
       </div>

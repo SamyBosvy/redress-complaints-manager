@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/empty-state';
+import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
@@ -11,7 +13,7 @@ import { useMembership, membershipQuery } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
 import {
-  PAGE_SIZE, ackState, parseQueueSearch, queueCountsQuery, queueQuery,
+  PAGE_SIZE, queueEmptyState, ackState, parseQueueSearch, queueCountsQuery, queueQuery,
   type QueueSearch, type QueueSort, type QueueTab,
 } from "@/lib/queue";
 
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
     ]);
   },
   head: () => ({ meta: [{ title: "Queue — Redress" }, { name: "description", content: "Track customer complaints and regulatory deadlines." }, { property: "og:title", content: "Queue — Redress" }, { property: "og:description", content: "Track customer complaints and regulatory deadlines." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  pendingComponent: () => <TableSkeleton columns={6} />,
   component: Queue,
 });
 
@@ -78,6 +81,7 @@ function Queue() {
   const currentPage = search.page ?? 1;
   const from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(total, currentPage * PAGE_SIZE);
+  const empty = queueEmptyState(counts.total, total, m.role);
   const canLog = m.role !== "read_only";
 
   return (
@@ -176,8 +180,13 @@ function Queue() {
                 </tr>
               );
             })}
-            {page.rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No complaints match this view.</td></tr>
+            {empty && (
+              <tr><td colSpan={6}><EmptyState
+                title={empty.kind === 'empty' ? 'No complaints yet' : 'No complaints match this view'}
+                description={empty.kind === 'empty' ? 'Your firm has no recorded complaints.' : 'No complaints meet the selected view criteria.'}
+                primaryAction={empty.kind === 'filtered' ? <Button onClick={() => navigate({search: {tab: 'all'}, replace: true})}>Clear filters</Button> : empty.canLog ? <Button asChild><Link to="/app/new">Log your first complaint</Link></Button> : undefined}
+                secondaryAction={empty.canShare ? <Button variant="outline" asChild><Link to="/app/forms">Share your public form</Link></Button> : undefined}
+              /></td></tr>
             )}
           </tbody>
         </table>

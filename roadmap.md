@@ -41,3 +41,6 @@
 - [ ] Verify queue sorting/paging/badges with a signed-in firm and mobile widths — blocked: hosted database paused
 - [x] Item #47: grouped role-aware Work/Insight/Admin navigation, shared user menu with organisation switching/Account/sign-out, mobile navigation Sheet closing on navigation; role visibility regression tests
 - [ ] Verify Item #47 signed-in navigation, switching/sign-out and mobile widths end-to-end — blocked: hosted database paused
+
+- [x] Item #49: shared empty states and reduced-motion-safe table skeletons; queue empty-firm/filter distinction and role actions, QA/Templates/Reports/Audit/Privacy/invitations empty states, authenticated navigation pending placeholders.
+- [ ] Verify Item #49 live signed-in empty/loading states — blocked: hosted database stays paused.

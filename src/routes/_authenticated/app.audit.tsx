@@ -1,3 +1,6 @@
+import { EmptyState } from '@/components/empty-state';
+import { TableSkeleton, TableSkeletonRows } from '@/components/table-skeleton';
+import { History } from 'lucide-react';
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/app/audit")({
     await context.queryClient.ensureQueryData(membersQuery(m!.org!.id));
   },
   head: () => ({ meta: [{ title: "Audit log — Redress" }, { name: "description", content: "Review the immutable audit history for your firm." }, { property: "og:title", content: "Audit log — Redress" }, { property: "og:description", content: "Review the immutable audit history for your firm." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  pendingComponent: () => <TableSkeleton columns={5} />,
   component: Audit,
 });
 
@@ -100,6 +104,7 @@ function Audit() {
             </tr>
           </thead>
           <tbody>
+            {isLoading && <TableSkeletonRows columns={5} />}
             {data.map((r) => {
               const ch = changed(r.before, r.after);
               const a = r.after as any, b = r.before as any;
@@ -123,7 +128,7 @@ function Audit() {
                 </tr>
               );
             })}
-            {!isLoading && data.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No entries for these filters.</td></tr>}
+            {!isLoading && data.length === 0 && <tr><td colSpan={5}><EmptyState icon={History} title="No entries for these filters" description="No audit events match the selected dates and filters." /></td></tr>}
           </tbody>
         </table>
       </div>

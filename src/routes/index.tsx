@@ -1,18 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
+import { getRequestOrigin } from "@/lib/origin.functions";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Redress — Complaints management for payment providers" },
-      { name: "description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
-      { property: "og:title", content: "Redress — Complaints management for payment providers" },
-      { property: "og:description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  loader: () => getRequestOrigin(),
+  head: ({ loaderData: origin }) => {
+    const image = `${origin}/og-image.png`;
+    return {
+      meta: [
+        { title: "Redress — Complaints management for payment providers" },
+        { name: "description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
+        { property: "og:title", content: "Redress — Complaints management for payment providers" },
+        { property: "og:description", content: "Handle every customer complaint within PSD2 deadlines, with a full audit trail and regulator-ready reporting." },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: image },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:alt", content: "Redress — every complaint answered fairly, and on time." },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: image },
+      ],
+    };
+  },
   component: Index,
 });
 

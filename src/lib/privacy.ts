@@ -22,6 +22,7 @@ export function retentionState(c: { status: string; closed_at: string | null; le
 }
 export function deletionDate(requestedAt: string) { return new Date(new Date(requestedAt).getTime() + 30 * 86400000).toISOString(); }
 export const PRIVACY_WARNING = 'Working-record erasure removes customer details, correspondence, internal notes and attachments. Historical immutable audit records and backups may still contain personal data. This is not a complete GDPR erasure; legal review is required.';
-export function privacyHead(title: string, description: string) {
-  return { meta: [{ title: `${title} — Redress` }, { name: 'description', content: description }, { property: 'og:title', content: `${title} — Redress` }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' }] };
+export function privacyHead(title: string, description: string, origin?: string) {
+  const image = origin ? `${origin}/og-image.png` : undefined;
+  return { meta: [{ title: `${title} — Redress` }, { name: 'description', content: description }, { property: 'og:title', content: `${title} — Redress` }, { property: 'og:description', content: description }, { property: 'og:type', content: 'website' }, ...(image ? [{ property: 'og:image', content: image }, { property: 'og:image:width', content: '1200' }, { property: 'og:image:height', content: '630' }, { property: 'og:image:alt', content: 'Redress — every complaint answered fairly, and on time.' }, { name: 'twitter:image', content: image }] : []), { name: 'twitter:card', content: image ? 'summary_large_image' : 'summary' }] };
 }

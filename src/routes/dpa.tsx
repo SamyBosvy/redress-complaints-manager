@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { PolicyDocument } from '@/components/policy-document';
 import { privacyHead } from '@/lib/privacy';
-export const Route=createFileRoute('/dpa')({head:()=>privacyHead('Data processing agreement','Draft data processing agreement for firms using Redress.'),component:()=> <PolicyDocument title="Data processing agreement" sections={[
+import { getRequestOrigin } from '@/lib/origin.functions';
+export const Route=createFileRoute('/dpa')({loader:()=>getRequestOrigin(),head:({loaderData})=>privacyHead('Data processing agreement','Draft data processing agreement for firms using Redress.',loaderData),component:()=> <PolicyDocument title="Data processing agreement" sections={[
   {heading:'Parties and instructions',text:'[Insert controller and processor legal entities, addresses, effective date and signatures.] The customer firm acts as controller of complaint data; Redress processes that data only under documented instructions and applicable law.'},
   {heading:'Processing scope',text:'The service records complaints, correspondence, evidence, outcomes, statutory deadlines and audit history. Data subjects include complainants, representatives and authorised staff. [Specify sensitive-data categories, purposes and duration.]'},
   {heading:'Security and confidentiality',text:'Access is authenticated, role-scoped and organisation-isolated. Files are held in private storage. Audit entries are append-only. [Add the verified technical and organisational measures, incident response obligations and breach notification deadlines.]'},

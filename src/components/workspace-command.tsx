@@ -60,7 +60,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, open
             </CommandGroup>
             <CommandGroup heading="Actions">
               {canNew && matches('New complaint') && <CommandItem value="action-new" onSelect={() => go('/app/new')}>New complaint</CommandItem>}
-              {themes.filter(value => matches(`Toggle theme ${value}`)).map(value => <CommandItem key={value} value={`theme-${value}`} onSelect={() => { changeTheme(value); setOpen(false); }}>Toggle theme — {value[0].toUpperCase() + value.slice(1)}{theme === value ? ' ✓' : ''}</CommandItem>)}
+              {themes.filter(value => matches(`Toggle theme ${value}`)).map(value => <CommandItem key={value} value={`theme-${value}`} onSelect={() => { changeTheme(value); setOpen(false); }}>Toggle theme — {value.charAt(0).toUpperCase() + value.slice(1)}{theme === value ? ' ✓' : ''}</CommandItem>)}
             </CommandGroup>
             {text.trim().length >= 3 && <CommandGroup heading="Complaints">
               {debounced !== text.trim() || search.isFetching ? <p className="px-2 py-3 text-sm text-muted-foreground" role="status">Searching…</p> : search.isError ? <p className="px-2 py-3 text-sm text-muted-foreground" role="status">Couldn't search complaints</p> : <>

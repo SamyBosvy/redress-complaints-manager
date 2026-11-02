@@ -43,3 +43,4 @@
 - App shell desktop/sidebar and mobile Sheet share grouped navigation from appNavigation and the same user menu; preserve existing per-link role visibility. Why: prevent navigation permission drift between screen sizes.
 
 - Shared EmptyState and TableSkeleton components provide empty and pending workspace views; queue emptiness uses an unfiltered org-scoped count and a tested role-action helper. Why: distinguish empty firms from filtered views consistently, with reduced-motion-safe loading placeholders.
+- Workspace palette and shortcuts reuse appNavigation for role visibility; complaint search reuses queue filters with explicit org scope and eight-result cap. Why: preserve navigation permissions and tenant isolation without separate rules.

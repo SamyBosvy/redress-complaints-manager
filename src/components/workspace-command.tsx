@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Command, CommandInput, CommandList, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { complaintSearchQuery } from '@/lib/queue';
@@ -10,12 +8,12 @@ import { createShortcutHandler, palettePages, shortcutsBlocked } from '@/lib/sho
 import type { AppRole } from '@/lib/org';
 import type { ThemePreference } from '@/lib/theme';
 
-export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme }: {
+export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, open, setOpen }: {
   role: AppRole | null | undefined; orgId: string; userId: string;
   theme: ThemePreference; changeTheme: (theme: ThemePreference) => void;
+  open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [help, setHelp] = useState(false);
   const [text, setText] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -44,18 +42,12 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme }: {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [role, navigate, open]);
+  }, [role, navigate, open, setOpen]);
   const needle = text.toLowerCase().trim();
   const matches = (label: string) => !needle || label.toLowerCase().includes(needle);
   const themes = ['light', 'dark', 'system'] as const;
   const go = (to: (typeof pages)[number]['to']) => { setOpen(false); void navigate({ to }); };
   return <>
-    <Button variant="outline" onClick={() => setOpen(true)} aria-label="Search commands and complaints" className="mx-3 mb-1 hidden justify-between md:flex">
-      <Search aria-hidden="true" className="h-4 w-4" />Search… <kbd className="ml-auto text-xs text-muted-foreground">⌘K</kbd>
-    </Button>
-    <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label="Search commands and complaints" className="md:hidden">
-      <Search aria-hidden="true" className="h-4 w-4" /><span>Search…</span><kbd className="text-xs text-muted-foreground">⌘K</kbd>
-    </Button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-h-[90dvh] max-w-[min(32rem,calc(100vw-1rem))] gap-0 overflow-hidden p-0">
         <DialogTitle className="sr-only">Search commands and complaints</DialogTitle>

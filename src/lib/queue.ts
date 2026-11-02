@@ -234,6 +234,19 @@ export const queueQuery = (orgId: string, p: QueueParams) =>
     queryFn: () => fetchQueuePage(orgId, p),
   });
 
+/** Palette search reuses queue filters, with explicit tenant scope and a hard result cap. */
+export const complaintSearchQuery = (orgId: string, userId: string, text: string) => queryOptions({
+  queryKey: ['complaint-search', orgId, userId, text],
+  queryFn: async () => {
+    const { data, error } = await applyFilters(
+      supabase.from('complaint_queue').select('id, reference, complainant_name, customer_ref').eq('org_id', orgId),
+      { tab: 'all', userId, q: text },
+    ).order('reference').limit(8);
+    if (error) throw error;
+    return data;
+  },
+});
+
 /** Unfiltered tab badge counts for the queue header. */
 export const queueCountsQuery = (orgId: string, userId: string) =>
   queryOptions({

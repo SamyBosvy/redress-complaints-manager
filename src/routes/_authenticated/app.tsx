@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { TableSkeleton } from '@/components/table-skeleton';
+import { WorkspaceCommand } from '@/components/workspace-command';
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
@@ -36,12 +37,14 @@ function AppLayout() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>('system');
   useEffect(() => {
     setTheme(getThemePreference());
     return watchSystemTheme(() => { if (getThemePreference() === 'system') applyTheme('system'); });
   }, []);
   const organisations = m?.organisations.filter(x=>x.active) ?? [];
+  const changeTheme = (value: ThemePreference) => { setTheme(value); setThemePreference(value); };
   async function signOut() {
     setBusy(true);
     try {await clearAndSignOut(qc); await navigate({to:'/auth',search:{},replace:true});}
@@ -107,7 +110,7 @@ function AppLayout() {
           </>}
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={theme} onValueChange={v => { const t = v as ThemePreference; setTheme(t); setThemePreference(t); }}>
+          <DropdownMenuRadioGroup value={theme} onValueChange={v => { if (v === 'light' || v === 'dark' || v === 'system') changeTheme(v); }}>
             <DropdownMenuRadioItem value="light" className="min-h-11">Light</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="dark" className="min-h-11">Dark</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="system" className="min-h-11">System</DropdownMenuRadioItem>
@@ -124,6 +127,7 @@ function AppLayout() {
     <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
       <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="px-5 py-4"><Logo className="text-sidebar-accent-foreground" /><p className="mt-1 truncate text-xs">{m?.org?.legal_name}</p></div>
+        <Button variant="outline" className="mx-3 justify-between" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… <kbd className="text-xs text-muted-foreground">⌘K</kbd></Button>
         {groupedNav}
         {userMenu}
       </aside>
@@ -131,6 +135,7 @@ function AppLayout() {
         <header className="flex min-w-0 items-center justify-between gap-2 border-b px-4 py-2 md:hidden">
           <Logo />
           <div className="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" className="px-1 text-xs" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… <kbd>⌘K</kbd></Button>
             <NotificationBell />
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild><Button variant="ghost" size="icon" aria-label="Open navigation menu"><Menu aria-hidden="true" className="h-5 w-5" /></Button></SheetTrigger>
@@ -151,6 +156,7 @@ function AppLayout() {
         <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
         <main className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
+      <WorkspaceCommand role={m?.role} orgId={m?.org?.id ?? ''} userId={m?.user.id ?? ''} theme={theme} changeTheme={changeTheme} open={commandOpen} setOpen={setCommandOpen} />
     </div>
   );
 }

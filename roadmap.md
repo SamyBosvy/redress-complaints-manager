@@ -44,3 +44,5 @@
 
 - [x] Item #49: shared empty states and reduced-motion-safe table skeletons; queue empty-firm/filter distinction and role actions, QA/Templates/Reports/Audit/Privacy/invitations empty states, authenticated navigation pending placeholders.
 - [ ] Verify Item #49 live signed-in empty/loading states — blocked: hosted database stays paused.
+- [x] Item #21: role-aware command palette, 250ms tenant-scoped complaint search (max 8), desktop/mobile search buttons, guarded global shortcuts and queue J/K row focus.
+- [ ] Verify Item #21 live complaint search and signed-in mobile/keyboard navigation — blocked: hosted database remains paused.

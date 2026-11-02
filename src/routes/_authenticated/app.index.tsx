@@ -1,4 +1,6 @@
 import { EmptyState } from '@/components/empty-state';
+import { useEffect, useRef } from 'react';
+import { shortcutsBlocked } from '@/lib/shortcuts';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -57,6 +59,24 @@ function Queue() {
     navigate({ search: (prev) => ({ ...prev, ...patch, page: patch.page ?? 1 }), replace: true });
   const setTab = (v: string) => update({ tab: v as QueueTab });
   const openCase = (id: string) => navigate({ to: "/app/c/$id", params: { id } });
+
+  const tableRef = useRef<HTMLTableElement>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (shortcutsBlocked(event.target) || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+      const key = event.key.toLowerCase();
+      if (key !== 'j' && key !== 'k') return;
+      const rows = Array.from(tableRef.current?.querySelectorAll<HTMLTableRowElement>('tbody tr[role="link"]') ?? []);
+      if (!rows.length) return;
+      const index = rows.findIndex(row => row === document.activeElement || row.contains(document.activeElement));
+      const next = index < 0 ? (key === 'j' ? 0 : rows.length - 1) : Math.max(0, Math.min(rows.length - 1, index + (key === 'j' ? 1 : -1)));
+      event.preventDefault();
+      rows[next]?.focus();
+      rows[next]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [page.rows]);
 
   const countryOpts = countries.length
     ? Object.fromEntries(countries.map((c) => [c.country_code, COUNTRIES[c.country_code] ?? c.country_code]))
@@ -139,7 +159,7 @@ function Queue() {
       )}
 
       <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
-        <table className="w-full text-sm">
+        <table ref={tableRef} className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <SortTh label="Reference" sortKey="reference" search={search} update={update} />
@@ -157,7 +177,7 @@ function Queue() {
                 <tr key={r.id} tabIndex={0} role="link" aria-label={`Open complaint ${r.reference}`}
                   onClick={() => openCase(r.id!)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openCase(r.id!); } }}
-                  className="cursor-pointer border-b last:border-0 hover:bg-muted/40 focus:bg-muted/40 focus:outline-none">
+                  className="cursor-pointer border-b last:border-0 hover:bg-muted/40 focus:bg-accent focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring">
                   <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
                     <Link to="/app/c/$id" params={{ id: r.id! }} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
                       {r.reference}

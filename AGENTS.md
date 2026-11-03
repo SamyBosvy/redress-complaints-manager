@@ -42,5 +42,6 @@
 - Queue pagination is server-side (50/page) via pageSlices, which segments running vs stopped clocks so stopped clocks always sort last across pages; count queries must be org-scoped. Why: the "All" tab must never hide rows and stopped clocks must not interleave.
 - App shell desktop/sidebar and mobile Sheet share grouped navigation from appNavigation and the same user menu; preserve existing per-link role visibility. Why: prevent navigation permission drift between screen sizes.
 
-- Shared EmptyState and TableSkeleton components provide empty and pending workspace views; queue emptiness uses an unfiltered org-scoped count and a tested role-action helper. Why: distinguish empty firms from filtered views consistently, with reduced-motion-safe loading placeholders.
+- EmptyState/TableSkeleton share reduced-motion-safe empty/loading views; queue uses an unfiltered org count and tested role actions. Why: distinguish empty firms from filters.
+- TrialBanner uses UTC-day/expiry logic and org-scoped session dismissal, never entitlement locks. Why: billing remains independent.
 - Workspace palette and shortcuts reuse appNavigation for role visibility; complaint search reuses queue filters with explicit org scope and eight-result cap. Why: preserve navigation permissions and tenant isolation without separate rules.

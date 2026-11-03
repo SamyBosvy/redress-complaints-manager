@@ -24,6 +24,8 @@
 - [ ] Verify Users/invite acceptance, Settings, switching, account/recovery/2FA, case recalculation and sign-out end-to-end — blocked: hosted database inaccessible and session minting fails; concurrency and hosted RLS/audit behavior remain unverified
 
 ## Current scoped completion
+- [x] Item #52: informational trial banner, UTC-day urgency, session dismissal above two days, no-price plan dialog and admin contact placeholder; no entitlement locks or billing changes.
+- [ ] Verify Item #52 signed-in banner/dialog and mobile layout — blocked: hosted database remains paused. Replace hello@example.com with the approved contact address before launch.
 - [x] Code-only PDF/currency work: shared Unicode font, firm-address letter header, per-currency report figures/CSV/PDF and Outcome currency selectors
 - [x] Local verification: all 92 tests passed; automatic full typecheck/build OK at 2026-10-28 02:43:54 UTC; Polish letter (1 page), French letter (2 pages) and regulatory pack (1 page) rendered to PNG and every page visually checked
 - [ ] Compliance workflow database/UI hardening — blocked: hosted database paused; staged sql/0015_compliance_hardening.sql remains untouched

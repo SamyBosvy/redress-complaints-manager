@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { TableSkeleton } from '@/components/table-skeleton';
+import { TrialBanner } from '@/components/trial-banner';
 import { WorkspaceCommand } from '@/components/workspace-command';
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
@@ -64,7 +65,6 @@ function AppLayout() {
     } catch {toast.error('Could not switch organisation. Please try again.');}
     finally {setBusy(false);}
   }
-  const trialDays = m?.org ? Math.ceil((new Date(m.org.trial_ends_at).getTime() - Date.now()) / 86400000) : 0;
 
   const icons = { queue: Inbox, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
   const fullName = m?.user.user_metadata?.['full_name'];
@@ -148,11 +148,7 @@ function AppLayout() {
             </Sheet>
           </div>
         </header>
-        {trialDays > 0 && (
-          <div className="border-b bg-accent px-4 py-2 text-sm text-accent-foreground md:px-6">
-            Free trial: <span className="tabular font-medium">{trialDays}</span> days remaining. All Growth features included.
-          </div>
-        )}
+        {m?.org && <TrialBanner key={m.org.id} orgId={m.org.id} endsAt={m.org.trial_ends_at} isAdmin={m.role === 'org_admin'} />}
         <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
         <main className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>

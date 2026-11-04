@@ -115,7 +115,7 @@ function Queue() {
             {counts.ackOverdue > 0 ? ` ${counts.ackOverdue} acknowledgements overdue.` : ""}
           </p>
         </div>
-        {canLog && <Button asChild><Link to="/app/new"><Plus className="h-4 w-4" /> New complaint</Link></Button>}
+        {canLog && <Button asChild><Link to="/app/new"><Plus aria-hidden="true" className="h-4 w-4" /> New complaint</Link></Button>}
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">
@@ -131,7 +131,7 @@ function Queue() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input className="pl-8" placeholder="Reference, name or customer ID" value={search.q ?? ""}
             onChange={(e) => update({ q: e.target.value })} />
         </div>
@@ -150,7 +150,7 @@ function Queue() {
               <span className="truncate">{c.label}</span>
               <button type="button" aria-label={`Remove filter ${c.label}`} onClick={() => update({ [c.key]: c.key === "q" ? "" : undefined })}
                 className="shrink-0 rounded-full p-0.5 hover:bg-muted">
-                <X className="h-3 w-3" />
+                <X aria-hidden="true" className="h-3 w-3" />
               </button>
             </span>
           ))}
@@ -164,7 +164,7 @@ function Queue() {
             <tr>
               <SortTh label="Reference" sortKey="reference" search={search} update={update} />
               <SortTh label="Customer" sortKey="customer" search={search} update={update} />
-              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Category</th>
+              <th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">Category</th>
               <SortTh label="Status" sortKey="status" search={search} update={update} />
               <SortTh label="Agent" sortKey="agent" search={search} update={update} className="hidden lg:table-cell" />
               <SortTh label="Time left" sortKey="time_left" search={search} update={update} />
@@ -214,11 +214,11 @@ function Queue() {
           <p className="text-muted-foreground tabular">{total === 0 ? "No complaints" : `Showing ${from}–${to} of ${total}`}</p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => update({ page: currentPage - 1 })}>
-              <ChevronLeft className="h-4 w-4" /> Previous
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" /> Previous
             </Button>
             <span className="tabular text-muted-foreground">Page {currentPage} of {pages}</span>
             <Button variant="outline" size="sm" disabled={currentPage >= pages} onClick={() => update({ page: currentPage + 1 })}>
-              Next <ChevronRight className="h-4 w-4" />
+              Next <ChevronRight aria-hidden="true" className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -237,11 +237,11 @@ function SortTh({ label, sortKey, search, update, className }: {
   const active = search.sort === sortKey;
   const nextDir = active && search.dir === "asc" ? "desc" : "asc";
   return (
-    <th aria-sort={active ? (search.dir === "asc" ? "ascending" : "descending") : undefined} className={`px-4 py-2.5 font-medium ${className ?? ""}`}>
+    <th scope="col" aria-sort={active ? (search.dir === "asc" ? "ascending" : "descending") : undefined} className={`px-4 py-2.5 font-medium ${className ?? ""}`}>
       <button type="button" onClick={() => update({ sort: sortKey, dir: nextDir })}
         className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground">
         {label}
-        {active ? (search.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+        {active ? (search.dir === "asc" ? <ArrowUp aria-hidden="true" className="h-3 w-3" /> : <ArrowDown aria-hidden="true" className="h-3 w-3" />) : <ArrowUpDown aria-hidden="true" className="h-3 w-3 opacity-40" />}
       </button>
     </th>
   );
@@ -250,7 +250,7 @@ function SortTh({ label, sortKey, search, update, className }: {
 function Filter({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: Record<string, string> }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-auto min-w-32"><SelectValue placeholder={label} /></SelectTrigger>
+      <SelectTrigger aria-label={label} className="w-auto min-w-32"><SelectValue placeholder={label} /></SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>All {label.toLowerCase()}</SelectItem>
         {Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}

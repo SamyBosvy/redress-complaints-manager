@@ -1,3 +1,4 @@
+import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -115,7 +116,7 @@ function NewComplaint() {
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={v.vulnerable} onCheckedChange={(c) => set("vulnerable")(!!c)} /> Vulnerable customer
           </label>
-          {v.vulnerable && <Input placeholder="Note (optional)" value={v.vulnerable_note} onChange={(e) => set("vulnerable_note")(e.target.value)} />}
+          {v.vulnerable && <Input aria-label="Additional support note (optional)" placeholder="Note (optional)" value={v.vulnerable_note} onChange={(e) => set("vulnerable_note")(e.target.value)} />}
         </div>
       </Section>
 
@@ -150,7 +151,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+  return <AccessibleField label={label}>{children}</AccessibleField>;
 }
 function Pick({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: Record<string, string> }) {
   return (

@@ -1,3 +1,4 @@
+import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -109,7 +110,7 @@ function CaseView() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <Link to="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Queue</Link>
+      <Link to="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft aria-hidden="true" className="h-4 w-4" /> Queue</Link>
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
@@ -130,7 +131,7 @@ function CaseView() {
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Status">
                 <Select value={status} disabled={!canEdit} onValueChange={(v) => update({ status: v as Status })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label="Letter kind"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(STATUSES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
@@ -176,10 +177,10 @@ function CaseView() {
             <p className="mb-2 text-xs text-muted-foreground">Never shown to the customer.</p>
             {canEdit && (
               <div className="space-y-2">
-                <Textarea rows={3} placeholder="Add an internal note" value={note} onChange={(e) => setNote(e.target.value)} />
+                <Textarea aria-label="Internal note" rows={3} placeholder="Add an internal note" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div className="flex justify-between">
                   <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-primary hover:underline">
-                    <Paperclip className="h-4 w-4" /> Attach file
+                    <Paperclip aria-hidden="true" className="h-4 w-4" /> Attach file
                     <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
                   </label>
                   <Button size="sm" onClick={addNote} disabled={!note.trim()}>Add note</Button>
@@ -361,26 +362,26 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
               <SelectContent>{Object.entries(TEMPLATE_KINDS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={lang} onValueChange={setLang}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Letter language"><SelectValue /></SelectTrigger>
               <SelectContent>{Object.entries(LANGUAGES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           {!tpl && <p className="text-sm text-warning">No {LANGUAGES[lang as keyof typeof LANGUAGES]} version of this template yet. Showing English.</p>}
           {adrMissing && <p className="text-sm text-warning">This final response template has no ADR referral block.</p>}
           {!adr?.adr_name && isFinal(kind) && <p className="text-sm text-warning">No ADR body is set for this customer's country.</p>}
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
-          <Textarea rows={14} value={body} onChange={(e) => setBody(e.target.value)} />
+          <Input aria-label="Letter subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <Textarea aria-label="Letter body" rows={14} value={body} onChange={(e) => setBody(e.target.value)} />
           {kind === "holding" && (
             <div className="space-y-1.5">
-              <Label>Reason for the delay *</Label>
-              <Input value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)} />
+              <Label htmlFor="letter-delay-reason">Reason for the delay *</Label>
+              <Input id="letter-delay-reason" value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)} />
               <p className="text-xs text-muted-foreground">Sending a holding response moves the deadline to {formatDate(c.extended_due)}.</p>
             </div>
           )}
         </div>
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy className="h-4 w-4" /> Copy</Button>
-          <Button variant="outline" onClick={pdf}><FileDown className="h-4 w-4" /> Download PDF</Button>
+          <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
+          <Button variant="outline" onClick={pdf}><FileDown aria-hidden="true" className="h-4 w-4" /> Download PDF</Button>
           <Button onClick={markSent}>Mark as sent</Button>
         </DialogFooter>
       </DialogContent>
@@ -392,7 +393,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   return <section className="rounded-lg border bg-card p-5"><h2 className="mb-4 text-sm font-semibold">{title}</h2>{children}</section>;
 }
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+  return <AccessibleField label={label}>{children}</AccessibleField>;
 }
 function Item({ k, v }: { k: string; v: string | null | undefined }) {
   return <div><dt className="text-xs text-muted-foreground">{k}</dt><dd>{v || "—"}</dd></div>;

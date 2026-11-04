@@ -1,9 +1,11 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FieldContext } from '@/lib/field-context';
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
   ({ className, ...props }, ref) => {
+    const field = React.useContext(FieldContext);
     return (
       <textarea
         className={cn(
@@ -11,6 +13,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           className,
         )}
         ref={ref}
+        id={props['aria-label'] ? undefined : field}
+        aria-labelledby={field && !props['aria-label'] ? `${field}-label` : undefined}
         {...props}
       />
     );

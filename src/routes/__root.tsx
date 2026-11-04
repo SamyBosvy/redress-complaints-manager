@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 // Inline, pre-paint: applies the stored theme before first render to avoid a flash.
-const themeInitScript = `(function(){try{var t=localStorage.getItem('redress-theme');if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+const themeInitScript = `(function(){try{var t=localStorage.getItem('redress-theme');if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}var c='comfortable';try{if(localStorage.getItem('redress-density')==='compact')c='compact';}catch(e){}document.documentElement.setAttribute('data-density',c);})();`;
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -115,6 +115,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
         {children}
         <Scripts />
       </body>
@@ -125,6 +126,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  useEffect(() => {
+    // Public routes own their main landmark; account flows use their first content wrapper.
+    const target = document.querySelector('main') ?? document.querySelector('#page-content');
+    if (target instanceof HTMLElement) { target.id = 'main-content'; target.tabIndex = -1; }
+  }, [router.state.location.pathname]);
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
@@ -139,7 +146,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Outlet />
+        <div id="page-content"><Outlet /></div>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

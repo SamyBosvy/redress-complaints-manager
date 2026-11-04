@@ -93,8 +93,8 @@ function Reports() {
           <p className="mt-1 text-sm text-muted-foreground">Volumes, deadlines, outcomes and root causes for the selected period.</p>
         </div>
         <div className="flex items-end gap-3">
-          <div className="space-y-1"><Label className="text-xs">From</Label><Input type="date" className="tabular" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">To</Label><Input type="date" className="tabular" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="report-from" className="text-xs">From</Label><Input id="report-from" type="date" className="tabular" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="report-to" className="text-xs">To</Label><Input id="report-to" type="date" className="tabular" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ function Reports() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">Breakdown</CardTitle>
               <Select value={dim} onValueChange={(v) => setDim(v as typeof dim)}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Breakdown dimension" className="w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="product">By product</SelectItem>
                   <SelectItem value="category">By category</SelectItem>
@@ -178,12 +178,12 @@ function Reports() {
               <table className="w-full text-sm">
                 <thead className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">{{ product: "Product", category: "Category", country: "Country", channel: "Channel", agent: "Agent" }[dim]}</th>
-                    <th className="py-2 pr-4 font-medium">Total</th>
-                    <th className="py-2 pr-4 font-medium">Resolved</th>
-                    <th className="py-2 pr-4 font-medium">Within deadline</th>
-                    <th className="py-2 pr-4 font-medium">Upheld / partial</th>
-                    <th className="py-2 font-medium">Redress + goodwill</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">{{ product: "Product", category: "Category", country: "Country", channel: "Channel", agent: "Agent" }[dim]}</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Total</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Resolved</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Within deadline</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Upheld / partial</th>
+                    <th scope="col" className="py-2 font-medium">Redress + goodwill</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -209,8 +209,8 @@ function Reports() {
               <p className="mr-auto max-w-xl text-sm text-muted-foreground">
                 Totals by product and category, outcomes, within-deadline percentage and redress paid, for {from} to {to}.
               </p>
-              <Button variant="outline" onClick={exportPackCsv} disabled={!rows.length}><Download className="h-4 w-4" /> Export CSV</Button>
-              <Button variant="outline" onClick={exportPackPdf} disabled={!rows.length}><FileText className="h-4 w-4" /> Export PDF</Button>
+              <Button variant="outline" onClick={exportPackCsv} disabled={!rows.length}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button>
+              <Button variant="outline" onClick={exportPackPdf} disabled={!rows.length}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button>
             </CardContent>
           </Card>
         </>

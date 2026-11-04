@@ -1,9 +1,11 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FieldContext } from '@/lib/field-context';
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    const field = React.useContext(FieldContext);
     return (
       <input
         type={type}
@@ -12,6 +14,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        id={props['aria-label'] ? undefined : field}
+        aria-labelledby={field && !props['aria-label'] ? `${field}-label` : undefined}
         {...props}
       />
     );

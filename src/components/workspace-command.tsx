@@ -7,10 +7,12 @@ import { complaintSearchQuery } from '@/lib/queue';
 import { createShortcutHandler, palettePages, shortcutsBlocked } from '@/lib/shortcuts';
 import type { AppRole } from '@/lib/org';
 import type { ThemePreference } from '@/lib/theme';
+import type { DensityPreference } from '@/lib/density';
 
-export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, open, setOpen }: {
+export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, density, changeDensity, open, setOpen }: {
   role: AppRole | null | undefined; orgId: string; userId: string;
   theme: ThemePreference; changeTheme: (theme: ThemePreference) => void;
+  density: DensityPreference; changeDensity: (density: DensityPreference) => void;
   open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const navigate = useNavigate();
@@ -59,6 +61,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, open
               {pages.filter(page => matches(page.label)).map(page => <CommandItem key={page.to} value={page.to} onSelect={() => go(page.to)}>{page.label}</CommandItem>)}
             </CommandGroup>
             <CommandGroup heading="Actions">
+              {(['comfortable', 'compact'] as const).filter(value => matches(`Density ${value}`)).map(value => <CommandItem key={value} value={`density-${value}`} onSelect={() => { changeDensity(value); setOpen(false); }}>Density — {value === 'compact' ? 'Compact' : 'Comfortable'}{density === value ? ' ✓' : ''}</CommandItem>)}
               {canNew && matches('New complaint') && <CommandItem value="action-new" onSelect={() => go('/app/new')}>New complaint</CommandItem>}
               {themes.filter(value => matches(`Toggle theme ${value}`)).map(value => <CommandItem key={value} value={`theme-${value}`} onSelect={() => { changeTheme(value); setOpen(false); }}>Toggle theme — {value.charAt(0).toUpperCase() + value.slice(1)}{theme === value ? ' ✓' : ''}</CommandItem>)}
             </CommandGroup>

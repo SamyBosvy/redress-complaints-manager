@@ -120,6 +120,12 @@ function AppLayout() {
             <DropdownMenuRadioItem value="system" className="min-h-11">System</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuLabel>Density</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={density} onValueChange={v => { if (v === 'comfortable' || v === 'compact') changeDensity(v); }}>
+            <DropdownMenuRadioItem value="comfortable" className="min-h-11">Comfortable</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="compact" className="min-h-11">Compact</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
           <DropdownMenuItem asChild className="min-h-11"><Link to="/account" onClick={() => setMenuOpen(false)}><UserRound aria-hidden="true" />Account</Link></DropdownMenuItem>
           <DropdownMenuItem className="min-h-11" disabled={busy} onSelect={() => { void signOut(); }}><LogOut aria-hidden="true" />Sign out</DropdownMenuItem>
         </DropdownMenuContent>
@@ -154,9 +160,9 @@ function AppLayout() {
         </header>
         {m?.org && <TrialBanner key={m.org.id} orgId={m.org.id} endsAt={m.org.trial_ends_at} isAdmin={m.role === 'org_admin'} />}
         <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
-        <main className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
-      <WorkspaceCommand role={m?.role} orgId={m?.org?.id ?? ''} userId={m?.user.id ?? ''} theme={theme} changeTheme={changeTheme} open={commandOpen} setOpen={setCommandOpen} />
+      <WorkspaceCommand role={m?.role} orgId={m?.org?.id ?? ''} userId={m?.user.id ?? ''} theme={theme} changeTheme={changeTheme} density={density} changeDensity={changeDensity} open={commandOpen} setOpen={setCommandOpen} />
     </div>
   );
 }

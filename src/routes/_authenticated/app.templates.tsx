@@ -91,12 +91,12 @@ function Templates() {
             </div>
           )}
           <div className="mt-4 space-y-1.5">
-            <Label>Subject</Label>
-            <Input value={subject} disabled={!canEdit} onChange={(e) => setSubject(e.target.value)} />
+            <Label htmlFor="template-subject">Subject</Label>
+            <Input id="template-subject" value={subject} disabled={!canEdit} onChange={(e) => setSubject(e.target.value)} />
           </div>
           <div className="mt-4 space-y-1.5">
-            <Label>Body</Label>
-            <Textarea rows={16} className="font-mono text-sm" value={body} disabled={!canEdit} onChange={(e) => setBody(e.target.value)} />
+            <Label htmlFor="template-body">Body</Label>
+            <Textarea id="template-body" rows={16} className="font-mono text-sm" value={body} disabled={!canEdit} onChange={(e) => setBody(e.target.value)} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Merge fields: {MERGE_FIELDS.map((f) => `{${f}}`).join("  ")}

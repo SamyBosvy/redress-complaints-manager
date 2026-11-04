@@ -1,3 +1,4 @@
+import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -224,7 +225,7 @@ function Setup() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+  return <AccessibleField label={label}>{children}</AccessibleField>;
 }
 
 function Num({ value, onChange }: { value: number; onChange: (v: number) => void }) {

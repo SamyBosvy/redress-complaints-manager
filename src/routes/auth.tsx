@@ -90,7 +90,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+    <main id="main-content" tabIndex={-1} className="flex min-h-dvh items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-between"><Link to="/"><Logo /></Link></div>
         <h1 className="mt-8 text-2xl font-semibold">{signup ? "Start your free trial" : "Sign in"}</h1>
@@ -125,6 +125,6 @@ function AuthPage() {
         </Button>
         <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground"><Link to="/privacy" className="hover:text-primary">Privacy policy</Link><Link to="/dpa" className="hover:text-primary">Data processing agreement</Link></div>
       </div>
-    </div>
+    </main>
   );
 }

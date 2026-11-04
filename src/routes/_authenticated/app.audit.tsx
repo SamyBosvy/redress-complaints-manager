@@ -88,19 +88,19 @@ function Audit() {
         <Pick label="Area" value={f.table} onChange={(v) => setF({ ...f, table: v })} options={TABLES} />
         <Pick label="Action" value={f.action} onChange={(v) => setF({ ...f, action: v })} options={{ insert: "Created", update: "Changed", delete: "Deleted" }} />
         <Pick label="User" value={f.actor} onChange={(v) => setF({ ...f, actor: v })} options={Object.fromEntries(members.map((x) => [x.user_id, x.name]))} />
-        <div className="space-y-1"><Label className="text-xs">From</Label><Input type="date" className="tabular" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} /></div>
-        <div className="space-y-1"><Label className="text-xs">To</Label><Input type="date" className="tabular" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} /></div>
+        <div className="space-y-1"><Label htmlFor="audit-from" className="text-xs">From</Label><Input id="audit-from" type="date" className="tabular" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} /></div>
+        <div className="space-y-1"><Label htmlFor="audit-to" className="text-xs">To</Label><Input id="audit-to" type="date" className="tabular" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} /></div>
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-2.5 font-medium">When</th>
-              <th className="px-4 py-2.5 font-medium">User</th>
-              <th className="px-4 py-2.5 font-medium">Area</th>
-              <th className="px-4 py-2.5 font-medium">Action</th>
-              <th className="px-4 py-2.5 font-medium">Detail</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">When</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">User</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Area</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Action</th>
+              <th scope="col" className="px-4 py-2.5 font-medium">Detail</th>
             </tr>
           </thead>
           <tbody>
@@ -146,9 +146,9 @@ function fmt(v: unknown) {
 function Pick({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: Record<string, string> }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
+      <Label htmlFor={`audit-${label}`} className="text-xs">{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="min-w-36"><SelectValue /></SelectTrigger>
+        <SelectTrigger id={`audit-${label}`} className="min-w-36"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>All</SelectItem>
           {Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}

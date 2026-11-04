@@ -76,7 +76,7 @@ function QaPage() {
       <div className="mt-2 overflow-x-auto rounded-lg border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr><th className="px-4 py-2.5 font-medium">Reference</th><th className="px-4 py-2.5 font-medium">Customer</th><th className="px-4 py-2.5 font-medium">Type</th><th className="px-4 py-2.5 font-medium">Since</th><th className="px-4 py-2.5 font-medium" /></tr>
+            <tr><th scope="col" className="px-4 py-2.5 font-medium">Reference</th><th scope="col" className="px-4 py-2.5 font-medium">Customer</th><th scope="col" className="px-4 py-2.5 font-medium">Type</th><th scope="col" className="px-4 py-2.5 font-medium">Since</th><th scope="col" className="px-4 py-2.5 font-medium"><span className="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>
             {pending.map((r) => (
@@ -107,7 +107,7 @@ function QaPage() {
       <div className="mt-2 overflow-x-auto rounded-lg border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr><th className="px-4 py-2.5 font-medium">Reference</th><th className="px-4 py-2.5 font-medium">Type</th><th className="px-4 py-2.5 font-medium">Result</th><th className="px-4 py-2.5 font-medium">Decided</th><th className="hidden px-4 py-2.5 font-medium md:table-cell">Comments</th></tr>
+            <tr><th scope="col" className="px-4 py-2.5 font-medium">Reference</th><th scope="col" className="px-4 py-2.5 font-medium">Type</th><th scope="col" className="px-4 py-2.5 font-medium">Result</th><th scope="col" className="px-4 py-2.5 font-medium">Decided</th><th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">Comments</th></tr>
           </thead>
           <tbody>
             {done.map((r) => (
@@ -146,14 +146,14 @@ function QaPage() {
             {SCORECARD.map(([key, label]) => (
               <div key={key} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <Label>{label}</Label>
-                  <div className="flex gap-1">
+                  <Label htmlFor={`qa-note-${key}`}>{label}</Label>
+                  <div role="group" aria-label={`${label} result`} className="flex gap-1">
                     {(["pass", "fail"] as const).map((v) => (
                       <Button key={v} size="sm" variant={card[key].result === v ? (v === "pass" ? "default" : "destructive") : "outline"} onClick={() => setCard({ ...card, [key]: { ...card[key], result: v } })}>{v === "pass" ? "Pass" : "Fail"}</Button>
                     ))}
                   </div>
                 </div>
-                <Textarea rows={1} placeholder="Note (optional)" value={card[key].note} onChange={(e) => setCard({ ...card, [key]: { ...card[key], note: e.target.value } })} />
+                <Textarea id={`qa-note-${key}`} rows={1} placeholder="Note (optional)" value={card[key].note} onChange={(e) => setCard({ ...card, [key]: { ...card[key], note: e.target.value } })} />
               </div>
             ))}
             <div className="space-y-2">

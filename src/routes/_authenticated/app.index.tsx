@@ -164,7 +164,7 @@ function Queue() {
             <tr>
               <SortTh label="Reference" sortKey="reference" search={search} update={update} />
               <SortTh label="Customer" sortKey="customer" search={search} update={update} />
-              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Category</th>
+              <th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">Category</th>
               <SortTh label="Status" sortKey="status" search={search} update={update} />
               <SortTh label="Agent" sortKey="agent" search={search} update={update} className="hidden lg:table-cell" />
               <SortTh label="Time left" sortKey="time_left" search={search} update={update} />
@@ -237,7 +237,7 @@ function SortTh({ label, sortKey, search, update, className }: {
   const active = search.sort === sortKey;
   const nextDir = active && search.dir === "asc" ? "desc" : "asc";
   return (
-    <th aria-sort={active ? (search.dir === "asc" ? "ascending" : "descending") : undefined} className={`px-4 py-2.5 font-medium ${className ?? ""}`}>
+    <th scope="col" aria-sort={active ? (search.dir === "asc" ? "ascending" : "descending") : undefined} className={`px-4 py-2.5 font-medium ${className ?? ""}`}>
       <button type="button" onClick={() => update({ sort: sortKey, dir: nextDir })}
         className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground">
         {label}
@@ -250,7 +250,7 @@ function SortTh({ label, sortKey, search, update, className }: {
 function Filter({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: Record<string, string> }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-auto min-w-32"><SelectValue placeholder={label} /></SelectTrigger>
+      <SelectTrigger aria-label={label} className="w-auto min-w-32"><SelectValue placeholder={label} /></SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>All {label.toLowerCase()}</SelectItem>
         {Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}

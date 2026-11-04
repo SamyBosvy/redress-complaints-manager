@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { TrialBanner } from '@/components/trial-banner';
+import { getDensityPreference, setDensityPreference, type DensityPreference } from '@/lib/density';
 import { WorkspaceCommand } from '@/components/workspace-command';
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import {useQueryClient} from '@tanstack/react-query';
@@ -40,12 +41,15 @@ function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>('system');
+  const [density, setDensity] = useState<DensityPreference>('comfortable');
   useEffect(() => {
+    setDensity(getDensityPreference());
     setTheme(getThemePreference());
     return watchSystemTheme(() => { if (getThemePreference() === 'system') applyTheme('system'); });
   }, []);
   const organisations = m?.organisations.filter(x=>x.active) ?? [];
   const changeTheme = (value: ThemePreference) => { setTheme(value); setThemePreference(value); };
+  const changeDensity = (value: DensityPreference) => { setDensity(value); setDensityPreference(value); };
   async function signOut() {
     setBusy(true);
     try {await clearAndSignOut(qc); await navigate({to:'/auth',search:{},replace:true});}

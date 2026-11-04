@@ -193,11 +193,11 @@ function Setup() {
                   </Select>
                   <Input type="date" className="tabular" value={h.date} onChange={(e) => setHolidays(holidays.map((x, j) => j === i ? { ...x, date: e.target.value } : x))} />
                   <Input placeholder="Holiday name" maxLength={100} value={h.name} onChange={(e) => setHolidays(holidays.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-                  <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => setHolidays(holidays.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => setHolidays(holidays.filter((_, j) => j !== i))}><Trash2 aria-hidden="true" className="h-4 w-4" /></Button>
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={() => setHolidays([...holidays, { country: countries[0] ?? "", date: "", name: "" }])}>
-                <Plus className="h-4 w-4" /> Add holiday
+                <Plus aria-hidden="true" className="h-4 w-4" /> Add holiday
               </Button>
             </>
           )}

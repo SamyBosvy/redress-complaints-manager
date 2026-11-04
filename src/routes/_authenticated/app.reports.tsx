@@ -209,8 +209,8 @@ function Reports() {
               <p className="mr-auto max-w-xl text-sm text-muted-foreground">
                 Totals by product and category, outcomes, within-deadline percentage and redress paid, for {from} to {to}.
               </p>
-              <Button variant="outline" onClick={exportPackCsv} disabled={!rows.length}><Download className="h-4 w-4" /> Export CSV</Button>
-              <Button variant="outline" onClick={exportPackPdf} disabled={!rows.length}><FileText className="h-4 w-4" /> Export PDF</Button>
+              <Button variant="outline" onClick={exportPackCsv} disabled={!rows.length}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button>
+              <Button variant="outline" onClick={exportPackPdf} disabled={!rows.length}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button>
             </CardContent>
           </Card>
         </>

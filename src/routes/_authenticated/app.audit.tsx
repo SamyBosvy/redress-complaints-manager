@@ -81,7 +81,7 @@ function Audit() {
           <h1 className="text-2xl font-semibold">Audit log</h1>
           <p className="mt-1 text-sm text-muted-foreground">Every action is recorded permanently. Entries cannot be edited or deleted.</p>
         </div>
-        <Button variant="outline" onClick={exportCsv} disabled={!data.length}><Download className="h-4 w-4" /> Export CSV</Button>
+        <Button variant="outline" onClick={exportCsv} disabled={!data.length}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button>
       </div>
 
       <div className="mt-6 flex flex-wrap items-end gap-3">

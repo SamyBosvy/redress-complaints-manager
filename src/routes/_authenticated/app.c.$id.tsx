@@ -110,7 +110,7 @@ function CaseView() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <Link to="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Queue</Link>
+      <Link to="/app" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft aria-hidden="true" className="h-4 w-4" /> Queue</Link>
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
@@ -180,7 +180,7 @@ function CaseView() {
                 <Textarea aria-label="Internal note" rows={3} placeholder="Add an internal note" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div className="flex justify-between">
                   <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-primary hover:underline">
-                    <Paperclip className="h-4 w-4" /> Attach file
+                    <Paperclip aria-hidden="true" className="h-4 w-4" /> Attach file
                     <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
                   </label>
                   <Button size="sm" onClick={addNote} disabled={!note.trim()}>Add note</Button>
@@ -380,8 +380,8 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
           )}
         </div>
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy className="h-4 w-4" /> Copy</Button>
-          <Button variant="outline" onClick={pdf}><FileDown className="h-4 w-4" /> Download PDF</Button>
+          <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
+          <Button variant="outline" onClick={pdf}><FileDown aria-hidden="true" className="h-4 w-4" /> Download PDF</Button>
           <Button onClick={markSent}>Mark as sent</Button>
         </DialogFooter>
       </DialogContent>

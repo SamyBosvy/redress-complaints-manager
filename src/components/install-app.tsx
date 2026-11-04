@@ -74,7 +74,7 @@ export function InstallAppButton({ className, variant = "outline" }: { className
   return (
     <>
       <Button variant={variant} size="sm" className={cn(className)} onClick={click}>
-        <Download className="h-4 w-4" /> Download the app
+        <Download aria-hidden="true" className="h-4 w-4" /> Download the app
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]">

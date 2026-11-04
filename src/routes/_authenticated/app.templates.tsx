@@ -86,7 +86,7 @@ function Templates() {
           {!current && <EmptyState icon={FileText} title="No template for this kind and language" description={`${TEMPLATE_KINDS[kind]} · ${LANGUAGES[lang as keyof typeof LANGUAGES] ?? lang}`} />}
           {missingAdr && (
             <div className="mt-4 flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+              <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-warning" />
               Final responses must include the ADR referral block with {"{adr_body_name}"} and {"{adr_body_contact}"}.
             </div>
           )}

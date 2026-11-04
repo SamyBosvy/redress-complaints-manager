@@ -48,3 +48,6 @@
 - [ ] Verify Item #49 live signed-in empty/loading states — blocked: hosted database stays paused.
 - [x] Item #21: role-aware command palette, 250ms tenant-scoped complaint search (max 8), desktop/mobile search buttons, guarded global shortcuts and queue J/K row focus.
 - [ ] Verify Item #21 live complaint search and signed-in mobile/keyboard navigation — blocked: hosted database remains paused.
+
+- [x] Item #51: local Comfortable/Compact density in user menu/palette, pre-paint application and shared table CSS; associated form labels, scoped headers, decorative icons, shared focus indicators and skip link; public axe audit in both themes.
+- [ ] Verify Item #51 signed-in controls and keyboard/mobile flows — blocked: hosted database stays paused.

@@ -115,7 +115,7 @@ function Queue() {
             {counts.ackOverdue > 0 ? ` ${counts.ackOverdue} acknowledgements overdue.` : ""}
           </p>
         </div>
-        {canLog && <Button asChild><Link to="/app/new"><Plus className="h-4 w-4" /> New complaint</Link></Button>}
+        {canLog && <Button asChild><Link to="/app/new"><Plus aria-hidden="true" className="h-4 w-4" /> New complaint</Link></Button>}
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mt-6">
@@ -131,7 +131,7 @@ function Queue() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input className="pl-8" placeholder="Reference, name or customer ID" value={search.q ?? ""}
             onChange={(e) => update({ q: e.target.value })} />
         </div>
@@ -150,7 +150,7 @@ function Queue() {
               <span className="truncate">{c.label}</span>
               <button type="button" aria-label={`Remove filter ${c.label}`} onClick={() => update({ [c.key]: c.key === "q" ? "" : undefined })}
                 className="shrink-0 rounded-full p-0.5 hover:bg-muted">
-                <X className="h-3 w-3" />
+                <X aria-hidden="true" className="h-3 w-3" />
               </button>
             </span>
           ))}
@@ -214,11 +214,11 @@ function Queue() {
           <p className="text-muted-foreground tabular">{total === 0 ? "No complaints" : `Showing ${from}–${to} of ${total}`}</p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => update({ page: currentPage - 1 })}>
-              <ChevronLeft className="h-4 w-4" /> Previous
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" /> Previous
             </Button>
             <span className="tabular text-muted-foreground">Page {currentPage} of {pages}</span>
             <Button variant="outline" size="sm" disabled={currentPage >= pages} onClick={() => update({ page: currentPage + 1 })}>
-              Next <ChevronRight className="h-4 w-4" />
+              Next <ChevronRight aria-hidden="true" className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -241,7 +241,7 @@ function SortTh({ label, sortKey, search, update, className }: {
       <button type="button" onClick={() => update({ sort: sortKey, dir: nextDir })}
         className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground">
         {label}
-        {active ? (search.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+        {active ? (search.dir === "asc" ? <ArrowUp aria-hidden="true" className="h-3 w-3" /> : <ArrowDown aria-hidden="true" className="h-3 w-3" />) : <ArrowUpDown aria-hidden="true" className="h-3 w-3 opacity-40" />}
       </button>
     </th>
   );

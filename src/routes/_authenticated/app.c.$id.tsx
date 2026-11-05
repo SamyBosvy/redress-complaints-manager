@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DeadlineClock } from "@/components/deadline-clock";
 import { StatusPill } from "@/components/status-pill";
+import { CustomerHistory } from '@/components/customer-history';
 import {DeadlineRecalculation} from '@/components/deadline-recalculation';
 import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";
@@ -205,6 +206,8 @@ function CaseView() {
             </div>
             {canRecalculate(m.role,Boolean(c.anonymised_at),c.privacy_processing) && c.country_code && c.product && c.received_at && <DeadlineRecalculation org={orgId} id={id} country={c.country_code} product={c.product} received={c.received_at} dates={{ack_due:c.ack_due,final_due:c.final_due,extended_due:c.extended_due}} onSaved={refresh}/>}
           </Card>
+
+          <CustomerHistory orgId={orgId} currentId={id} identity={c.anonymised_at ? {} : { customerRef: c.customer_ref, email: c.complainant_email }} />
 
           <Card title="Timeline">
             <ol className="space-y-4">

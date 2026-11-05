@@ -1,4 +1,5 @@
 import { AccessibleField } from '@/components/accessible-field';
+import { DuplicateWarning, useDuplicateWarning } from '@/components/customer-history';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -67,6 +68,7 @@ function NewComplaint() {
     assigned_to: m.role === "agent" ? m.user.id : "none", priority: "standard",
   });
   const set = (k: keyof typeof v) => (val: string | boolean) => setV((p) => ({ ...p, [k]: val }));
+  const duplicateLookup = useDuplicateWarning(orgId, { customerRef: v.customer_ref, email: v.complainant_email });
 
   if (m.role === "read_only") return <p className="text-muted-foreground">Read-only users cannot log complaints.</p>;
 
@@ -109,8 +111,8 @@ function NewComplaint() {
 
       <Section title="Complainant">
         <F label="Name *"><Input value={v.complainant_name} onChange={(e) => set("complainant_name")(e.target.value)} /></F>
-        <F label="Customer / account ID"><Input value={v.customer_ref} onChange={(e) => set("customer_ref")(e.target.value)} /></F>
-        <F label="Email"><Input type="email" value={v.complainant_email} onChange={(e) => set("complainant_email")(e.target.value)} /></F>
+        <F label="Customer / account ID"><Input value={v.customer_ref} onChange={(e) => set("customer_ref")(e.target.value)} onBlur={duplicateLookup.onBlur} /></F>
+        <F label="Email"><Input type="email" value={v.complainant_email} onChange={(e) => set("complainant_email")(e.target.value)} onBlur={duplicateLookup.onBlur} /></F>
         <F label="Phone"><Input value={v.complainant_phone} onChange={(e) => set("complainant_phone")(e.target.value)} /></F>
         <div className="sm:col-span-2 space-y-2">
           <label className="flex items-center gap-2 text-sm">
@@ -134,6 +136,7 @@ function NewComplaint() {
         <F label="Priority"><Pick value={v.priority} onChange={set("priority")} options={{ standard: "Standard", high: "High" }} /></F>
       </Section>
 
+      <DuplicateWarning lookup={duplicateLookup} />
       <div className="mt-6 flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => navigate({ to: "/app" })}>Cancel</Button>
         <Button type="submit" disabled={busy}>Log complaint</Button>

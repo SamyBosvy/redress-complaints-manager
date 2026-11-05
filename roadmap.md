@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Item #16: customer history (10 newest, full counts) and debounced/blur non-blocking duplicate warnings; safely escaped org-scoped matching, existing RLS only.
+- [ ] Verify Item #16 signed-in history, duplicate links and complaint submission — blocked: hosted database stays paused.
+
 - [x] Enable Lovable Cloud
 - [x] Phase 1: design system, auth, organisations + roles (RLS), first-run wizard
 - [x] Phase 2: complaints, rule sets, business-day calendars, queue, new complaint form

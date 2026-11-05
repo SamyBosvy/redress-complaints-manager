@@ -1,0 +1,2 @@
+## Customer history
+- Use safely quoted exact-ID or anchored case-insensitive-email filters against org-scoped complaint_queue under existing RLS; exclude anonymised/current cases and count all non-closed statuses as open. Why: precise customer matching without changing permissions or blocking intake.

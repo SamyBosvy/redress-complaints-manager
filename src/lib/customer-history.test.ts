@@ -10,7 +10,7 @@ describe('customer matching', () => {
     expect(customerFilter({ customerRef: '  ', email: '\t' })).toBeNull();
   });
   it('matches exact ID or case-insensitive email only', () => {
-    expect(customerFilter({ customerRef: 'ABC', email: 'A@B.EU' })).toBe('customer_ref.eq."ABC",complainant_email.ilike."a@b.eu"');
+    expect(customerFilter({ customerRef: 'ABC', email: 'A@B.EU' })).toBe('customer_ref.eq."ABC",complainant_email.imatch."^a@b\\\\.eu$"');
   });
   it('quotes separators so they cannot become filter clauses', () => {
     expect(customerFilter({ customerRef: 'x),org_id.neq.secret,(x' })).toBe('customer_ref.eq."x),org_id.neq.secret,(x"');
@@ -19,7 +19,7 @@ describe('customer matching', () => {
     expect(customerFilter({ customerRef: 'a"\\b' })).toBe('customer_ref.eq."a\\"\\\\b"');
   });
   it('escapes email pattern wildcards to avoid broad matches', () => {
-    expect(customerFilter({ email: 'A%_*@b.eu' })).toBe('complainant_email.ilike."a\\\\%\\\\_\\\\*@b.eu"');
+    expect(customerFilter({ email: 'A%_*@b.eu' })).toBe('complainant_email.imatch."^a%_\\\\*@b\\\\.eu$"');
   });
   it('excludes the current case and anonymised cases', () => {
     expect(eligibleCustomerHistory({ id: 'current', anonymised_at: null }, 'current')).toBe(false);

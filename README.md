@@ -16,7 +16,7 @@ Redress is a complaints-management platform for EU payment institutions, e-money
 
 ## Status
 
-Built in phases. Done: organisations, roles, first-run setup wizard, complaint intake, deadline engine, queue, case view, templates, letter generation and the holding-response clock. Installable as an app. Next: audit log, public web form, QA and alerts, reporting, Stripe billing, GDPR tooling and settings pages.
+Built in phases. Done: organisations, roles, first-run setup wizard, multi-user invites, complaint intake, deadline engine, queue, case view, templates, letter generation and the holding-response clock, database-enforced audit log, public web form per firm, QA review and sampling, in-app alerts, reporting dashboard and regulatory pack (CSV and PDF), GDPR retention, subject-access and erasure tools, settings and account security (2FA). Installable as an app. Next: end-to-end checks with a signed-in firm, Stripe billing (paused until launch), email notifications and final privacy and DPA wording.
 
 ## Roles
 

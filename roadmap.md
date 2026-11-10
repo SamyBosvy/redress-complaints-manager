@@ -54,3 +54,5 @@
 
 - [x] Item #51: local Comfortable/Compact density in user menu/palette, pre-paint application and shared table CSS; associated form labels, scoped headers, decorative icons, shared focus indicators and skip link; public axe audit in both themes.
 - [ ] Verify Item #51 signed-in controls and keyboard/mobile flows — blocked: hosted database stays paused.
+
+- [x] GitHub sync check (Nov 2026)

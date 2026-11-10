@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
-import { embedPdfFont } from './pdf-font';
+import { embedPdfFont, type PdfFonts } from './pdf-font';
 type Pack = { firm: string; generatedAt: string; scope?: string; tables: Record<string, Record<string, unknown>[]>; attachments: { path: string; contentType: string }[] };
-export function personalDataPdf(pack: Pack, fontBase64: string) {
+export function personalDataPdf(pack: Pack, fontBase64: PdfFonts) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   embedPdfFont(doc,fontBase64);
   let y=22;

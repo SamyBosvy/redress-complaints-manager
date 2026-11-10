@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
-import { embedPdfFont, PDF_FONT } from './pdf-font';
+import { embedPdfFont, PDF_FONT, type PdfFonts } from './pdf-font';
 
-export function letterPdf(letter: { firm: string; address?: string | null; date: string; subject: string; body: string }, fontBase64: string) {
+export function letterPdf(letter: { firm: string; address?: string | null; date: string; subject: string; body: string }, fontBase64: PdfFonts) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   embedPdfFont(doc, fontBase64);
   let y = 20;

@@ -1,6 +1,6 @@
 import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, FileDown, Paperclip } from "lucide-react";
@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DeadlineClock } from "@/components/deadline-clock";
 import { StatusPill } from "@/components/status-pill";
 import { CustomerHistory } from '@/components/customer-history';
+import { CaseLetters } from '@/components/case-letters';
+import { caseLettersQuery } from '@/lib/case-letters-query';
+import { matchLetterEvent } from '@/lib/case-letters';
 import {DeadlineRecalculation} from '@/components/deadline-recalculation';
 import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";
@@ -73,8 +76,23 @@ function CaseView() {
   const canEdit = !c.anonymised_at && m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
   const [note, setNote] = useState("");
   const [letterOpen, setLetterOpen] = useState(false);
+  const [expandedLetters, setExpandedLetters] = useState<Set<string>>(new Set());
+  const [revealLetter, setRevealLetter] = useState<string | null>(null);
+  const lettersResult = useQuery(caseLettersQuery(orgId, id, Boolean(c.anonymised_at)));
+  const letters = c.anonymised_at ? [] : lettersResult.data ?? [];
+  const toggleLetter = (letterId: string) => setExpandedLetters(current => {
+    const next = new Set(current);
+    if (next.has(letterId)) next.delete(letterId); else next.add(letterId);
+    return next;
+  });
+  const showLetter = (letterId: string) => {
+    setExpandedLetters(current => new Set([...current, letterId]));
+    setRevealLetter(letterId);
+    document.getElementById(`letter-${letterId}`)?.scrollIntoView({ block: 'center' });
+    document.getElementById(`letter-${letterId}`)?.focus({ preventScroll: true });
+  };
 
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["case", id] }), qc.invalidateQueries({ queryKey: ["queue"] })]);
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["case", id] }), qc.invalidateQueries({ queryKey: ["queue"] }), qc.invalidateQueries({ queryKey: ['case-letters', orgId, id] })]);
 
   async function update(patch: Patch) {
     const { error } = await supabase.from("complaints").update(patch).eq("id", id);
@@ -173,6 +191,7 @@ function CaseView() {
           </Card>
 
           <OutcomeCard c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
+          <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
           <Card title="Internal notes and attachments">
             <p className="mb-2 text-xs text-muted-foreground">Never shown to the customer.</p>
@@ -213,7 +232,7 @@ function CaseView() {
             <ol className="space-y-4">
               {events.map((e) => (
                 <li key={e.id} className="border-l-2 pl-3 text-sm">
-                  <EventLine e={e} nameOf={nameOf} onOpen={openAttachment} />
+                  <EventLine e={e} nameOf={nameOf} onOpen={openAttachment} letterId={matchLetterEvent(e, letters)} onLetter={showLetter} />
                   <p className="mt-0.5 text-xs text-muted-foreground tabular">{nameOf(e.actor)} · {new Date(e.created_at).toLocaleString("en-GB")}</p>
                 </li>
               ))}
@@ -228,7 +247,7 @@ function CaseView() {
 }
 
 type Ev = { kind: string; detail: unknown };
-function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void }) {
+function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
     case "created": return <p>Complaint logged via {CHANNELS[d.channel as keyof typeof CHANNELS] ?? d.channel}</p>;
@@ -238,7 +257,7 @@ function EventLine({ e, nameOf, onOpen }: { e: Ev; nameOf: (u: string | null) =>
     case "deadline_recalculated": return <p>Deadlines recalculated{d.reason ? `: ${d.reason}` : ''}</p>;
     case "outcome": return <p>Outcome updated: {d.after?.outcome ? OUTCOMES[d.after.outcome as keyof typeof OUTCOMES] : "—"}</p>;
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
-    case "letter_sent": return <p>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></p>;
+    case "letter_sent": return <p>{letterId ? <a href={`#letter-${letterId}`} className="text-primary hover:underline" onClick={event => { event.preventDefault(); onLetter(letterId); }}>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></a> : <>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></>}</p>;
     case "note": return <p className="whitespace-pre-wrap rounded bg-muted px-2 py-1">{d.text}</p>;
     case "attachment": return <p>Attachment: <button className="text-primary hover:underline" onClick={() => onOpen(d.path!)}>{d.name}</button></p>;
     default: return <p>{e.kind}</p>;

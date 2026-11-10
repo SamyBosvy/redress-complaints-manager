@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Item #17: case Letters card, full org-scoped list, accessible body disclosures, copy/original-date PDFs and matched timeline links; ordering/sender/filename/matching unit tests.
+- [ ] Verify Item #17 signed-in letter reads, timeline links, clipboard and PDF downloads — blocked: hosted database stays paused.
+
 - [x] Item #16: customer history (10 newest, full counts) and debounced/blur non-blocking duplicate warnings; safely escaped org-scoped matching, existing RLS only.
 - [ ] Verify Item #16 signed-in history, duplicate links and complaint submission — blocked: hosted database stays paused.
 

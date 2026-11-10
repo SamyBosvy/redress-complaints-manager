@@ -11,8 +11,8 @@ import { loadPdfFont } from '@/lib/pdf-font';
 
 export function CaseLetters({ letters, loading, error, anonymised, members, reference, firm, address, expanded, onToggle, revealId, onGenerate }: {
   letters: CaseLetter[]; loading: boolean; error: boolean; anonymised: boolean;
-  members: { user_id: string; name: string }[]; reference: string; firm: string; address?: string | null;
-  expanded: ReadonlySet<string>; onToggle: (id: string) => void; revealId: string | null; onGenerate?: () => void;
+  members: { user_id: string; name: string }[]; reference: string; firm: string; address?: string | null | undefined;
+  expanded: ReadonlySet<string>; onToggle: (id: string) => void; revealId: string | null; onGenerate?: (() => void) | undefined;
 }) {
   const [downloading, setDownloading] = useState<string | null>(null);
   useEffect(() => {
@@ -31,7 +31,7 @@ export function CaseLetters({ letters, loading, error, anonymised, members, refe
     try {
       const { letterPdf } = await import('@/lib/letter-pdf');
       const font = await loadPdfFont();
-      letterPdf({ firm, address, date: formatDate(letter.sent_at), subject: letter.subject, body: letter.body }, font)
+      letterPdf({ firm, address: address ?? null, date: formatDate(letter.sent_at), subject: letter.subject, body: letter.body }, font)
         .save(letterFilename(reference, letter.kind, letter.sent_at));
     } catch { toast.error("Couldn't download letter PDF."); }
     finally { setDownloading(null); }

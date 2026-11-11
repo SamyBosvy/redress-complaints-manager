@@ -34,7 +34,6 @@
 
 - Workspace security redirects, Settings visibility and deadline-recalculation permission UI rules live in src/lib/workspace-access.ts with tests; database RPCs remain authoritative. Why: one consistent client gate without duplicating server enforcement.
 - Case loading reads privacy_processing directly from complaints under RLS and fails closed on read errors. Why: the queue view omits this field and claimed cases must not offer recalculation.
-- Daily digest selection is pure and single-recipient in src/lib/daily-digest.ts; a paginated server-only preparation helper reads one active membership without sending or scheduling. Why: prepare role-scoped data without email queues or bulk sending.
 - Membership regression tests execute repository SQL routines in isolated local PostgreSQL via PGlite, never against hosted tenant data. Why: verify invite and role safeguards without creating real users or changing production records.
 - All PDF generators use the shared local Unicode font loader/embedding helper for normal and bold styles. Why: avoid standard-font fallback and preserve multilingual text.
 - Reporting aggregates redress and goodwill independently by their recorded currency, retaining missing-currency amounts as unspecified rather than inferring a currency. Why: never combine unlike currencies or silently omit payments.
@@ -47,4 +46,3 @@
 - Workspace palette and shortcuts reuse appNavigation for role visibility; complaint search reuses queue filters with explicit org scope and eight-result cap. Why: preserve navigation permissions and tenant isolation without separate rules.
 
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
-- Public holidays come from the date-holidays package via src/lib/public-holidays.ts: nationwide type 'public' only (intersection across regions; GB = England & Wales), loaded lazily, never hand-coded; imports add missing dates only. Why: wrong holidays create wrong regulatory deadlines.

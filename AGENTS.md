@@ -47,3 +47,4 @@
 - Workspace palette and shortcuts reuse appNavigation for role visibility; complaint search reuses queue filters with explicit org scope and eight-result cap. Why: preserve navigation permissions and tenant isolation without separate rules.
 
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
+- Public holidays come from the date-holidays package via src/lib/public-holidays.ts: nationwide type 'public' only (intersection across regions; GB = England & Wales), loaded lazily, never hand-coded; imports add missing dates only. Why: wrong holidays create wrong regulatory deadlines.

@@ -59,3 +59,5 @@
 - [ ] Verify Item #51 signed-in controls and keyboard/mobile flows — blocked: hosted database stays paused.
 
 - [x] GitHub sync check (Nov 2026)
+- [x] Item #11: date-holidays nationwide public holiday pre-fill in setup and Org Admin add-missing preview in Calendars; spot-check tests for all 32 countries.
+- [ ] Verify Item #11 signed-in setup save and Calendars insert — blocked: hosted database stays paused.

@@ -1,7 +1,8 @@
 import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { holidayNote } from "@/lib/public-holidays";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,17 @@ function Setup() {
   const [adr, setAdr] = useState<Record<string, Adr>>({});
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [rules, setRules] = useState({ name: "PSD2 payment services", ack: 1, final: 15, extended: 35 });
+
+  const countryKey = countries.join(",");
+  useEffect(() => {
+    if (step !== 3) return;
+    let live = true;
+    const years = [new Date().getUTCFullYear(), new Date().getUTCFullYear() + 1];
+    void import("@/lib/public-holidays").then(({ publicHolidays }) => Promise.all(countries.flatMap((c) => years.map(async (y) => (await publicHolidays(c, y)).map((h) => ({ country: c, ...h }))))))
+      .then((lists) => { if (!live) return; setHolidays((cur) => { const seen = new Set(cur.map((h) => `${h.country}|${h.date}`)); return [...cur, ...lists.flat().filter((h) => !seen.has(`${h.country}|${h.date}`))]; }); })
+      .catch(() => { if (live) toast.error("Couldn't load public holidays. Add them manually."); });
+    return () => { live = false; };
+  }, [step, countryKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (m?.org && m.role !== "org_admin") {
     return (
@@ -184,7 +196,8 @@ function Setup() {
 
           {step === 3 && (
             <>
-              <p className="text-sm text-muted-foreground">Weekends are excluded automatically. Add public holidays for each country; you can edit them later.</p>
+              <p className="text-sm text-muted-foreground">Weekends are excluded automatically. Nationwide public holidays for this year and next are pre-filled; check, edit or remove them. You can change them later.</p>
+              {countries.map((c) => holidayNote(c) && <p key={c} className="text-sm text-muted-foreground">{COUNTRIES[c]}: {holidayNote(c)}</p>)}
               {holidays.map((h, i) => (
                 <div key={i} className="grid grid-cols-[1fr_1fr_1.5fr_auto] gap-2">
                   <Select value={h.country} onValueChange={(v) => setHolidays(holidays.map((x, j) => j === i ? { ...x, country: v } : x))}>

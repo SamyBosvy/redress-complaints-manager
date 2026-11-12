@@ -1,6 +1,7 @@
 # Redress roadmap
 
-- [ ] Item #41: truthful full marketing landing page, shared contact constant, illustrative product views, plans/FAQ; verify accessibility, themes and mobile widths locally.
+- [x] Item #41: truthful full marketing landing page, shared contact constant, illustrative product views, plans/FAQ; automatic typecheck/build clean, 191 tests passed; axe zero violations in light/dark, no horizontal scroll at 320/360/390/1280, menu/FAQ/skip/trial links checked locally.
+- [ ] Item #41 launch readiness: replace placeholder CONTACT_EMAIL; hosted signup/demo delivery unverified while the database stays paused and contact remains a placeholder.
 
 - [x] Item #17: case Letters card, full org-scoped list, accessible body disclosures, copy/original-date PDFs and matched timeline links; ordering/sender/filename/matching unit tests.
 - [ ] Verify Item #17 signed-in letter reads, timeline links, clipboard and PDF downloads — blocked: hosted database stays paused.

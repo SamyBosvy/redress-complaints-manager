@@ -17,7 +17,7 @@ export function trialState(endsAt: string, now = new Date()) {
 }
 
 export const TRIAL_PLANS = [
-  { name: 'Starter', features: ['3 seats · 100 complaints per month', 'Complaint handling and deadline tracking', 'Standard letters, audit trail and core reports'] },
-  { name: 'Growth', features: ['10 seats · 500 complaints per month', 'Everything in Starter', 'Custom templates and firm branding', 'QA review and regulatory PDF pack'] },
-  { name: 'Scale', features: ['Unlimited seats and complaints', 'Everything in Growth', 'Contact us to discuss your firm’s needs'] },
+  { name: 'Starter', features: ['Complaint handling and deadline tracking', 'Standard letters, audit trail and core reports'] },
+  { name: 'Growth', features: ['Everything in Starter', 'Custom templates and firm branding', 'QA review and regulatory PDF pack'] },
+  { name: 'Scale', features: ['Everything in Growth', 'Contact us to discuss your firm’s needs'] },
 ] as const;

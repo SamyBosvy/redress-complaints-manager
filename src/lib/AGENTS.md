@@ -1,4 +1,3 @@
-## Customer history
 ## Shared marketing data
 - Marketing and TrialBanner share CONTACT_EMAIL from src/lib/contact.ts and TRIAL_PLANS from src/lib/trial.ts; product previews are static fictional HTML. Why: prevent contact/plan drift without querying tenant data.
 

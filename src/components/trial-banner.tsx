@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TRIAL_CONTACT_EMAIL, TRIAL_PLANS, trialState } from '@/lib/trial';
+import { TRIAL_PLANS, trialState } from '@/lib/trial';
+import { CONTACT_EMAIL } from '@/lib/contact';
 import { cn } from '@/lib/utils';
 
 export function TrialBanner({ orgId, endsAt, isAdmin }: { orgId: string; endsAt: string; isAdmin: boolean }) {
@@ -47,7 +48,7 @@ export function TrialBanner({ orgId, endsAt, isAdmin }: { orgId: string; endsAt:
             </section>
           </div>
           <div className="shrink-0 space-y-2">
-            {isAdmin && <Button asChild variant="outline" className="w-full min-h-12"><a href={`mailto:${TRIAL_CONTACT_EMAIL}`}>Talk to us</a></Button>}
+            {isAdmin && <Button asChild variant="outline" className="w-full min-h-12"><a href={`mailto:${CONTACT_EMAIL}`}>Talk to us</a></Button>}
             <DialogClose asChild><Button className="w-full min-h-12">Continue</Button></DialogClose>
           </div>
         </DialogContent>

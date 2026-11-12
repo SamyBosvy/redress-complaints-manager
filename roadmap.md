@@ -1,5 +1,7 @@
 # Redress roadmap
 
+- [ ] Item #41: truthful full marketing landing page, shared contact constant, illustrative product views, plans/FAQ; verify accessibility, themes and mobile widths locally.
+
 - [x] Item #17: case Letters card, full org-scoped list, accessible body disclosures, copy/original-date PDFs and matched timeline links; ordering/sender/filename/matching unit tests.
 - [ ] Verify Item #17 signed-in letter reads, timeline links, clipboard and PDF downloads — blocked: hosted database stays paused.
 

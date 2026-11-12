@@ -16,9 +16,6 @@ export function trialState(endsAt: string, now = new Date()) {
   return { days, today, expired, tone, dismissible: days > 2 } as const;
 }
 
-// Placeholder only: replace with the approved contact address before launch.
-export const TRIAL_CONTACT_EMAIL = 'hello@example.com';
-
 export const TRIAL_PLANS = [
   { name: 'Starter', features: ['3 seats · 100 complaints per month', 'Complaint handling and deadline tracking', 'Standard letters, audit trail and core reports'] },
   { name: 'Growth', features: ['10 seats · 500 complaints per month', 'Everything in Starter', 'Custom templates and firm branding', 'QA review and regulatory PDF pack'] },

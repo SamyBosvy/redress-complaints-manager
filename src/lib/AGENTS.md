@@ -1,3 +1,6 @@
+## Shared marketing data
+- Marketing and TrialBanner share CONTACT_EMAIL from src/lib/contact.ts and TRIAL_PLANS from src/lib/trial.ts; product previews are static fictional HTML. Why: prevent contact/plan drift without querying tenant data.
+
 ## Customer history
 - Use safely quoted exact-ID or anchored case-insensitive-email filters against org-scoped complaint_queue under existing RLS; exclude anonymised/current cases and count all non-closed statuses as open. Why: precise customer matching without changing permissions or blocking intake.
 ## Holiday and digest helpers

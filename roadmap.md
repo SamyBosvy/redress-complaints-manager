@@ -1,7 +1,7 @@
 # Redress roadmap
 
 - [x] Item #41: truthful full marketing landing page, shared contact constant, illustrative product views, plans/FAQ; automatic typecheck/build clean, 191 tests passed; axe zero violations in light/dark, no horizontal scroll at 320/360/390/1280, menu/FAQ/skip/trial links checked locally.
-- [ ] Item #41 launch readiness: replace placeholder CONTACT_EMAIL; hosted signup/demo delivery unverified while the database stays paused and contact remains a placeholder.
+- [ ] Item #41 launch readiness: CONTACT_EMAIL set to samy.bosvy@gmail.com; hosted signup/demo delivery unverified while the database stays paused.
 
 - [x] Item #17: case Letters card, full org-scoped list, accessible body disclosures, copy/original-date PDFs and matched timeline links; ordering/sender/filename/matching unit tests.
 - [ ] Verify Item #17 signed-in letter reads, timeline links, clipboard and PDF downloads — blocked: hosted database stays paused.
@@ -34,7 +34,7 @@
 
 ## Current scoped completion
 - [x] Item #52: informational trial banner, UTC-day urgency, session dismissal above two days, no-price plan dialog and admin contact placeholder; no entitlement locks or billing changes.
-- [ ] Verify Item #52 signed-in banner/dialog and mobile layout — blocked: hosted database remains paused. Replace hello@example.com with the approved contact address before launch.
+- [ ] Verify Item #52 signed-in banner/dialog and mobile layout — blocked: hosted database remains paused.
 - [x] Code-only PDF/currency work: shared Unicode font, firm-address letter header, per-currency report figures/CSV/PDF and Outcome currency selectors
 - [x] Local verification: all 92 tests passed; automatic full typecheck/build OK at 2026-10-28 02:43:54 UTC; Polish letter (1 page), French letter (2 pages) and regulatory pack (1 page) rendered to PNG and every page visually checked
 - [ ] Compliance workflow database/UI hardening — blocked: hosted database paused; staged sql/0015_compliance_hardening.sql remains untouched

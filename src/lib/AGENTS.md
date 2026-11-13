@@ -1,4 +1,5 @@
 ## Shared marketing data
+- Public form text/options and error mapping live in public-form-i18n.ts; URL language overrides browser detection after hydration and stored option keys remain unchanged. Why: complete translations without changing intake contracts.
 - Marketing and TrialBanner share CONTACT_EMAIL from src/lib/contact.ts and TRIAL_PLANS from src/lib/trial.ts; product previews are static fictional HTML. Why: prevent contact/plan drift without querying tenant data.
 
 ## Customer history

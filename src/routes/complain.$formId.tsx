@@ -13,7 +13,7 @@ import type { ZodIssue } from 'zod';
 import { PUBLIC_FORM_I18N, NATIVE_LANGUAGE_NAMES, resolvePublicFormLanguage, isPublicFormLanguage, interpolate, publicFormIssueMessage, publicFormServerError } from '@/lib/public-form-i18n';
 
 export const Route = createFileRoute('/complain/$formId')({
-  validateSearch: (search: Record<string, unknown>) => ({ embed: search['embed'] === '1' || search['embed'] === 1 ? '1' : undefined, lang: typeof search['lang'] === 'string' ? search['lang'] : undefined }),
+  validateSearch: (search: Record<string, unknown>) => ({ embed: search['embed'] === '1' || search['embed'] === 1 ? '1' : undefined, lang: typeof search['lang'] === 'string' ? search['lang'] : search['lang'] === undefined ? undefined : '' }),
   loader: async ({ params }) => {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.formId)) return null;
     try { return await getPublicForm({ data: { id: params.formId } }); } catch { return null; }
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/complain/$formId')({
 });
 function PublicComplaint() {
   const firm = Route.useLoaderData();
-  const { embed, lang } = Route.useSearch();
+  const { lang } = Route.useSearch();
   const navigate = Route.useNavigate();
   const uiLanguage = resolvePublicFormLanguage(lang);
   const t = PUBLIC_FORM_I18N[uiLanguage];

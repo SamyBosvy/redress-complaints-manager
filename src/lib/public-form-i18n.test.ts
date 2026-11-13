@@ -24,7 +24,7 @@ describe('Public form languages', () => {
       expect(mapped).toContain(PUBLIC_FORM_I18N[lang].nameRequired);
       expect(mapped).toContain(PUBLIC_FORM_I18N[lang].emailInvalid);
       expect(mapped).toContain(PUBLIC_FORM_I18N[lang].privacyRequired);
-      expect(mapped).toContain(PUBLIC_FORM_I18N[lang].tooLong.replace('{max}', '51'));
+      expect(mapped).toContain(PUBLIC_FORM_I18N[lang].tooLong.replace('{max}', '50'));
       expect(mapped.every(message => message.length > 0)).toBe(true);
       expect(publicFormServerError(lang)).toBe(PUBLIC_FORM_I18N[lang].saveError);
     });

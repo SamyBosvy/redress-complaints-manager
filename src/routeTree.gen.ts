@@ -35,6 +35,7 @@ import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
 import { Route as AuthenticatedAppSettingsCalendarsRouteImport } from './routes/_authenticated/app.settings.calendars'
 import { Route as AuthenticatedAppSettingsCountriesRouteImport } from './routes/_authenticated/app.settings.countries'
+import { Route as AuthenticatedAppSettingsImportRouteImport } from './routes/_authenticated/app.settings.import'
 import { Route as AuthenticatedAppSettingsRulesRouteImport } from './routes/_authenticated/app.settings.rules'
 import { Route as AuthenticatedAppSettingsUsersRouteImport } from './routes/_authenticated/app.settings.users'
 import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
@@ -173,6 +174,12 @@ const AuthenticatedAppSettingsCountriesRoute =
     path: '/countries',
     getParentRoute: () => AuthenticatedAppSettingsRoute,
   } as any)
+const AuthenticatedAppSettingsImportRoute =
+  AuthenticatedAppSettingsImportRouteImport.update({
+    id: '/import',
+    path: '/import',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
 const AuthenticatedAppSettingsRulesRoute =
   AuthenticatedAppSettingsRulesRouteImport.update({
     id: '/rules',
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -244,6 +252,7 @@ export interface FileRoutesByTo {
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -276,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/_authenticated/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/_authenticated/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
+  '/_authenticated/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
   '/_authenticated/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/_authenticated/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/app/c/$id'
     | '/app/settings/calendars'
     | '/app/settings/countries'
+    | '/app/settings/import'
     | '/app/settings/rules'
     | '/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/app/c/$id'
     | '/app/settings/calendars'
     | '/app/settings/countries'
+    | '/app/settings/import'
     | '/app/settings/rules'
     | '/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -367,6 +379,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/c/$id'
     | '/_authenticated/app/settings/calendars'
     | '/_authenticated/app/settings/countries'
+    | '/_authenticated/app/settings/import'
     | '/_authenticated/app/settings/rules'
     | '/_authenticated/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -571,6 +584,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsCountriesRouteImport
       parentRoute: typeof AuthenticatedAppSettingsRoute
     }
+    '/_authenticated/app/settings/import': {
+      id: '/_authenticated/app/settings/import'
+      path: '/import'
+      fullPath: '/app/settings/import'
+      preLoaderRoute: typeof AuthenticatedAppSettingsImportRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
     '/_authenticated/app/settings/rules': {
       id: '/_authenticated/app/settings/rules'
       path: '/rules'
@@ -598,6 +618,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAppSettingsRouteChildren {
   AuthenticatedAppSettingsCalendarsRoute: typeof AuthenticatedAppSettingsCalendarsRoute
   AuthenticatedAppSettingsCountriesRoute: typeof AuthenticatedAppSettingsCountriesRoute
+  AuthenticatedAppSettingsImportRoute: typeof AuthenticatedAppSettingsImportRoute
   AuthenticatedAppSettingsRulesRoute: typeof AuthenticatedAppSettingsRulesRoute
   AuthenticatedAppSettingsUsersRoute: typeof AuthenticatedAppSettingsUsersRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
@@ -609,6 +630,7 @@ const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildr
       AuthenticatedAppSettingsCalendarsRoute,
     AuthenticatedAppSettingsCountriesRoute:
       AuthenticatedAppSettingsCountriesRoute,
+    AuthenticatedAppSettingsImportRoute: AuthenticatedAppSettingsImportRoute,
     AuthenticatedAppSettingsRulesRoute: AuthenticatedAppSettingsRulesRoute,
     AuthenticatedAppSettingsUsersRoute: AuthenticatedAppSettingsUsersRoute,
     AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,

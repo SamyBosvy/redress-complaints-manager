@@ -111,9 +111,9 @@ export function validateImport(rows: Record<string, string>[], columns: ColumnMa
     if (!get('channel')) warnings.push('Missing channel defaults to Email.');
     const data: Insert | null = errors.length || !date ? null : {
       org_id: orgId, created_by: userId, received_at: date, complainant_name: get('complainant_name'), country_code: country,
-      product: product as Insert['product'], category: category as Insert['category'], channel: channel as Insert['channel'], language, status: status as Insert['status'],
+      product: product as Insert['product'], category: category as Insert['category'], channel: channel as Insert['channel'], language, status: status as NonNullable<Insert['status']>,
       summary, complainant_email: get('complainant_email') || null, complainant_phone: get('complainant_phone') || null, customer_ref: get('customer_ref') || null,
-      desired_outcome: get('desired_outcome') || null, vulnerable: truth.includes(vulnerable), assigned_to: agent?.user_id ?? null, priority: priority as Insert['priority'],
+      desired_outcome: get('desired_outcome') || null, vulnerable: truth.includes(vulnerable), assigned_to: agent?.user_id ?? null, priority: priority === 'high' ? 'high' : 'standard',
     };
     return { row: index + 2, state: errors.length ? 'blocked' : warnings.length ? 'warnings' : 'ready', problems: [...errors, ...warnings], data, externalReference };
   });

@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Item #10 front half: local CSV/XLSX parsing, six-language column/value suggestions, validation and 50-row preview, problems CSV, 100-row existing-path inserts with progress and retained preview on errors.
+- [ ] Verify Item #10 signed-in mobile upload/import, permissions and persisted readback — blocked: hosted database stays paused.
+
 - [x] Item #25: six-language public complaint form, typed dictionary and option labels, browser/URL language selection, translated validation and metadata; existing submission values preserved.
 - [ ] Verify Item #25 live form submission/confirmation — blocked: hosted database stays paused; native-speaker review needed before launch (French reviewed by owner).
 

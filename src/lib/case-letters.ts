@@ -20,7 +20,10 @@ export function letterFilename(reference: string, kind: string, sentAt: string):
 /** The existing letters table has sent_at (no created_at); compare it to the event's created_at. */
 export function matchLetterEvent(event: { kind: string; created_at: string; detail: unknown }, letters: readonly CaseLetter[]): string | undefined {
   if (!['letter_sent','letter_drafted'].includes(event.kind) || !event.detail || typeof event.detail !== 'object') return;
-  if ('letter_id' in event.detail && typeof event.detail.letter_id === 'string') return letters.find(l=>l.id===event.detail.letter_id)?.id;
+  if ('letter_id' in event.detail && typeof event.detail.letter_id === 'string') {
+    const id = event.detail.letter_id;
+    return letters.find(l=>l.id===id)?.id;
+  }
   const kind = ('template' in event.detail ? event.detail.template : undefined);
   const timestamp = Date.parse(event.created_at);
   if (typeof kind !== 'string' || !Number.isFinite(timestamp)) return;

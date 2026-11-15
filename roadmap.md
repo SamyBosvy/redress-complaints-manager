@@ -1,10 +1,13 @@
 # Redress roadmap
 
+- [x] Item #20: queue multi-selection/ranges/all-matching, confirmed reassignment/priority in 50-case batches, closed-case skips, progress/results and client CSV; public-form text corrections.
+- [ ] Verify Item #20 signed-in/mobile selection, persisted bulk updates and per-case audit/activity — blocked: hosted database stays paused.
+
 - [x] Item #10 front half: local CSV/XLSX parsing, six-language column/value suggestions, validation and 50-row preview, problems CSV, 100-row existing-path inserts with progress and retained preview on errors.
 - [ ] Verify Item #10 signed-in mobile upload/import, permissions and persisted readback — blocked: hosted database stays paused.
 
 - [x] Item #25: six-language public complaint form, typed dictionary and option labels, browser/URL language selection, translated validation and metadata; existing submission values preserved.
-- [ ] Verify Item #25 live form submission/confirmation — blocked: hosted database stays paused; native-speaker review needed before launch (French reviewed by owner).
+- [ ] Verify Item #25 live form submission/confirmation — blocked: hosted database stays paused; native-speaker review needed before launch (French still needs owner review).
 
 - [x] Item #41: truthful full marketing landing page, shared contact constant, illustrative product views, plans/FAQ; automatic typecheck/build clean, 191 tests passed; axe zero violations in light/dark, no horizontal scroll at 320/360/390/1280, menu/FAQ/skip/trial links checked locally.
 - [ ] Item #41 launch readiness: CONTACT_EMAIL set to samy.bosvy@gmail.com; hosted signup/demo delivery unverified while the database stays paused.

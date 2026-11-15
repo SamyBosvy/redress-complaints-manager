@@ -1,3 +1,5 @@
+import { CloseChecklistDialog } from '@/components/close-checklist';
+import { nextStatuses, transitionRequirement, workflowError } from '@/lib/workflow';
 import { AccessibleField } from '@/components/accessible-field';
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -38,9 +40,9 @@ const caseQuery = (id: string) =>
       ]);
       if (c.error) throw c.error;
       if (ev.error) throw ev.error;
-      const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
+      const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing,withdrawal_reason,redress_none,goodwill_none,adr_rights_given').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
       if(privacyError)throw privacyError;
-      return { c: {...c.data,privacy_processing:privacy.privacy_processing}, events: ev.data };
+      return { c: {...c.data,...privacy}, events: ev.data };
     },
   });
 
@@ -73,7 +75,10 @@ function CaseView() {
   const { data: { c, events } } = useSuspenseQuery(caseQuery(id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const nameOf = (u: string | null | undefined) => (u ? members.find((x) => x.user_id === u)?.name ?? "Unknown user" : "Unassigned");
-  const canEdit = !c.anonymised_at && m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
+  const canEdit = !c.anonymised_at && !c.privacy_processing && m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
+  const [closeOpen,setCloseOpen] = useState(false);
+  const [nextOpen,setNextOpen] = useState(false);
+  const [transitionBusy,setTransitionBusy] = useState(false);
   const [note, setNote] = useState("");
   const [letterOpen, setLetterOpen] = useState(false);
   const [expandedLetters, setExpandedLetters] = useState<Set<string>>(new Set());
@@ -96,7 +101,7 @@ function CaseView() {
 
   async function update(patch: Patch) {
     const { error } = await supabase.from("complaints").update(patch).eq("id", id);
-    if (error) { toast.error(error.message); return false; }
+    if (error) { toast.error(workflowError(error.message)); return false; }
     await refresh();
     return true;
   }
@@ -148,12 +153,7 @@ function CaseView() {
         <div className="space-y-6">
           <Card title="Handling">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Status">
-                <Select value={status} disabled={!canEdit} onValueChange={(v) => update({ status: v as Status })}>
-                  <SelectTrigger aria-label="Letter kind"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(STATUSES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
-                </Select>
-              </Field>
+              <div className="space-y-2"><Button variant="outline" disabled={!canEdit || !nextStatuses(status,m.role,m.org?.qa_required ?? false,canEdit).length} onClick={()=>setNextOpen(true)}>Next step</Button></div>
               <Field label="Assigned agent">
                 <Select value={c.assigned_to ?? "none"} disabled={!canEdit} onValueChange={(v) => update({ assigned_to: v === "none" ? null : v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -241,6 +241,8 @@ function CaseView() {
         </div>
       </div>
 
+      {nextOpen && <Dialog open onOpenChange={setNextOpen}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>Next step</DialogTitle></DialogHeader>{nextStatuses(status,m.role,m.org?.qa_required ?? false,canEdit).map(next=>{const requirement=transitionRequirement(next,status,letters,c.holding_reason);return <div key={next} className="space-y-1"><Button className="w-full whitespace-normal" variant="outline" disabled={transitionBusy || (next!=='closed' && (!!requirement || lettersResult.isPending || lettersResult.isError))} onClick={async()=>{if(next==='closed'){setNextOpen(false);setCloseOpen(true);return;}setTransitionBusy(true);try{if(await update({status:next}))setNextOpen(false);}finally{setTransitionBusy(false);}}}>{STATUSES[next]}</Button>{requirement && <p className="text-sm text-muted-foreground">{requirement}</p>}</div>;})}</DialogContent></Dialog>}
+      {closeOpen && <CloseChecklistDialog c={c} finalSent={status==='final_response_sent' && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
       {letterOpen && <LetterDialog c={c} onClose={() => setLetterOpen(false)} onSent={refresh} />}
     </div>
   );
@@ -305,9 +307,9 @@ function OutcomeCard({ c, baseCurrency, canEdit, onSave }: { c: any; baseCurrenc
         <div className="mt-4 flex justify-end">
           <Button variant="outline" onClick={async () => {
             if (await onSave({
-              outcome: (v.outcome || null) as keyof typeof OUTCOMES | null, redress_amount: num(v.redress_amount), redress_currency: v.redress_currency || null,
-              goodwill_amount: num(v.goodwill_amount), goodwill_currency: v.goodwill_currency || null,
-              root_cause_category: v.root_cause_category || null, root_cause_note: v.root_cause_note || null,
+              outcome: (v.outcome || null) as keyof typeof OUTCOMES | null, redress_amount: num(v.redress_amount), redress_currency: v.redress_amount === "" ? null : v.redress_currency || null,
+              goodwill_amount: num(v.goodwill_amount), goodwill_currency: v.goodwill_amount === "" ? null : v.goodwill_currency || null,
+              redress_none: false, goodwill_none: false, root_cause_category: v.root_cause_category || null, root_cause_note: v.root_cause_note || null,
             })) toast.success("Outcome saved.");
           }}>Save outcome</Button>
         </div>
@@ -347,17 +349,20 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   const tpl = templates.find((x) => x.kind === kind && x.language === lang);
   const adrMissing = isFinal(kind) && tpl && !hasAdrBlock(tpl.body);
 
+  const finalBlocked = isFinal(kind) && !["acknowledged","under_investigation","holding_response_sent","reopened"].includes(c.status);
+  const draft = isFinal(kind) && m.org?.qa_required;
   async function markSent() {
+    if(finalBlocked)return;
     if (kind === "holding" && !reason.trim()) { toast.error("Record the reason for the delay."); return; }
     const { error } = await supabase.from("letters").insert({ org_id: orgId, complaint_id: c.id, kind, language: lang, subject, body, sent_by: m.user.id });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(workflowError(error.message)); return; }
     const next = statusAfterLetter(kind, c.status, m.org!.qa_required);
     const patch: Patch = {};
     if (next) patch.status = next as Status;
     if (kind === "holding" && !c.holding_sent_at) { patch.holding_sent_at = new Date().toISOString(); patch.holding_reason = reason.trim().slice(0, 1000); }
     if (Object.keys(patch).length) {
       const { error: e2 } = await supabase.from("complaints").update(patch).eq("id", c.id);
-      if (e2) toast.error(e2.message);
+      if (e2) { toast.error(workflowError(e2.message)); await onSent(); onClose(); return; }
     }
     await onSent();
     toast.success(next === "pending_qa" ? "Final response sent to QA for approval." : "Letter recorded as sent.");
@@ -389,6 +394,8 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
             </Select>
           </div>
           {!tpl && <p className="text-sm text-warning">No {LANGUAGES[lang as keyof typeof LANGUAGES]} version of this template yet. Showing English.</p>}
+          {draft && <p className="text-sm text-warning">Draft — pending QA</p>}
+          {finalBlocked && <p className="text-sm text-warning">A final response cannot be re-sent while awaiting QA or after it has been sent.</p>}
           {adrMissing && <p className="text-sm text-warning">This final response template has no ADR referral block.</p>}
           {!adr?.adr_name && isFinal(kind) && <p className="text-sm text-warning">No ADR body is set for this customer's country.</p>}
           <Input aria-label="Letter subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
@@ -402,9 +409,9 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
           )}
         </div>
         <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
-          <Button variant="outline" onClick={pdf}><FileDown aria-hidden="true" className="h-4 w-4" /> Download PDF</Button>
-          <Button onClick={markSent}>Mark as sent</Button>
+          <Button disabled={!!draft} variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
+          <Button disabled={!!draft} variant="outline" onClick={pdf}><FileDown aria-hidden="true" className="h-4 w-4" /> Download PDF</Button>
+          <Button disabled={finalBlocked} onClick={markSent}>{draft ? "Submit for QA" : "Mark as sent"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

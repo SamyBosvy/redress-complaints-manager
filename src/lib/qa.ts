@@ -36,7 +36,7 @@ export const qaReviewsQuery = (orgId: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("qa_reviews")
-        .select("*, complaints(reference, complainant_name)")
+        .select("*, complaints(reference, complainant_name, assigned_to), letters(sent_by)")
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(500);

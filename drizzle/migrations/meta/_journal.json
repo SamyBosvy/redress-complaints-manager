@@ -106,6 +106,13 @@
       "when": 1792803208757,
       "tag": "0014_account_recovery_and_settings_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794779561573,
+      "tag": "0015_compliance_hardening",
+      "breakpoints": true
     }
   ]
 }

@@ -143,6 +143,7 @@ export type Database = {
       complaints: {
         Row: {
           ack_due: string | null
+          adr_rights_given: boolean
           anonymised_at: string | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["complaint_category"]
@@ -160,6 +161,7 @@ export type Database = {
           final_due: string | null
           goodwill_amount: number | null
           goodwill_currency: string | null
+          goodwill_none: boolean
           holding_reason: string | null
           holding_sent_at: string | null
           id: string
@@ -173,6 +175,7 @@ export type Database = {
           received_at: string
           redress_amount: number | null
           redress_currency: string | null
+          redress_none: boolean
           reference: string
           root_cause_category: string | null
           root_cause_note: string | null
@@ -183,9 +186,11 @@ export type Database = {
           updated_at: string
           vulnerable: boolean
           vulnerable_note: string | null
+          withdrawal_reason: string | null
         }
         Insert: {
           ack_due?: string | null
+          adr_rights_given?: boolean
           anonymised_at?: string | null
           assigned_to?: string | null
           category: Database["public"]["Enums"]["complaint_category"]
@@ -203,6 +208,7 @@ export type Database = {
           final_due?: string | null
           goodwill_amount?: number | null
           goodwill_currency?: string | null
+          goodwill_none?: boolean
           holding_reason?: string | null
           holding_sent_at?: string | null
           id?: string
@@ -216,6 +222,7 @@ export type Database = {
           received_at?: string
           redress_amount?: number | null
           redress_currency?: string | null
+          redress_none?: boolean
           reference?: string
           root_cause_category?: string | null
           root_cause_note?: string | null
@@ -226,9 +233,11 @@ export type Database = {
           updated_at?: string
           vulnerable?: boolean
           vulnerable_note?: string | null
+          withdrawal_reason?: string | null
         }
         Update: {
           ack_due?: string | null
+          adr_rights_given?: boolean
           anonymised_at?: string | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
@@ -246,6 +255,7 @@ export type Database = {
           final_due?: string | null
           goodwill_amount?: number | null
           goodwill_currency?: string | null
+          goodwill_none?: boolean
           holding_reason?: string | null
           holding_sent_at?: string | null
           id?: string
@@ -259,6 +269,7 @@ export type Database = {
           received_at?: string
           redress_amount?: number | null
           redress_currency?: string | null
+          redress_none?: boolean
           reference?: string
           root_cause_category?: string | null
           root_cause_note?: string | null
@@ -269,6 +280,7 @@ export type Database = {
           updated_at?: string
           vulnerable?: boolean
           vulnerable_note?: string | null
+          withdrawal_reason?: string | null
         }
         Relationships: [
           {
@@ -321,6 +333,7 @@ export type Database = {
       }
       letters: {
         Row: {
+          approved_by: string | null
           body: string
           complaint_id: string
           id: string
@@ -329,9 +342,11 @@ export type Database = {
           org_id: string
           sent_at: string
           sent_by: string
+          status: string
           subject: string
         }
         Insert: {
+          approved_by?: string | null
           body: string
           complaint_id: string
           id?: string
@@ -340,9 +355,11 @@ export type Database = {
           org_id: string
           sent_at?: string
           sent_by?: string
+          status?: string
           subject?: string
         }
         Update: {
+          approved_by?: string | null
           body?: string
           complaint_id?: string
           id?: string
@@ -351,6 +368,7 @@ export type Database = {
           org_id?: string
           sent_at?: string
           sent_by?: string
+          status?: string
           subject?: string
         }
         Relationships: [
@@ -781,6 +799,7 @@ export type Database = {
           decided_at: string | null
           id: string
           kind: string
+          letter_id: string | null
           org_id: string
           reviewer: string | null
           scorecard: Json | null
@@ -793,6 +812,7 @@ export type Database = {
           decided_at?: string | null
           id?: string
           kind: string
+          letter_id?: string | null
           org_id: string
           reviewer?: string | null
           scorecard?: Json | null
@@ -805,6 +825,7 @@ export type Database = {
           decided_at?: string | null
           id?: string
           kind?: string
+          letter_id?: string | null
           org_id?: string
           reviewer?: string | null
           scorecard?: Json | null
@@ -823,6 +844,13 @@ export type Database = {
             columns: ["complaint_id"]
             isOneToOne: false
             referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qa_reviews_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "letters"
             referencedColumns: ["id"]
           },
           {

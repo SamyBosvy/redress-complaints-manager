@@ -48,14 +48,14 @@ export function CaseLetters({ letters, loading, error, anonymised, members, refe
           <span className="min-w-0 space-y-1">
             <span className="block text-sm font-medium">{TEMPLATE_KINDS[letter.kind]} · {LANGUAGES[letter.language as keyof typeof LANGUAGES] ?? letter.language}</span>
             <span className="block break-words text-sm [overflow-wrap:anywhere]">{letter.subject || 'No subject'}</span>
-            <span className="block text-xs font-normal text-muted-foreground">Sent {formatDate(letter.sent_at)} · {letterSender(letter.sent_by, members)}</span>
+            <span className="block text-xs font-normal text-muted-foreground">{letter.status==='pending_approval' ? 'Draft — pending QA' : 'Sent'} {formatDate(letter.sent_at)} · {letterSender(letter.sent_by, members)}</span>
           </span>
           <ChevronDown aria-hidden="true" className={`mt-1 h-4 w-4 shrink-0 ${expanded.has(letter.id) ? 'rotate-180' : ''}`} />
         </Button>
         <div id={`letter-body-${letter.id}`} hidden={!expanded.has(letter.id)} className="mt-3 whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]">{letter.body}</div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" aria-label={`Copy ${letter.subject || TEMPLATE_KINDS[letter.kind]}`} onClick={() => void copy(letter)}><Copy aria-hidden="true" className="h-4 w-4" />Copy</Button>
-          <Button size="sm" variant="outline" disabled={downloading !== null} aria-label={`Download PDF: ${letter.subject || TEMPLATE_KINDS[letter.kind]}`} onClick={() => void pdf(letter)}><FileDown aria-hidden="true" className="h-4 w-4" />Download PDF</Button>
+          <Button size="sm" variant="outline" disabled={letter.status!=='sent'} aria-label={`Copy ${letter.subject || TEMPLATE_KINDS[letter.kind]}`} onClick={() => void copy(letter)}><Copy aria-hidden="true" className="h-4 w-4" />Copy</Button>
+          <Button size="sm" variant="outline" disabled={downloading !== null || letter.status!=='sent'} aria-label={`Download PDF: ${letter.subject || TEMPLATE_KINDS[letter.kind]}`} onClick={() => void pdf(letter)}><FileDown aria-hidden="true" className="h-4 w-4" />Download PDF</Button>
         </div>
       </li>)}</ul>}
   </section>;

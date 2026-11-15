@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Batch 2: reviewed/applied compliance migration 0015 with managed journal/snapshot and refreshed types; legal Next step, closure checklist, four-eyes QA/draft restrictions and readable import labels.
+- [ ] Batch 2 signed-in case/QA/import persistence and mobile verification — blocked: hosted database has no users or organisations; no test accounts created.
+
 - [x] Item #20: queue multi-selection/ranges/all-matching, confirmed reassignment/priority in 50-case batches, closed-case skips, progress/results and client CSV; public-form text corrections.
 - [ ] Verify Item #20 signed-in/mobile selection, persisted bulk updates and per-case audit/activity — blocked: hosted database stays paused.
 
@@ -46,7 +49,7 @@
 - [ ] Verify Item #52 signed-in banner/dialog and mobile layout — blocked: hosted database remains paused.
 - [x] Code-only PDF/currency work: shared Unicode font, firm-address letter header, per-currency report figures/CSV/PDF and Outcome currency selectors
 - [x] Local verification: all 92 tests passed; automatic full typecheck/build OK at 2026-10-28 02:43:54 UTC; Polish letter (1 page), French letter (2 pages) and regulatory pack (1 page) rendered to PNG and every page visually checked
-- [ ] Compliance workflow database/UI hardening — blocked: hosted database paused; staged sql/0015_compliance_hardening.sql remains untouched
+- [x] Compliance workflow database/UI hardening — migration 0015 applied; hosted columns/functions/triggers verified; letters/QA/complaints RLS unchanged.
 - [ ] Verify currency controls and report exports with a signed-in firm — blocked: hosted database paused
 - [x] Use actual privacy_processing read from complaints for the case recalculation gate; fail closed on read errors
 - [x] No-send daily digest preparation: one active member, tenant/role-scoped clocks, at-risk 0–3 business days, overdue, pending final-response approvals; paginated server reads, no queue, schedule or sends

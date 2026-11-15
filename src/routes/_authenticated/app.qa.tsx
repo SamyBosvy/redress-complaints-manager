@@ -1,3 +1,4 @@
+import { fourEyes, FOUR_EYES, workflowError } from '@/lib/workflow';
 import { EmptyState } from '@/components/empty-state';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { CheckCheck } from 'lucide-react';
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/app/qa")({
   component: QaPage,
 });
 
-type ReviewRow = QaReview & { complaints: { reference: string; complainant_name: string } | null };
+type ReviewRow = QaReview & { complaints: { reference: string; complainant_name: string; assigned_to: string | null } | null; letters?: {sent_by:string} | null };
 
 function QaPage() {
   const m = useMembership()!;
@@ -41,14 +42,7 @@ function QaPage() {
 
   async function decide(r: ReviewRow, status: "approved" | "returned", note: string) {
     const { error } = await supabase.from("qa_reviews").update({ status, comments: note || null, reviewer: m.user.id, decided_at: new Date().toISOString() }).eq("id", r.id);
-    if (error) { toast.error(error.message); return; }
-    const next = status === "approved" ? "final_response_sent" : "under_investigation";
-    const { error: e2 } = await supabase.from("complaints").update({ status: next }).eq("id", r.complaint_id);
-    if (e2) { toast.error(e2.message); return; }
-    if (status === "returned") {
-      const { data: c } = await supabase.from("complaints").select("assigned_to, reference").eq("id", r.complaint_id).single();
-      if (c?.assigned_to) await supabase.from("notifications").insert({ org_id: orgId, user_id: c.assigned_to, kind: "qa_returned", title: `Final response returned by QA: ${c.reference}`, complaint_id: r.complaint_id });
-    }
+    if (error) { toast.error(workflowError(error.message)); return; }
     toast.success(status === "approved" ? "Final response approved and marked sent." : "Returned to the agent.");
     await refresh();
   }
@@ -56,7 +50,7 @@ function QaPage() {
   async function saveScorecard(r: ReviewRow) {
     const passed = scorecardPassed(card);
     const { error } = await supabase.from("qa_reviews").update({ status: passed ? "passed" : "failed", scorecard: card as any, comments: comments || null, reviewer: m.user.id, decided_at: new Date().toISOString() }).eq("id", r.id);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(workflowError(error.message)); return; }
     toast.success(passed ? "Review passed." : "Review failed — recorded.");
     setScoreFor(null);
     setComments("");
@@ -88,8 +82,9 @@ function QaPage() {
                 <td className="px-4 py-3 text-right">
                   {canDecide && r.kind === "approval" && (
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" onClick={() => decide(r, "approved", "")}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => { setReturnFor(r); setComments(""); }}>Return</Button>
+                      <Button size="sm" disabled={fourEyes(m.user.id,r.letters?.sent_by,r.complaints?.assigned_to) || !r.letters} onClick={() => decide(r, "approved", "")}>Approve</Button>
+                      <Button disabled={fourEyes(m.user.id,r.letters?.sent_by,r.complaints?.assigned_to) || !r.letters} size="sm" variant="outline" onClick={() => { setReturnFor(r); setComments(""); }}>Return</Button>
+                    {fourEyes(m.user.id,r.letters?.sent_by,r.complaints?.assigned_to) && <p className="text-sm text-muted-foreground">{FOUR_EYES}</p>}
                     </div>
                   )}
                   {canDecide && r.kind === "sample" && (
@@ -134,7 +129,7 @@ function QaPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnFor(null)}>Cancel</Button>
-            <Button disabled={!comments.trim()} onClick={() => { decide(returnFor!, "returned", comments.trim()); setReturnFor(null); }}>Return</Button>
+            <Button disabled={!comments.trim()} onClick={() => { if(returnFor)void decide(returnFor, "returned", comments.trim()); setReturnFor(null); }}>Return</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -163,7 +158,7 @@ function QaPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setScoreFor(null)}>Cancel</Button>
-            <Button onClick={() => saveScorecard(scoreFor!)}>Save review</Button>
+            <Button onClick={() => scoreFor && saveScorecard(scoreFor)}>Save review</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

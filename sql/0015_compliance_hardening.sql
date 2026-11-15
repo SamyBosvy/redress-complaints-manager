@@ -1,5 +1,5 @@
 -- Compliance hardening: DB-enforced complaint workflow, four-eyes QA, currency validation, close checklist.
--- PENDING: apply via the migration tool once the hosted database is resumed (paused: workspace out of Cloud credits).
+-- Reviewed against migrations 0012–0014; preserves membership, privacy locks and RLS.
 -- Until applied, src/test/workflow-database.test.ts executes these routines in local PostgreSQL (PGlite).
 
 -- Letters gain an approval state; existing letters are already sent.
@@ -12,6 +12,7 @@ ALTER TABLE public.qa_reviews ADD COLUMN letter_id uuid REFERENCES public.letter
 
 -- Complaints: withdrawal reason and explicit "no payment" confirmations for the close checklist.
 ALTER TABLE public.complaints ADD COLUMN withdrawal_reason text;
+ALTER TABLE public.complaints ADD COLUMN adr_rights_given boolean NOT NULL DEFAULT false;
 ALTER TABLE public.complaints ADD COLUMN redress_none boolean NOT NULL DEFAULT false;
 ALTER TABLE public.complaints ADD COLUMN goodwill_none boolean NOT NULL DEFAULT false;
 
@@ -48,6 +49,7 @@ DECLARE o public.organisations%ROWTYPE; adr text; final_letter public.letters%RO
 BEGIN
   IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
   SELECT * INTO o FROM public.organisations WHERE id = NEW.org_id;
+  IF auth.uid() IS NOT NULL AND NOT public.has_org_role(NEW.org_id, ARRAY['org_admin','complaints_manager','qa_reviewer','agent']::public.app_role[]) THEN RAISE EXCEPTION 'You cannot change this complaint'; END IF;
 
   IF OLD.status = 'received' AND NEW.status = 'acknowledged' THEN
     IF NOT EXISTS (SELECT 1 FROM public.letters l WHERE l.complaint_id = NEW.id AND l.kind = 'acknowledgement' AND l.status = 'sent') THEN
@@ -69,7 +71,7 @@ BEGIN
 
   ELSIF NEW.status = 'final_response_sent' THEN
     IF OLD.status = 'pending_qa' THEN
-      IF NOT EXISTS (SELECT 1 FROM public.qa_reviews q WHERE q.complaint_id = NEW.id AND q.kind = 'approval' AND q.status = 'approved') THEN
+      IF NOT EXISTS (SELECT 1 FROM public.qa_reviews q WHERE q.complaint_id = NEW.id AND q.kind = 'approval' AND q.status = 'approved' AND EXISTS(SELECT 1 FROM public.letters l WHERE l.id=q.letter_id AND l.complaint_id=NEW.id AND l.org_id=NEW.org_id AND l.status='sent')) THEN
         RAISE EXCEPTION 'Final response requires QA approval'; END IF;
     ELSIF OLD.status IN ('acknowledged','under_investigation','holding_response_sent','reopened') THEN
       IF o.qa_required THEN RAISE EXCEPTION 'Final response must go through QA approval'; END IF;
@@ -82,6 +84,10 @@ BEGIN
   ELSIF NEW.status = 'closed' THEN
     IF OLD.status IN ('closed','escalated_to_adr') THEN
       RAISE EXCEPTION 'Invalid status change: % to %', OLD.status, NEW.status; END IF;
+    IF NEW.root_cause_category IS NULL OR length(trim(NEW.root_cause_category))=0 THEN RAISE EXCEPTION 'Set the root cause before closing'; END IF;
+    IF NOT NEW.adr_rights_given THEN RAISE EXCEPTION 'Confirm ADR referral rights before closing'; END IF;
+    IF NOT (NEW.redress_none OR (NEW.redress_amount IS NOT NULL AND NEW.redress_currency IS NOT NULL)) THEN RAISE EXCEPTION 'Record redress paid or confirm none before closing'; END IF;
+    IF NOT (NEW.goodwill_none OR (NEW.goodwill_amount IS NOT NULL AND NEW.goodwill_currency IS NOT NULL)) THEN RAISE EXCEPTION 'Record goodwill paid or confirm none before closing'; END IF;
     IF NEW.outcome = 'withdrawn' THEN
       IF NEW.withdrawal_reason IS NULL OR length(trim(NEW.withdrawal_reason)) = 0 THEN
         RAISE EXCEPTION 'Closing as withdrawn requires a reason'; END IF;
@@ -123,7 +129,12 @@ CREATE TRIGGER complaints_status_guard BEFORE UPDATE ON public.complaints
 -- Letter insert guard: final responses are drafts pending QA when the org requires it.
 CREATE OR REPLACE FUNCTION public.letters_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE c public.complaints%ROWTYPE;
 BEGIN
+  SELECT * INTO c FROM public.complaints WHERE id=NEW.complaint_id AND org_id=NEW.org_id FOR UPDATE;
+  IF c.id IS NULL OR c.anonymised_at IS NOT NULL OR c.privacy_processing THEN RAISE EXCEPTION 'This complaint is read-only'; END IF;
+  IF NEW.kind::text LIKE 'final_%' AND c.status NOT IN ('acknowledged','under_investigation','holding_response_sent','reopened') THEN RAISE EXCEPTION 'A final response cannot be sent at this stage'; END IF;
+  IF NEW.kind='holding' AND c.status NOT IN ('acknowledged','under_investigation') THEN RAISE EXCEPTION 'A holding response cannot be sent at this stage'; END IF;
   IF NEW.kind::text LIKE 'final_%'
      AND (SELECT qa_required FROM public.organisations WHERE id = NEW.org_id) THEN
     NEW.status := 'pending_approval';
@@ -151,12 +162,20 @@ CREATE OR REPLACE FUNCTION public.qa_reviews_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE author uuid; handler uuid;
 BEGIN
+  IF TG_OP='INSERT' THEN
+    IF NEW.status<>'pending' OR NEW.reviewer IS NOT NULL OR NEW.decided_at IS NOT NULL THEN RAISE EXCEPTION 'New reviews must be pending'; END IF;
+    IF NEW.kind='approval' AND NOT EXISTS(SELECT 1 FROM public.letters l WHERE l.id=NEW.letter_id AND l.org_id=NEW.org_id AND l.complaint_id=NEW.complaint_id AND l.status='pending_approval') THEN RAISE EXCEPTION 'Review requires the pending final letter'; END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.org_id<>OLD.org_id OR NEW.complaint_id<>OLD.complaint_id OR NEW.kind<>OLD.kind OR NEW.letter_id IS DISTINCT FROM OLD.letter_id THEN RAISE EXCEPTION 'Review identity cannot change'; END IF;
+  IF NEW.status IS DISTINCT FROM OLD.status AND NOT ((NEW.kind='approval' AND NEW.status IN ('approved','returned')) OR (NEW.kind='sample' AND NEW.status IN ('passed','failed'))) THEN RAISE EXCEPTION 'Invalid review decision'; END IF;
   IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('approved','returned','passed','failed') THEN
     IF OLD.status <> 'pending' THEN RAISE EXCEPTION 'This review has already been decided'; END IF;
     NEW.reviewer := auth.uid();
     NEW.decided_at := now();
     IF NEW.kind = 'approval' THEN
-      SELECT l.sent_by INTO author FROM public.letters l WHERE l.id = NEW.letter_id;
+      SELECT l.sent_by INTO author FROM public.letters l WHERE l.id = NEW.letter_id AND l.org_id=NEW.org_id AND l.complaint_id=NEW.complaint_id AND l.status='pending_approval' FOR UPDATE;
+      IF author IS NULL OR NOT EXISTS(SELECT 1 FROM public.complaints WHERE id=NEW.complaint_id AND org_id=NEW.org_id AND status='pending_qa' AND NOT privacy_processing AND anonymised_at IS NULL) THEN RAISE EXCEPTION 'Review requires the pending final letter'; END IF;
       SELECT c.assigned_to INTO handler FROM public.complaints c WHERE c.id = NEW.complaint_id;
       IF author IS NOT NULL AND author = auth.uid() THEN
         RAISE EXCEPTION 'You cannot approve a letter you wrote'; END IF;
@@ -166,7 +185,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER qa_reviews_guard BEFORE UPDATE ON public.qa_reviews
+CREATE TRIGGER qa_reviews_guard BEFORE INSERT OR UPDATE ON public.qa_reviews
   FOR EACH ROW EXECUTE FUNCTION public.qa_reviews_guard();
 
 -- QA decisions cascade: approval sends the letter and advances the case; return sends it back with notice.
@@ -204,7 +223,7 @@ BEGIN
     INSERT INTO public.notifications (org_id, user_id, kind, title, complaint_id)
     SELECT NEW.org_id, om.user_id, 'qa_pending', 'Final response awaiting QA: ' || NEW.reference, NEW.id
     FROM public.org_members om
-    WHERE om.org_id = NEW.org_id AND om.role IN ('qa_reviewer','complaints_manager','org_admin');
+    WHERE om.org_id = NEW.org_id AND om.active AND om.role IN ('qa_reviewer','complaints_manager','org_admin');
   END IF;
   RETURN NEW;
 END $$;
@@ -248,3 +267,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+-- Preserve existing recovery/invite minimisation while excluding new customer free text.
+CREATE OR REPLACE FUNCTION public.audit_minimise(_table text,_row jsonb) RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=public AS $$ SELECT CASE WHEN _row IS NULL THEN NULL WHEN _table='account_recovery' THEN _row-'hashes' WHEN _table='org_invites' THEN _row-ARRAY['token_hash','email'] WHEN _table='complaints' THEN _row-ARRAY['complainant_name','complainant_email','complainant_phone','customer_ref','vulnerable_note','summary','desired_outcome','holding_reason','root_cause_note','root_cause_category','withdrawal_reason'] WHEN _table='complaint_events' THEN _row-'detail' WHEN _table='letters' THEN _row-ARRAY['subject','body'] WHEN _table='qa_reviews' THEN _row-ARRAY['comments','scorecard'] WHEN _table='notifications' THEN _row-'title' WHEN _table='public_form_submissions' THEN _row-'privacy_notice' ELSE _row END $$;
+CREATE TRIGGER audit_letters_update AFTER UPDATE ON public.letters FOR EACH ROW EXECUTE FUNCTION public.audit_capture();

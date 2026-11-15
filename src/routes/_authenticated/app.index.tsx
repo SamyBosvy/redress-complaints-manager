@@ -208,6 +208,8 @@ function Queue() {
 
       {wholePage && selected.length < total && <Button variant="link" className="mt-3 h-auto max-w-full whitespace-normal text-left" disabled={selecting || busy} onClick={selectMatching}>{selecting ? 'Selecting…' : `Select all ${total} matching the current filters`}</Button>}
 
+      <QueueBulkActions key={scope} rows={selected} orgId={orgId} role={m.role} handlers={handlers} members={members} clear={clearSelection} onBusy={setBusy}/>
+
       <div className="mt-4 max-w-full overflow-x-auto rounded-lg border bg-card">
         <table ref={tableRef} className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -280,7 +282,6 @@ function Queue() {
           </div>
         </div>
       </div>
-      <QueueBulkActions key={scope} rows={selected} orgId={orgId} role={m.role} handlers={handlers} members={members} clear={clearSelection} onBusy={setBusy}/>
     </div>
   );
 }

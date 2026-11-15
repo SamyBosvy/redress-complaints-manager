@@ -79,7 +79,7 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
   }
   if (!rows.length) return null;
   return <>
-    <div className="sticky bottom-2 z-20 mt-4 border bg-card p-3 shadow-sm" aria-label="Bulk actions">
+    <div className="sticky top-2 z-20 mt-4 border bg-card p-3 shadow-sm" aria-label="Bulk actions">
       <div className="flex flex-wrap items-center gap-2">
         <strong className="w-full text-sm tabular sm:w-auto sm:mr-auto">{rows.length} selected</strong>
         {permissions.reassign && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => {setValue('none'); setAction('reassign');}}><UserRound aria-hidden="true" className="h-4 w-4"/>Reassign</Button>}

@@ -42,7 +42,33 @@ describe('complaint import', () => {
     expect(matchImportValue('channel', 'PHONE')).toBe('phone');
   });
   it.each(['date','name','country','product','category','summary'])('blocks missing required %s', field => { expect(validate({ [field]: '' })?.state).toBe('blocked'); });
-  it.each(['country','product','category','channel','language','status'])('blocks unknown %s', field => { expect(validate({ [field]: 'unknown' })?.state).toBe('blocked'); });
+  it.each(['country','product','category'])('blocks unknown required %s', field => { expect(validate({ [field]: 'unknown' })?.state).toBe('blocked'); });
+  it.each([
+    ['status', 'Reçue', 'Status “Reçue” not recognised — will import as Received.', 'received'],
+    ['channel', 'Fax', 'Channel “Fax” not recognised — will import as Email.', 'email'],
+    ['language', 'Klingon', 'Language “Klingon” not recognised — will import as English.', 'en'],
+  ] as const)('warns and defaults unmapped optional %s', (field, raw, message, fallback) => {
+    const row = validate({ [field]: raw });
+    expect(row?.state).toBe('warnings');
+    expect(row?.problems).toContain(message);
+    expect(row?.data?.[field === 'status' ? 'status' : field]).toBe(fallback);
+  });
+  it('matches translated status labels in five languages', () => {
+    expect(matchImportValue('status', 'Reçue')).toBe('received');
+    expect(matchImportValue('status', 'Recibida')).toBe('received');
+    expect(matchImportValue('status', 'Recebida')).toBe('received');
+    expect(matchImportValue('status', 'Otrzymana')).toBe('received');
+    expect(matchImportValue('status', 'Ontvangen')).toBe('received');
+    expect(matchImportValue('status', 'Accusé de réception')).toBe('acknowledged');
+    expect(matchImportValue('status', 'En investigación')).toBe('under_investigation');
+    expect(matchImportValue('status', 'W trakcie badania')).toBe('under_investigation');
+    expect(matchImportValue('status', 'Clôturée')).toBe('closed');
+    expect(matchImportValue('status', 'Gesloten')).toBe('closed');
+    expect(validate({ status: 'Reçue' })?.data?.status).toBe('received');
+  });
+  it.each(['Description', 'Description de la réclamation', 'Descripción', 'Descrição', 'Opis', 'Omschrijving', 'Beschrijving', 'Details', 'Complaint details', 'Complaint description'])('maps "%s" header to summary', header => {
+    expect(suggestColumns([header])).toEqual({ summary: header });
+  });
   it('honours explicit mapping and explicit unmapped values', () => {
     const row = { ...base, product: 'Local card' };
     expect(validateImport([row], columns, { product: { 'Local card': 'card' } }, 'DD/MM/YYYY', members, 'org', 'creator', '2026-11-14')[0]?.data?.product).toBe('card');

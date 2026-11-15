@@ -195,7 +195,7 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
   return count ?? 0;
 }
 
-async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
+export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
   const size = PAGE_SIZE;
   const sort = p.sort ?? "time_left";
   const dir = p.dir ?? "asc";
@@ -233,6 +233,16 @@ export const queueQuery = (orgId: string, p: QueueParams) =>
     queryKey: ["queue", orgId, p],
     queryFn: () => fetchQueuePage(orgId, p),
   });
+
+/** Reuses the exact page filters/order and never silently caps matching selection. */
+export async function fetchMatchingQueue(orgId: string, p: QueueParams): Promise<QueueItem[]> {
+  const first = await fetchQueuePage(orgId, { ...p, page: 1 });
+  const rows = [...first.rows];
+  for (let page = 2; page <= Math.ceil(first.total / PAGE_SIZE); page++) {
+    rows.push(...(await fetchQueuePage(orgId, { ...p, page })).rows);
+  }
+  return rows;
+}
 
 /** Palette search reuses queue filters, with explicit tenant scope and a hard result cap. */
 export const complaintSearchQuery = (orgId: string, userId: string, text: string) => queryOptions({

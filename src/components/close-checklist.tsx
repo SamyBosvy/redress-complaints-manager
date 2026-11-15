@@ -10,7 +10,8 @@ import { closeComplete, type CloseChecklist } from '@/lib/workflow';
 import type { Database } from '@/integrations/supabase/types';
 
 type Case = Database['public']['Tables']['complaints']['Row'];
-export function CloseChecklistDialog({ c, finalSent, baseCurrency, onClose, onSave }: { c: Partial<Case>; finalSent: boolean; baseCurrency: string; onClose: () => void; onSave: (p: Database['public']['Tables']['complaints']['Update']) => Promise<boolean> }) {
+type ChecklistCase = Partial<Pick<Case,'outcome'|'root_cause_category'|'withdrawal_reason'|'adr_rights_given'|'redress_none'|'goodwill_none'|'redress_amount'|'goodwill_amount'|'redress_currency'|'goodwill_currency'>>;
+export function CloseChecklistDialog({ c, finalSent, baseCurrency, onClose, onSave }: { c: ChecklistCase; finalSent: boolean; baseCurrency: string; onClose: () => void; onSave: (p: Database['public']['Tables']['complaints']['Update']) => Promise<boolean> }) {
   const [v,setV] = useState<CloseChecklist>({ outcome:c.outcome ?? '', rootCause:c.root_cause_category ?? '', withdrawalReason:c.withdrawal_reason ?? '', finalSent, adr:c.adr_rights_given ?? false, redressNone:c.redress_none ?? false, goodwillNone:c.goodwill_none ?? false, redress:c.redress_amount?.toString() ?? '', goodwill:c.goodwill_amount?.toString() ?? '', redressCurrency:c.redress_currency ?? baseCurrency, goodwillCurrency:c.goodwill_currency ?? baseCurrency });
   const [busy,setBusy] = useState(false);
   const field = <K extends keyof CloseChecklist>(key: K, value: CloseChecklist[K]) => setV(old => ({...old,[key]:value}));

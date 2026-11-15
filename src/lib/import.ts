@@ -27,7 +27,7 @@ const headerAliases: Partial<Record<ImportField, string[]>> = {
   received_at: ['Date received','Date de réception','Fecha de recepción','Data de receção','Data otrzymania','Ontvangstdatum'],
   complainant_name: ['Customer name','Nom du client','Nombre del cliente','Nome do cliente','Imię i nazwisko','Klantnaam'],
   country_code: ['Country','Pays','País','Kraj','Land'], product: ['Product','Produit','Producto','Produto','Produkt'], category: ['Category','Catégorie','Categoría','Categoria','Kategoria','Categorie'],
-  summary: ['Summary','Résumé','Resumen','Resumo','Opis','Samenvatting'], channel: ['Channel','Canal','Kanał','Kanaal'], language: ['Language','Langue','Idioma','Język','Taal'],
+  summary: ['Summary','Résumé','Resumen','Resumo','Opis','Samenvatting','Description','Description de la réclamation','Descripción','Descrição','Omschrijving','Beschrijving','Details','Complaint details','Complaint description'], channel: ['Channel','Canal','Kanał','Kanaal'], language: ['Language','Langue','Idioma','Język','Taal'],
   complainant_email: ['Email','E-mail','Correo electrónico'], complainant_phone: ['Phone','Téléphone','Teléfono','Telefone','Telefon','Telefoon'],
   customer_ref: ['Customer ID','Identifiant client','ID cliente','Identificador cliente','Identyfikator klienta','Klantnummer'], desired_outcome: ['Desired outcome','Résultat souhaité','Resultado deseado','Resultado pretendido','Oczekiwany wynik','Gewenste uitkomst'],
   vulnerable: ['Vulnerable','Vulnérable','Vulnerável','Wrażliwy','Kwetsbaar'], status: ['Status','Statut','Estado'], agent_email: ['Assigned agent email','Email agent','Correo del agente','Email do agente','Email agenta','E-mail behandelaar'], priority: ['Priority','Priorité','Prioridad','Prioridade','Priorytet','Prioriteit'], external_reference: ['External reference','Référence externe','Referencia externa','Referência externa','Zewnętrzny numer referencyjny','Externe referentie'],
@@ -41,6 +41,13 @@ export function suggestColumns(headers: string[]): ColumnMap {
   }
   return result;
 }
+/** Translated status labels (FR/ES/PT/PL/NL) accepted during import, keyed by status. */
+export const STATUS_TRANSLATIONS: Record<string, string[]> = {
+  received: ['Reçue','Reçu','Recibida','Recibido','Recebida','Recebido','Otrzymana','Otrzymany','Ontvangen'],
+  acknowledged: ['Accusée de réception','Accusé de réception','Acusada','Confirmada','Reconhecida','Potwierdzona','Bevestigd'],
+  under_investigation: ["En cours d'instruction","À l'étude",'En investigación','Em investigação','W trakcie badania','W trakcie wyjaśniania','In onderzoek'],
+  closed: ['Clôturée','Fermée','Cerrada','Encerrada','Fechada','Zamknięta','Gesloten','Afgesloten'],
+};
 export function matchImportValue(field: string, value: string): string {
   const options = VALUE_OPTIONS[field];
   if (!options || !value.trim()) return '';
@@ -48,6 +55,7 @@ export function matchImportValue(field: string, value: string): string {
   for (const [key, label] of Object.entries(options)) {
     const labels = [key, label];
     if (translatedField) for (const dictionary of Object.values(PUBLIC_FORM_I18N)) labels.push((dictionary[translatedField] as Record<string, string>)[key] ?? '');
+    if (field === 'status') labels.push(...(STATUS_TRANSLATIONS[key] ?? []));
     if (labels.some(label => normaliseImport(label) === normaliseImport(value))) return key;
   }
   return '';
@@ -82,15 +90,18 @@ export function validateImport(rows: Record<string, string>[], columns: ColumnMa
     const date = parseImportDate(get('received_at'), format);
     if (!date) errors.push('Received date is invalid for the selected format.');
     else if (date.slice(0, 10) > now.slice(0, 10)) errors.push('Received date is in the future.');
-    const mapped = (field: ImportField, fallback = '') => {
+    const mapped = (field: ImportField, fallback = '', optional = false) => {
       const raw = get(field);
       if (!raw) return fallback;
       const choice = values[field]?.[raw] ?? matchImportValue(field, raw);
-      if (!choice || !Object.hasOwn(VALUE_OPTIONS[field] ?? {}, choice)) { errors.push(`${IMPORT_FIELDS[field]} value “${raw}” is not mapped.`); return ''; }
+      if (!choice || !Object.hasOwn(VALUE_OPTIONS[field] ?? {}, choice)) {
+        if (optional) { warnings.push(`${IMPORT_FIELDS[field]} “${raw}” not recognised — will import as ${VALUE_OPTIONS[field]?.[fallback] ?? fallback}.`); return fallback; }
+        errors.push(`${IMPORT_FIELDS[field]} value “${raw}” is not mapped.`); return '';
+      }
       return choice;
     };
     const country = mapped('country_code'), product = mapped('product'), category = mapped('category');
-    const channel = mapped('channel', 'email'), language = mapped('language', 'en'), status = mapped('status', 'received');
+    const channel = mapped('channel', 'email', true), language = mapped('language', 'en', true), status = mapped('status', 'received', true);
     if (get('complainant_email') && !z.string().email().safeParse(get('complainant_email')).success) errors.push('Email is invalid.');
     const limits: Partial<Record<ImportField, number>> = { complainant_name: 200, complainant_email: 255, complainant_phone: 50, customer_ref: 100, summary: 10000, desired_outcome: 5000 };
     for (const [field, limit] of Object.entries(limits)) if (get(field as ImportField).length > limit) errors.push(`${IMPORT_FIELDS[field as ImportField]} exceeds ${limit} characters.`);

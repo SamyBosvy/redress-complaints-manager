@@ -90,15 +90,18 @@ export function validateImport(rows: Record<string, string>[], columns: ColumnMa
     const date = parseImportDate(get('received_at'), format);
     if (!date) errors.push('Received date is invalid for the selected format.');
     else if (date.slice(0, 10) > now.slice(0, 10)) errors.push('Received date is in the future.');
-    const mapped = (field: ImportField, fallback = '') => {
+    const mapped = (field: ImportField, fallback = '', optional = false) => {
       const raw = get(field);
       if (!raw) return fallback;
       const choice = values[field]?.[raw] ?? matchImportValue(field, raw);
-      if (!choice || !Object.hasOwn(VALUE_OPTIONS[field] ?? {}, choice)) { errors.push(`${IMPORT_FIELDS[field]} value “${raw}” is not mapped.`); return ''; }
+      if (!choice || !Object.hasOwn(VALUE_OPTIONS[field] ?? {}, choice)) {
+        if (optional) { warnings.push(`${IMPORT_FIELDS[field]} “${raw}” not recognised — will import as ${VALUE_OPTIONS[field]?.[fallback] ?? fallback}.`); return fallback; }
+        errors.push(`${IMPORT_FIELDS[field]} value “${raw}” is not mapped.`); return '';
+      }
       return choice;
     };
     const country = mapped('country_code'), product = mapped('product'), category = mapped('category');
-    const channel = mapped('channel', 'email'), language = mapped('language', 'en'), status = mapped('status', 'received');
+    const channel = mapped('channel', 'email', true), language = mapped('language', 'en', true), status = mapped('status', 'received', true);
     if (get('complainant_email') && !z.string().email().safeParse(get('complainant_email')).success) errors.push('Email is invalid.');
     const limits: Partial<Record<ImportField, number>> = { complainant_name: 200, complainant_email: 255, complainant_phone: 50, customer_ref: 100, summary: 10000, desired_outcome: 5000 };
     for (const [field, limit] of Object.entries(limits)) if (get(field as ImportField).length > limit) errors.push(`${IMPORT_FIELDS[field as ImportField]} exceeds ${limit} characters.`);

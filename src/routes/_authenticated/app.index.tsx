@@ -1,5 +1,11 @@
 import { EmptyState } from '@/components/empty-state';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { QueueBulkActions } from '@/components/queue-bulk-actions';
+import { Checkbox } from '@/components/ui/checkbox';
+import { selectAllMatching, selectRange } from '@/lib/bulk-actions';
+import { eligibleHandler } from '@/lib/settings';
+import { supabase } from '@/integrations/supabase/client';
 import { shortcutsBlocked } from '@/lib/shortcuts';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -15,8 +21,8 @@ import { useMembership, membershipQuery } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
 import {
-  PAGE_SIZE, queueEmptyState, ackState, parseQueueSearch, queueCountsQuery, queueQuery,
-  type QueueSearch, type QueueSort, type QueueTab,
+  PAGE_SIZE, queueEmptyState, ackState, parseQueueSearch, queueCountsQuery, queueQuery, fetchMatchingQueue,
+  type QueueItem, type QueueSearch, type QueueSort, type QueueTab,
 } from "@/lib/queue";
 
 export const Route = createFileRoute("/_authenticated/app/")({
@@ -24,11 +30,12 @@ export const Route = createFileRoute("/_authenticated/app/")({
   loaderDeps: ({ search }) => ({ search }),
   loader: async ({ context, deps }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
-    const orgId = m!.org!.id;
-    const params = { ...deps.search, userId: m!.user.id };
+    if (!m?.org) return;
+    const orgId = m.org.id;
+    const params = { ...deps.search, userId: m.user.id };
     await Promise.all([
       context.queryClient.ensureQueryData(queueQuery(orgId, params)),
-      context.queryClient.ensureQueryData(queueCountsQuery(orgId, m!.user.id)),
+      context.queryClient.ensureQueryData(queueCountsQuery(orgId, m.user.id)),
       context.queryClient.ensureQueryData(membersQuery(orgId)),
       context.queryClient.ensureQueryData(countriesQuery(orgId)),
     ]);
@@ -60,10 +67,51 @@ function Queue() {
   const setTab = (v: string) => update({ tab: v as QueueTab });
   const openCase = (id: string) => navigate({ to: "/app/c/$id", params: { id } });
 
+  const [selected, setSelected] = useState<QueueItem[]>([]);
+  const [selecting, setSelecting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [handlers, setHandlers] = useState<{user_id: string; name: string}[]>([]);
+  const anchor = useRef(-1);
+  const scope = JSON.stringify({orgId, userId: m.user.id, tab, q:search.q, status:search.status, category:search.category, product:search.product, country:search.country, agent:search.agent, vulnerable:search.vulnerable});
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const clearSelection = () => {setSelected([]); anchor.current = -1;};
+  useEffect(() => {setSelected([]); anchor.current = -1;}, [scope]);
+  useEffect(() => {anchor.current = -1;}, [search.page, search.sort, search.dir]);
+  useEffect(() => {
+    let cancelled = false;
+    setHandlers([]);
+    if (m.role === 'org_admin' || m.role === 'complaints_manager') {
+      void supabase.rpc('org_member_directory', {_org:orgId}).then(({data,error}) => {
+        if (!cancelled && !error) setHandlers((data ?? []).filter(eligibleHandler).map(h => ({user_id:h.user_id,name:h.full_name || h.email || 'Unknown'})));
+      });
+    }
+    return () => {cancelled = true;};
+  }, [orgId, m.role]);
+  const pageIds = page.rows.flatMap(r => r.id ? [r.id] : []);
+  const selectedIds = new Set(selected.map(r => r.id));
+  const wholePage = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id));
+  function toggleRow(index: number, checked: boolean, shift: boolean) {
+    const ids = selectRange(selected.flatMap(r => r.id ? [r.id] : []), pageIds, shift ? anchor.current : index, index, checked);
+    const available = new Map([...selected,...page.rows].map(r => [r.id,r]));
+    setSelected(ids.flatMap(id => {const row = available.get(id); return row ? [row] : [];}));
+    anchor.current = index;
+  }
+  async function selectMatching() {
+    const originalScope = scope;
+    setSelecting(true);
+    try {
+      const rows = await fetchMatchingQueue(orgId, {...params,tab});
+      if (scopeRef.current === originalScope) setSelected(selectAllMatching(rows));
+    } catch (error) {toast.error((error as {message?:string})?.message ?? 'Complaints could not be selected.');}
+    finally {setSelecting(false);}
+  }
+
   const tableRef = useRef<HTMLTableElement>(null);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (shortcutsBlocked(event.target) || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+      if (event.key === 'Escape' && !busy && !selecting) {setSelected([]); anchor.current = -1; return;}
       const key = event.key.toLowerCase();
       if (key !== 'j' && key !== 'k') return;
       const rows = Array.from(tableRef.current?.querySelectorAll<HTMLTableRowElement>('tbody tr[role="link"]') ?? []);
@@ -76,7 +124,7 @@ function Queue() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [page.rows]);
+  }, [page.rows, busy, selecting]);
 
   const countryOpts = countries.length
     ? Object.fromEntries(countries.map((c) => [c.country_code, COUNTRIES[c.country_code] ?? c.country_code]))
@@ -158,10 +206,18 @@ function Queue() {
         </div>
       )}
 
-      <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
+      {wholePage && selected.length < total && <Button variant="link" className="mt-3 h-auto max-w-full whitespace-normal text-left" disabled={selecting || busy} onClick={selectMatching}>{selecting ? 'Selecting…' : `Select all ${total} matching the current filters`}</Button>}
+
+      <QueueBulkActions key={scope} rows={selected} orgId={orgId} role={m.role} handlers={handlers} members={members} clear={clearSelection} onBusy={setBusy}/>
+
+      <div className="mt-4 max-w-full overflow-x-auto rounded-lg border bg-card">
         <table ref={tableRef} className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
+              <th scope="col" className="w-10 px-3 py-2.5"><Checkbox aria-label="Select all on this page" disabled={busy || selecting || !pageIds.length} checked={wholePage ? true : pageIds.some(id => selectedIds.has(id)) ? 'indeterminate' : false} onCheckedChange={checked => {
+                setSelected(current => checked === true ? selectAllMatching([...current,...page.rows]) : current.filter(r => !r.id || !pageIds.includes(r.id)));
+                anchor.current = -1;
+              }}/></th>
               <SortTh label="Reference" sortKey="reference" search={search} update={update} />
               <SortTh label="Customer" sortKey="customer" search={search} update={update} />
               <th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">Category</th>
@@ -171,15 +227,18 @@ function Queue() {
             </tr>
           </thead>
           <tbody>
-            {page.rows.map((r) => {
+            {page.rows.map((r, index) => {
+              if (!r.id) return null;
+              const id = r.id;
               const ack = ackState(r.status as Status, r.ack_due, today);
               return (
                 <tr key={r.id} tabIndex={0} role="link" aria-label={`Open complaint ${r.reference}`}
-                  onClick={() => openCase(r.id!)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openCase(r.id!); } }}
+                  onClick={() => openCase(id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) { e.preventDefault(); openCase(id); } }}
                   className="cursor-pointer border-b last:border-0 hover:bg-muted/40 focus:bg-accent focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring">
+                  <td className="px-3 py-3" onClick={e => e.stopPropagation()}><Checkbox aria-label={`Select complaint ${r.reference}`} checked={selectedIds.has(id)} disabled={busy || selecting} onClick={e => {e.stopPropagation(); toggleRow(index, !selectedIds.has(id), e.shiftKey);}} /></td>
                   <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
-                    <Link to="/app/c/$id" params={{ id: r.id! }} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
+                    <Link to="/app/c/$id" params={{ id }} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
                       {r.reference}
                     </Link>
                     {r.priority === "high" && <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 font-sans text-destructive">High</span>}
@@ -188,7 +247,7 @@ function Queue() {
                     {r.complainant_name}
                     {r.vulnerable && <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-xs text-warning">Vulnerable</span>}
                   </td>
-                  <td className="hidden px-4 py-3 md:table-cell">{CATEGORIES[r.category!]}</td>
+                  <td className="hidden px-4 py-3 md:table-cell">{r.category ? CATEGORIES[r.category] : '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <div className="flex flex-col items-start gap-1">
                       <StatusPill status={r.status as Status} />
@@ -201,7 +260,7 @@ function Queue() {
               );
             })}
             {empty && (
-              <tr><td colSpan={6}><EmptyState
+              <tr><td colSpan={7}><EmptyState
                 title={empty.kind === 'empty' ? 'No complaints yet' : 'No complaints match this view'}
                 description={empty.kind === 'empty' ? 'Your firm has no recorded complaints.' : 'No complaints meet the selected view criteria.'}
                 primaryAction={empty.kind === 'filtered' ? <Button onClick={() => navigate({search: {tab: 'all'}, replace: true})}>Clear filters</Button> : empty.canLog ? <Button asChild><Link to="/app/new">Log your first complaint</Link></Button> : undefined}

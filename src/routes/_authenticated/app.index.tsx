@@ -30,11 +30,12 @@ export const Route = createFileRoute("/_authenticated/app/")({
   loaderDeps: ({ search }) => ({ search }),
   loader: async ({ context, deps }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
-    const orgId = m!.org!.id;
-    const params = { ...deps.search, userId: m!.user.id };
+    if (!m?.org) return;
+    const orgId = m.org.id;
+    const params = { ...deps.search, userId: m.user.id };
     await Promise.all([
       context.queryClient.ensureQueryData(queueQuery(orgId, params)),
-      context.queryClient.ensureQueryData(queueCountsQuery(orgId, m!.user.id)),
+      context.queryClient.ensureQueryData(queueCountsQuery(orgId, m.user.id)),
       context.queryClient.ensureQueryData(membersQuery(orgId)),
       context.queryClient.ensureQueryData(countriesQuery(orgId)),
     ]);

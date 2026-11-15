@@ -12,7 +12,7 @@ describe('queue bulk actions', () => {
   });
   it('selects every matching row across pages without duplicate or missing IDs', () => {
     const rows = Array.from({length: 120}, (_, i) => ({id:String(i),reference:String(i),status:'received'}));
-    expect(selectAllMatching([...rows,rows[0],{id:null,reference:null,status:null}])).toHaveLength(120);
+    expect(selectAllMatching([...rows,{id:'0',reference:'0',status:'received'},{id:null,reference:null,status:null}])).toHaveLength(120);
   });
   it('skips closed cases, not final-response cases', () => {
     const rows = [{id:'a',reference:'A',status:'closed'},{id:'b',reference:'B',status:'final_response_sent'}];

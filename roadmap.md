@@ -1,6 +1,7 @@
 # Redress roadmap
 
-- [ ] Item #38: QA analytics, URL review filters, paginated reads, masked notes, CSV and regulatory PDF summary; dual-time-zone full tests and signed-in verification.
+- [x] Item #38: QA analytics, local-date URL review filters, paginated reads, role-scoped figures, masked notes, trend/table links, CSV and regulatory PDF summary/comparison. Final full suites: 525/525 tests in UTC and Australia/Sydney; automatic typecheck/build passed. No migrations, RLS, trigger, guard or billing changes.
+- [ ] Item #38 signed-in analytics/list drill-down, chart, CSV/PDF and mobile verification — session minting confirms no auth users; needs a usable account and review records.
 
 - [x] Item #40: acknowledgement/holding metrics, local dates, exports/chart/comparison and masking regression tests; no schema or billing changes. Full suites: 511/512 in each zone initially; repaired masking and 24/24 targeted tests passed in each zone; automatic typecheck/build passed.
 - [ ] Item #40 signed-in report/export/mobile verification — no auth users; session minting confirmed unavailable.

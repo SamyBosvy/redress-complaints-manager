@@ -90,3 +90,4 @@
 
 - [x] Item #34: accessible dashboard charts, report snapshot drill-downs and removable queue filters; no schema or billing changes.
 - [ ] Item #34 signed-in drill-down/mobile verification — requires an account and complaint fixture.
+- [x] Item34 fix: server-side drill-down filters, capped snapshots, template_versions REVOKE (0020)

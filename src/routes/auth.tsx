@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { membershipQuery } from '@/lib/org';
 import { defaultLanding } from '@/lib/my-day';
 
@@ -42,6 +42,8 @@ function AuthPage() {
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const navigate = useNavigate();
   const qc=useQueryClient();
+  const membership=useQuery(membershipQuery);
+  useEffect(()=>{if(membership.data?.org)void navigate({to:defaultLanding(membership.data.role),replace:true});},[membership.data?.org?.id,membership.data?.role,navigate]);
   async function goHome(){await qc.invalidateQueries({queryKey:['membership']});const m=await qc.ensureQueryData(membershipQuery);await navigate({to:defaultLanding(m?.role)});}
 
   async function submit(e: React.FormEvent) {

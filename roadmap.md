@@ -1,5 +1,9 @@
 # Redress roadmap
 
+- [x] Item #33 part 1: URL periods/comparison, currency-safe summaries, regulatory PDF cover/tables/methodology/footer and matching CSV.
+- [ ] Item #33: signed-in export/mobile verification — needs a usable account and organisation.
+- [ ] Part 2 only if a migration is needed: REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.template_versions FROM authenticated (defence-in-depth; RLS + trigger already block).
+
 - [x] Item #22 first half: grouped merge fields, cursor insertion/search, validation, live sample/case preview/PDF, counts and unsaved/save shortcuts; no schema or billing changes.
 - [x] Item #22 second half: managed migration 0019, immutable trigger-written template versions, line comparison/restore and Org Admin complaints email for letters/previews.
 - [ ] Item #22: verify signed-in editor/history/restore/save, firm email settings and mobile layout — no auth users.

@@ -8,20 +8,22 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsi
 import { membershipQuery, useMembership } from "@/lib/org";
 import { membersQuery, CATEGORIES, PRODUCTS, CHANNELS } from "@/lib/complaints";
 import { COUNTRIES } from "@/lib/countries";
-import { reportQuery, computeMetrics, breakdown, rootCauseTrend, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
+import { regulatoryQuery, regulatoryReport, regulatoryCsvRows, summaryComparison, PERIOD_PRESETS, parseReportSearch, selectedPeriod, previousPeriod, computeMetrics, breakdown, rootCauseTrend, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
 import { loadPdfFont } from '@/lib/pdf-font';
 import { toast } from 'sonner';
 import { downloadFile, toCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/app/reports")({
+  validateSearch: parseReportSearch,
   loader: async ({ context }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
-    await context.queryClient.ensureQueryData(membersQuery(m!.org!.id));
+    if (m?.org) await context.queryClient.ensureQueryData(membersQuery(m.org.id));
   },
   head: () => ({ meta: [{ title: "Reports — Redress" }, { name: "description", content: "Complaints dashboard, breakdowns and the regulatory reporting pack." }, { property: "og:title", content: "Reports — Redress" }, { property: "og:description", content: "Complaints dashboard, breakdowns and the regulatory reporting pack." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   pendingComponent: () => <TableSkeleton columns={6} />,
@@ -33,19 +35,33 @@ const OUTCOMES: Record<string, string> = { upheld: "Upheld", partially_upheld: "
 const CHART_COLORS = ["#0F766E", "#14213D", "#D97706", "#B91C1C", "#15803D", "#6B7280"];
 
 function Reports() {
-  const m = useMembership()!;
-  const orgId = m.org!.id;
+  const m = useMembership();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  if (!m?.org) return null;
+  return <ReportsContent membership={{...m, org: m.org}} search={search} navigate={navigate} />;
+}
+
+function ReportsContent({ membership: m, search, navigate }: { membership: NonNullable<ReturnType<typeof useMembership>> & { org: NonNullable<NonNullable<ReturnType<typeof useMembership>>['org']> }; search: ReturnType<typeof Route.useSearch>; navigate: ReturnType<typeof Route.useNavigate> }) {
+  const orgId = m.org.id;
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const nameOf = (u: string | null) => (u ? members.find((x) => x.user_id === u)?.name ?? "Former user" : "Unassigned");
 
   const today = new Date().toISOString().slice(0, 10);
-  const yearStart = today.slice(0, 4) + "-01-01";
-  const [from, setFrom] = useState(yearStart);
-  const [to, setTo] = useState(today);
+  const range = selectedPeriod(search, today);
+  const { from, to } = range;
+  const priorRange = previousPeriod(range);
   const [dim, setDim] = useState<"product" | "category" | "country" | "channel" | "agent">("product");
-
-  const { data: rows = [], isLoading } = useQuery(reportQuery(orgId, from, to));
+  const currentQuery = useQuery(regulatoryQuery(orgId, to));
+  const priorQuery = useQuery({ ...regulatoryQuery(orgId, priorRange.to), enabled: !!search.compare });
+  const isLoading = currentQuery.isLoading || (!!search.compare && priorQuery.isLoading);
+  const failed = currentQuery.isError || (!!search.compare && priorQuery.isError);
+  const allRows = currentQuery.data?.rows ?? [];
+  const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from);
+  const report = regulatoryReport(allRows, range, currentQuery.data?.holidays);
+  const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays);
   const metrics = useMemo(() => computeMetrics(rows), [rows]);
+  const updateSearch = (patch: Partial<typeof search>) => { void navigate({ search: prev => ({ ...prev, ...patch }) }); };
   const dimKey = (r: ReportRow) =>
     dim === "product" ? PRODUCTS[r.product] : dim === "category" ? CATEGORIES[r.category] : dim === "country" ? countryName(r.country_code) : dim === "channel" ? CHANNELS[r.channel] : nameOf(r.assigned_to);
   const bd = useMemo(() => breakdown(rows, dimKey), [rows, dim, members]);
@@ -55,36 +71,17 @@ function Reports() {
   const allowed = m.role === "org_admin" || m.role === "complaints_manager" || m.role === "read_only";
   if (!allowed) return <p className="text-muted-foreground">You do not have access to reports.</p>;
 
-  function packRows() {
-    const out: (string | number)[][] = [["Regulatory reporting pack", m.org!.legal_name], [`Period: ${from} to ${to}`, ""], []];
-    out.push(["By product and category", "", "", "", "", ""]);
-    out.push(["Product", "Category", "Total", "Upheld", "Partially upheld", "Not upheld", "Withdrawn", "Within deadline %", "Redress + goodwill"]);
-    for (const p of Object.keys(PRODUCTS)) {
-      for (const c of Object.keys(CATEGORIES)) {
-        const rs = rows.filter((r) => r.product === p && r.category === c);
-        if (!rs.length) continue;
-        const b = breakdown(rs, () => "x")[0];
-        if (!b) continue;
-        const count = (o: string) => rs.filter((r) => r.outcome === o).length;
-        out.push([PRODUCTS[p as keyof typeof PRODUCTS], CATEGORIES[c as keyof typeof CATEGORIES], rs.length, count("upheld"), count("partially_upheld"), count("not_upheld"), count("withdrawn"), b.withinPct ?? "", formatCurrencyTotals(b.redress)]);
-      }
-    }
-    out.push([], ["By root cause"], ["Root cause", "Total", "Resolved", "Within deadline %", "Upheld / partial %", "Redress + goodwill"]);
-    for(const r of breakdown(rows,row=>row.root_cause_category)) out.push([r.key,r.total,r.resolved,r.withinPct??"",r.upheldPct??"",formatCurrencyTotals(r.redress)]);
-    return out;
-  }
-
+  const summary = summaryComparison(report, search.compare ? previous : undefined);
   function exportPackCsv() {
-    downloadFile(`regulatory-pack-${from}-to-${to}.csv`, toCsv(packRows()));
+    downloadFile(`regulatory-pack-${from}-to-${to}.csv`, toCsv(regulatoryCsvRows(report, search.compare ? previous : undefined)));
   }
-
   async function exportPackPdf() {
     try {
       if (!m.org) return;
       const { regulatoryPackPdf } = await import('@/lib/regulatory-pdf');
       const font = await loadPdfFont();
-      regulatoryPackPdf(m.org.legal_name, from, to, packRows().slice(4), font).save(`regulatory-pack-${from}-to-${to}.pdf`);
-    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not generate PDF.'); }
+      regulatoryPackPdf({ name: m.org.legal_name, address: m.org.firm_address, licence: m.org.licence_type, regulator: m.org.regulator, generatedBy: members.find(x => x.user_id === m.user.id)?.name || m.user.email || 'Signed-in user', generatedAt: new Date().toISOString() }, report, font, search.compare ? previous : undefined).save(`regulatory-pack-${from}-to-${to}.pdf`);
+    } catch { toast.error('Could not generate the reporting pack. Please try again.'); }
   }
 
   return (
@@ -94,25 +91,22 @@ function Reports() {
           <h1 className="text-2xl font-semibold">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">Volumes, deadlines, outcomes and root causes for the selected period.</p>
         </div>
-        <div className="flex items-end gap-3">
-          <div className="space-y-1"><Label htmlFor="report-from" className="text-xs">From</Label><Input id="report-from" type="date" className="tabular" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label htmlFor="report-to" className="text-xs">To</Label><Input id="report-to" type="date" className="tabular" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1"><Label htmlFor="report-period">Period</Label><Select value={search.period && Object.hasOwn(PERIOD_PRESETS, search.period) ? search.period : 'this_year'} onValueChange={period => updateSearch({ period })}><SelectTrigger id="report-period" className="w-40"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PERIOD_PRESETS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent></Select></div>
+          {search.period === 'custom' && <><div className="space-y-1"><Label htmlFor="report-from">From</Label><Input id="report-from" type="date" value={search.from ?? from} onChange={e => updateSearch({ from: e.target.value })} /></div><div className="space-y-1"><Label htmlFor="report-to">To</Label><Input id="report-to" type="date" value={search.to ?? to} onChange={e => updateSearch({ to: e.target.value })} /></div></>}
+          <div className="flex items-center gap-2 pb-2"><Switch id="report-compare" checked={!!search.compare} onCheckedChange={compare => updateSearch({ compare })} /><Label htmlFor="report-compare">Compare with previous period</Label></div>
         </div>
       </div>
+      <p className="text-sm text-muted-foreground">{from} to {to}{search.compare ? ` · Compared with ${priorRange.from} to ${priorRange.to}` : ''}</p>
+      <div className="flex flex-wrap gap-3"><Button variant="outline" onClick={exportPackCsv} disabled={isLoading || failed}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button><Button variant="outline" onClick={exportPackPdf} disabled={isLoading || failed}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button></div>
+      {failed && <p role="alert" className="text-destructive">Could not load the reporting period. Please try again.</p>}
 
-      {isLoading ? <TableSkeleton columns={6} /> : rows.length === 0 ? <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." /> : (
+      {isLoading ? <TableSkeleton columns={6} /> : failed ? null : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Open complaints" value={metrics.open} />
-            <Stat label="Received this month" value={metrics.receivedThisMonth} />
-            <Stat label="Closed this month" value={metrics.closedThisMonth} />
-            <Stat label="Resolved within deadline" value={metrics.withinDeadlinePct === null ? "—" : metrics.withinDeadlinePct + "%"} />
-            <Stat label="Avg business days to resolve" value={metrics.avgBusinessDaysToResolve ?? "—"} />
-            <Stat label="Uphold rate" value={metrics.upholdRatePct === null ? "—" : metrics.upholdRatePct + "%"} />
-            <Stat label="Redress + goodwill paid" value={formatCurrencyTotals(metrics.redressTotal)} />
-            <Stat label="Vulnerable customers" value={metrics.vulnerableCount} />
+            {summary.map(s => <Stat key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
           </div>
-
+          {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." />}
           <div className="grid gap-3 md:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="text-base">Top categories</CardTitle></CardHeader>
@@ -205,28 +199,20 @@ function Reports() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="text-base">Regulatory reporting pack</CardTitle></CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
-              <p className="mr-auto max-w-xl text-sm text-muted-foreground">
-                Totals by product and category, outcomes, within-deadline percentage and redress paid, for {from} to {to}.
-              </p>
-              <Button variant="outline" onClick={exportPackCsv} disabled={!rows.length}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button>
-              <Button variant="outline" onClick={exportPackPdf} disabled={!rows.length}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button>
-            </CardContent>
-          </Card>
+
         </>
       )}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value, comparisonText }: { label: string; value: string | number; comparisonText?: string | undefined }) {
   return (
     <Card>
       <CardContent className="pt-5">
         <p className="break-words text-2xl font-semibold tabular">{value}</p>
         <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+        {comparisonText && <p className="mt-2 break-words text-xs text-muted-foreground">{comparisonText}</p>}
       </CardContent>
     </Card>
   );

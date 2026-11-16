@@ -155,6 +155,13 @@
       "when": 1794816284260,
       "tag": "0021_adr_escalation_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794830492312,
+      "tag": "0022_reopening_rules_local_dates",
+      "breakpoints": true
     }
   ]
 }

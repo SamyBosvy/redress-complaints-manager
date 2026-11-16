@@ -1,0 +1,52 @@
+ALTER TABLE public.organisations ADD COLUMN time_zone text NOT NULL DEFAULT 'Europe/Dublin', ADD COLUMN reopen_deadline_mode text NOT NULL DEFAULT 'restart' CHECK(reopen_deadline_mode IN ('restart','continue'));
+UPDATE public.organisations SET time_zone=CASE home_country WHEN 'IE' THEN 'Europe/Dublin' WHEN 'FR' THEN 'Europe/Paris' WHEN 'PL' THEN 'Europe/Warsaw' WHEN 'PT' THEN 'Europe/Lisbon' WHEN 'ES' THEN 'Europe/Madrid' WHEN 'NL' THEN 'Europe/Amsterdam' ELSE 'Europe/Brussels' END;
+CREATE FUNCTION public.valid_time_zone(_zone text) RETURNS boolean LANGUAGE sql STABLE SET search_path=pg_catalog AS $$ SELECT EXISTS(SELECT 1 FROM pg_timezone_names WHERE name=_zone) $$;
+ALTER TABLE public.organisations ADD CONSTRAINT organisation_time_zone_valid CHECK(public.valid_time_zone(time_zone));
+CREATE FUNCTION public.firm_date(_org uuid,_at timestamptz) RETURNS date LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT (_at AT TIME ZONE time_zone)::date FROM public.organisations WHERE id=_org $$;
+CREATE TABLE public.complaint_reopenings(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),org_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE CASCADE,complaint_id uuid NOT NULL REFERENCES public.complaints(id) ON DELETE CASCADE,reopened_by uuid NOT NULL,reopened_at timestamptz NOT NULL DEFAULT now(),reason_category text NOT NULL CHECK(reason_category IN ('new_evidence','customer_disagreed','handling_error','regulator_adr_request','other')),reason text NOT NULL CHECK(length(trim(reason)) BETWEEN 10 AND 1000),deadline_mode text NOT NULL CHECK(deadline_mode IN ('restart','continue')),previous_status public.complaint_status NOT NULL,previous_final_due date);
+GRANT SELECT ON public.complaint_reopenings TO authenticated;
+GRANT ALL ON public.complaint_reopenings TO service_role;
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.complaint_reopenings FROM authenticated,anon;
+ALTER TABLE public.complaint_reopenings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY reopenings_read ON public.complaint_reopenings FOR SELECT TO authenticated USING(public.is_org_member(org_id));
+CREATE FUNCTION public.reopenings_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Reopening records are append-only'; END $$;
+CREATE TRIGGER reopenings_immutable BEFORE UPDATE OR DELETE ON public.complaint_reopenings FOR EACH ROW EXECUTE FUNCTION public.reopenings_immutable();
+CREATE TRIGGER reopenings_no_truncate BEFORE TRUNCATE ON public.complaint_reopenings FOR EACH STATEMENT EXECUTE FUNCTION public.reopenings_immutable();
+CREATE TRIGGER audit_reopenings AFTER INSERT ON public.complaint_reopenings FOR EACH ROW EXECUTE FUNCTION public.audit_capture();
+CREATE FUNCTION public.reopen_deadlines(_org uuid,_case uuid,_mode text) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS $$ DECLARE c public.complaints; r public.rule_sets; d date:=public.firm_date(_org,now()); BEGIN
+IF NOT public.has_org_role(_org,ARRAY['org_admin','complaints_manager']::public.app_role[]) THEN RAISE EXCEPTION 'Only managers and administrators can reopen'; END IF;
+SELECT * INTO c FROM public.complaints WHERE id=_case AND org_id=_org; IF c.id IS NULL THEN RAISE EXCEPTION 'Complaint unavailable'; END IF;
+IF _mode='continue' THEN RETURN jsonb_build_object('ack_due',c.ack_due,'final_due',c.final_due,'extended_due',c.extended_due,'remaining_days',public.business_days_between(_org,c.country_code,d,c.final_due)); END IF;
+IF _mode IS DISTINCT FROM 'restart' THEN RAISE EXCEPTION 'Invalid deadline mode'; END IF;
+SELECT * INTO r FROM public.rule_sets WHERE id=c.rule_set_id AND org_id=_org; IF r.id IS NULL THEN RAISE EXCEPTION 'No deadline rule is configured'; END IF;
+RETURN jsonb_build_object('ack_due',public.add_business_days(_org,c.country_code,d,r.ack_days),'final_due',public.add_business_days(_org,c.country_code,d,r.final_days),'extended_due',public.add_business_days(_org,c.country_code,d,r.extended_days)); END $$;
+CREATE FUNCTION public.reopen_complaint(_org uuid,_case uuid,_category text,_reason text,_mode text DEFAULT NULL) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE c public.complaints; dates jsonb; mode text; rid uuid; BEGIN
+IF auth.uid() IS NULL OR NOT public.has_org_role(_org,ARRAY['org_admin','complaints_manager']::public.app_role[]) THEN RAISE EXCEPTION 'Only managers and administrators can reopen'; END IF;
+SELECT * INTO c FROM public.complaints WHERE id=_case AND org_id=_org FOR UPDATE;
+IF c.id IS NULL OR c.status NOT IN ('closed','final_response_sent') OR c.legal_hold OR c.privacy_processing OR c.anonymised_at IS NOT NULL OR EXISTS(SELECT 1 FROM public.adr_cases WHERE org_id=_org AND complaint_id=_case AND decision='pending') THEN RAISE EXCEPTION 'This complaint cannot be reopened'; END IF;
+SELECT coalesce(_mode,reopen_deadline_mode) INTO mode FROM public.organisations WHERE id=_org; dates:=public.reopen_deadlines(_org,_case,mode);
+INSERT INTO public.complaint_reopenings(org_id,complaint_id,reopened_by,reason_category,reason,deadline_mode,previous_status,previous_final_due) VALUES(_org,_case,auth.uid(),_category,trim(_reason),mode,c.status,c.final_due) RETURNING id INTO rid;
+PERFORM set_config('redress.reopening',rid::text,true);
+UPDATE public.complaints SET status='reopened',closed_at=NULL,ack_due=(dates->>'ack_due')::date,final_due=(dates->>'final_due')::date,extended_due=(dates->>'extended_due')::date,holding_sent_at=NULL,holding_reason=NULL,outcome=NULL,root_cause_id=NULL,root_cause_category=NULL,root_cause_note=NULL,redress_amount=NULL,redress_currency=NULL,goodwill_amount=NULL,goodwill_currency=NULL,redress_none=false,goodwill_none=false,adr_rights_given=false,withdrawal_reason=NULL WHERE id=_case AND org_id=_org;
+INSERT INTO public.complaint_events(org_id,complaint_id,actor,kind,detail) VALUES(_org,_case,auth.uid(),'reopened',jsonb_build_object('text','Reopened: '||replace(_category,'_',' ')||' — '||trim(_reason),'reason',trim(_reason),'previous',jsonb_build_object('outcome',c.outcome,'root_cause',c.root_cause_category,'redress',c.redress_amount,'redress_currency',c.redress_currency,'goodwill',c.goodwill_amount,'goodwill_currency',c.goodwill_currency),'old_deadlines',jsonb_build_object('ack_due',c.ack_due,'final_due',c.final_due,'extended_due',c.extended_due),'new_deadlines',dates,'deadline_mode',mode));
+PERFORM set_config('redress.reopening','',true); END $$;
+REVOKE ALL ON FUNCTION public.reopen_complaint(uuid,uuid,text,text,text),public.reopen_deadlines(uuid,uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.reopen_complaint(uuid,uuid,text,text,text),public.reopen_deadlines(uuid,uuid,text) TO authenticated;
+CREATE FUNCTION public.reopening_status_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF NEW.status='reopened' AND OLD.status IS DISTINCT FROM 'reopened' THEN
+IF OLD.status NOT IN ('closed','final_response_sent') OR OLD.legal_hold OR OLD.privacy_processing OR OLD.anonymised_at IS NOT NULL OR NOT public.has_org_role(OLD.org_id,ARRAY['org_admin','complaints_manager']::public.app_role[]) OR NOT EXISTS(SELECT 1 FROM public.complaint_reopenings r WHERE r.id::text=current_setting('redress.reopening',true) AND r.org_id=OLD.org_id AND r.complaint_id=OLD.id AND r.reopened_by=auth.uid() AND r.reopened_at=now() AND r.previous_status=OLD.status) OR EXISTS(SELECT 1 FROM public.adr_cases WHERE complaint_id=OLD.id AND org_id=OLD.org_id AND decision='pending') THEN RAISE EXCEPTION 'Use Reopen with an authorised reason'; END IF; END IF; RETURN NEW; END $$;
+CREATE TRIGGER reopening_status_guard BEFORE UPDATE ON public.complaints FOR EACH ROW EXECUTE FUNCTION public.reopening_status_guard();
+DO $$ DECLARE def text; BEGIN
+SELECT pg_get_functiondef('public.complaints_status_guard()'::regprocedure) INTO def;
+def:=replace(def,'ELSIF NEW.status=''reopened'' AND OLD.status=''closed'' THEN NULL;','ELSIF NEW.status=''reopened'' AND OLD.status IN (''closed'',''final_response_sent'') THEN NULL;');
+def:=replace(def,'l.status=''sent''','l.status=''sent'' AND l.sent_at >= coalesce((SELECT max(r.reopened_at) FROM public.complaint_reopenings r WHERE r.complaint_id=NEW.id AND r.org_id=NEW.org_id),''-infinity''::timestamptz)'); EXECUTE def;
+SELECT pg_get_functiondef('public.complaint_details_guard()'::regprocedure) INTO def;
+def:=replace(def,'IF NEW.status=''reopened'' AND OLD.status=''closed''','IF NEW.status=''reopened'' AND OLD.status IN (''closed'',''final_response_sent'')');
+def:=replace(def,'ARRAY[''org_admin'']::public.app_role[]','ARRAY[''org_admin'',''complaints_manager'']::public.app_role[]'); EXECUTE def;
+SELECT pg_get_functiondef('public.adr_guard()'::regprocedure) INTO def;
+def:=replace(def,'(now() AT TIME ZONE ''UTC'')::date','public.firm_date(NEW.org_id,now())');def:=replace(def,'(c.received_at AT TIME ZONE ''UTC'')::date','public.firm_date(c.org_id,c.received_at)');EXECUTE def;
+SELECT pg_get_functiondef('public.complaint_deadlines(uuid,text,text,timestamp with time zone)'::regprocedure) INTO def;def:=replace(def,'(_received AT TIME ZONE ''UTC'')::date','public.firm_date(_org,_received)');EXECUTE def;
+SELECT pg_get_functiondef('public.complaints_before_insert()'::regprocedure) INTO def;def:=replace(def,'(NEW.received_at AT TIME ZONE ''UTC'')::date','public.firm_date(NEW.org_id,NEW.received_at)');EXECUTE def;
+END $$;
+CREATE FUNCTION public.reopening_settings_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF (NEW.time_zone IS DISTINCT FROM OLD.time_zone OR NEW.reopen_deadline_mode IS DISTINCT FROM OLD.reopen_deadline_mode) AND auth.uid() IS NOT NULL AND NOT public.has_org_role(OLD.id,ARRAY['org_admin']::public.app_role[]) THEN RAISE EXCEPTION 'Only Org Admins can change reopening and time zone settings'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER reopening_settings_guard BEFORE UPDATE ON public.organisations FOR EACH ROW EXECUTE FUNCTION public.reopening_settings_guard();
+DO $$ DECLARE def text; BEGIN SELECT rtrim(pg_get_viewdef('public.complaint_queue'::regclass,true),'; '||chr(10)) INTO def; EXECUTE 'CREATE OR REPLACE VIEW public.complaint_queue WITH (security_invoker=true) AS SELECT q.*, EXISTS(SELECT 1 FROM public.complaint_reopenings r WHERE r.org_id=q.org_id AND r.complaint_id=q.id) AS has_reopened FROM ('||def||') q'; END $$;

@@ -7,12 +7,12 @@ import type { ResponseLetter, ResponseEvent } from './response-metrics';
 
 export type DayRow = QueueItem & { qa_reviews?: {comments:string|null;decided_at:string|null}[]; adr_cases?: {firm_response_due:string|null}|null };
 const columns='id,reference,complainant_name,customer_ref,category,product,country_code,status,assigned_to,vulnerable,priority,days_left,current_due,ack_due,received_at';
-export async function fetchDaySection(org:string,user:string,section:DaySection,today:string,zone:string,page=1,size=10):Promise<QueuePage & {rows:DayRow[];limited:boolean}> {
+export async function fetchDaySection(org:string,user:string,section:DaySection,today:string,zone:string,page=1,size=10):Promise<Omit<QueuePage,'rows'> & {rows:DayRow[];limited:boolean}> {
   let query=supabase.from('complaint_queue').select(daySelect(columns,section),{count:'exact'}).eq('org_id',org);
   for(const f of dayFilterOps(section,user,today,zone)) {
     if(f.op==='in'&&Array.isArray(f.value))query=query.in(f.column,f.value);
     else if(f.op==='is')query=query.is(f.column,null);
-    else if(f.op==='eq')query=query.eq(f.column,f.value);
+    else if(f.op==='eq'&&f.value!==null)query=query.eq(f.column,f.value);
     else if(typeof f.value==='number'||typeof f.value==='string') {if(f.op==='gte')query=query.gte(f.column,f.value);else if(f.op==='lt')query=query.lt(f.column,f.value);else query=query.lte(f.column,f.value);}
   }
   query=query.order('current_due',{ascending:true,nullsFirst:false}).order('id');

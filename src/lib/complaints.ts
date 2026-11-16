@@ -51,7 +51,7 @@ export const membersQuery = (orgId: string) =>
       const { data: p } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
       return m.map((x) => {
         const prof = p?.find((y) => y.id === x.user_id);
-        return { ...x, name: prof?.full_name || prof?.email || "Unknown" };
+        return { ...x, name: prof?.full_name || prof?.email || "Unknown", email: prof?.email ?? '' };
       });
     },
   });

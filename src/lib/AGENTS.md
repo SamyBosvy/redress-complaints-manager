@@ -15,3 +15,6 @@
 ## Detail edits and root causes
 - Detail edits use edit_complaint_details and transaction-scoped trigger context for one masked timeline event and one full audit diff; business-day deadlines share complaint_deadlines. Why: preserve existing guards without duplicate activity.
 - Root causes use an org-scoped foreign key and active-only new choices; reporting resolves current managed names and preserves legacy text, while closure requires a managed id. Why: retain historical choices without allowing free-text closure.
+
+## Template merging
+- Template previews and case letters share caseMergeValues and letterPdf; missing values remain visible, and template saves reject unknown fields or missing final ADR placeholders. Why: keep preview and sent-letter merging consistent without schema changes.

@@ -87,3 +87,6 @@
 - [x] GitHub sync check (Nov 2026)
 - [x] Item #11: date-holidays nationwide public holiday pre-fill in setup and Org Admin add-missing preview in Calendars; spot-check tests for all 32 countries.
 - [ ] Verify Item #11 signed-in setup save and Calendars insert — blocked: hosted database stays paused.
+
+- [x] Item #34: accessible dashboard charts, report snapshot drill-downs and removable queue filters; no schema or billing changes.
+- [ ] Item #34 signed-in drill-down/mobile verification — requires an account and complaint fixture.

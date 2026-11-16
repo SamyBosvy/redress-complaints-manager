@@ -268,7 +268,7 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
       return { label, count: group.length, share: pct(group.length, rows.length) ?? 0, upheld: pct(rs.filter(r => r.outcome === 'upheld' || r.outcome === 'partially_upheld').length, rs.length), within: pct(wd.filter(r => resolvedWithinDeadline(r)).length, wd.length) };
     }).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) };
   });
-  const rm=reopeningMetrics(reopenings,range,resolved.length);
+  const rm=reopeningMetrics(reopenings,range,all.filter(r=>r.closed_at&&r.closed_at.slice(0,10)>=range.from&&r.closed_at.slice(0,10)<=range.to).length);
   summary.push({label:'Reopened',value:rm.count},{label:'Reopen rate',value:rm.rate,unit:'%'});
   tables.push({title:'By reopen reason',rows:Object.entries(REOPEN_REASONS).map(([key,label])=>{const count=new Set(rm.rows.filter(r=>r.reason_category===key).map(r=>r.complaint_id)).size;return {label,count,share:pct(count,rm.count)??0,upheld:null,within:null};}).filter(r=>r.count>0)});
   const am = adrMetrics(adr, range);

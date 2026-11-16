@@ -14,7 +14,7 @@ export const TRANSITIONS: Record<Status, Status[]> = {
 };
 export function nextStatuses(status: Status, role: AppRole | null, qa: boolean, editable = true) {
   if (!editable || !role || role === 'read_only') return [];
-  return TRANSITIONS[status].filter(next => next !== 'pending_qa' || qa).filter(next => next !== 'final_response_sent' || !qa || status === 'pending_qa');
+  return TRANSITIONS[status].filter(next => next !== 'reopened').filter(next => next !== 'pending_qa' || qa).filter(next => next !== 'final_response_sent' || !qa || status === 'pending_qa');
 }
 export const FOUR_EYES = 'Four-eyes rule: someone else must approve this';
 export function fourEyes(user: string, author: string | null | undefined, handler: string | null | undefined) {

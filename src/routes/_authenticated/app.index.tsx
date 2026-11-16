@@ -142,7 +142,7 @@ function Queue() {
   if(search.report_ids) chips.push({key:'report_ids',label:'Report snapshot'});
   const clearAll = () =>
     navigate({
-      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,adr_from:undefined,adr_to:undefined,adr_metric:undefined,adr_decision:undefined,adr_currency:undefined,page: 1 }),
+      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,adr_from:undefined,adr_to:undefined,adr_metric:undefined,adr_decision:undefined,adr_currency:undefined,reopened:undefined,reopen_from:undefined,reopen_to:undefined,reopen_reason:undefined,page: 1 }),
       replace: true,
     });
 

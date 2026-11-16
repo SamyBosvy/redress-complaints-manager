@@ -16,10 +16,10 @@ export type AuditEntry = AuditCursor & { org_id: string; actor: string | null; t
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function parseAuditSearch(raw: Record<string, unknown>): AuditFilters {
   const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v ? v : undefined;
-  return { from: date(raw.from), to: date(raw.to), actor: typeof raw.actor === 'string' && UUID.test(raw.actor) ? raw.actor : undefined,
-    action: typeof raw.action === 'string' && ['insert', 'update', 'delete'].includes(raw.action) ? raw.action : undefined,
-    area: typeof raw.area === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(raw.area) ? raw.area : undefined,
-    reference: typeof raw.reference === 'string' && /^RDR-\d{4}-\d{6}$/i.test(raw.reference.trim()) ? raw.reference.trim().toUpperCase() : undefined };
+  return { from: date(raw['from']), to: date(raw['to']), actor: typeof raw['actor'] === 'string' && UUID.test(raw['actor']) ? raw['actor'] : undefined,
+    action: typeof raw['action'] === 'string' && ['insert', 'update', 'delete'].includes(raw['action']) ? raw['action'] : undefined,
+    area: typeof raw['area'] === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(raw['area']) ? raw['area'] : undefined,
+    reference: typeof raw['reference'] === 'string' && /^RDR-\d{4}-\d{6}$/i.test(raw['reference'].trim()) ? raw['reference'].trim().toUpperCase() : undefined };
 }
 export function encodeAuditCursor(cursor: AuditCursor): string { return encodeURIComponent(JSON.stringify(cursor)); }
 export function decodeAuditCursor(value: string): AuditCursor | undefined {
@@ -36,7 +36,7 @@ export function auditCaseOr(id: string): string {
 }
 export function auditObject(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 export function auditCaseId(row: AuditEntry): string | undefined {
-  const id = auditObject(row.after).complaint_id ?? auditObject(row.before).complaint_id ?? (row.table_name === 'complaints' ? row.row_id : undefined);
+  const id = auditObject(row.after)['complaint_id'] ?? auditObject(row.before)['complaint_id'] ?? (row.table_name === 'complaints' ? row.row_id : undefined);
   return typeof id === 'string' && UUID.test(id) ? id : undefined;
 }
 const FIELD_LABELS: Record<string, string> = { ack_due: 'Acknowledgement due', final_due: 'Final response due', extended_due: 'Extended deadline', assigned_to: 'Assigned handler', complainant_email: 'Customer email', complainant_phone: 'Customer phone', complainant_name: 'Customer name', qa_required: 'Four-eyes QA required', adr_rights_given: 'ADR rights provided', root_cause_id: 'Root cause', received_at: 'Received', closed_at: 'Closed', reopened_at: 'Reopened', org_id: 'Organisation', complaint_id: 'Case', row_id: 'Record', time_zone: 'Time zone' };
@@ -72,7 +72,7 @@ export function auditDateBoundary(day: string, zone: string, next = false): stri
   const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   for (let i = 0; i < 4; i++) {
     const parts = Object.fromEntries(fmt.formatToParts(new Date(guess)).map(p => [p.type, p.value]));
-    const represented = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+    const represented = Date.UTC(Number(parts['year']), Number(parts['month']) - 1, Number(parts['day']), Number(parts['hour']), Number(parts['minute']), Number(parts['second']));
     const delta = target - represented; guess += delta; if (!delta) break;
   }
   return new Date(guess).toISOString();

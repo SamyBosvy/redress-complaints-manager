@@ -32,7 +32,7 @@ describe('audit rules', () => {
     let cursor: typeof fixture[number] | undefined; const collected: string[] = [];
     do {
       const page = fixture.filter(r => !cursor || r.created_at < cursor.created_at || (r.created_at === cursor.created_at && BigInt(r.id) < BigInt(cursor.id))).slice(0, AUDIT_PAGE_SIZE);
-      collected.push(...page.map(r => r.id)); cursor = page.length ? decodeAuditCursor(encodeAuditCursor(page[page.length - 1])) : undefined;
+      collected.push(...page.map(r => r.id)); const last = page.at(-1); cursor = last ? decodeAuditCursor(encodeAuditCursor(last)) : undefined;
     } while (cursor);
     expect(collected).toEqual(fixture.map(r => r.id)); expect(new Set(collected).size).toBe(153);
   });

@@ -10,7 +10,7 @@ export const AUDIT_AREAS: Record<string, string> = {
   org_privacy_settings: 'Privacy settings', public_complaint_forms: 'Public complaint form', profiles: 'Profile',
 };
 export const AUDIT_ACTIONS: Record<string, string> = { insert: 'Created', update: 'Changed', delete: 'Deleted' };
-export type AuditFilters = { from?: string; to?: string; actor?: string; action?: string; area?: string; reference?: string };
+export type AuditFilters = { from?: string | undefined; to?: string | undefined; actor?: string | undefined; action?: string | undefined; area?: string | undefined; reference?: string | undefined };
 export type AuditCursor = { created_at: string; id: string };
 export type AuditEntry = AuditCursor & { org_id: string; actor: string | null; table_name: string; row_id: string | null; action: string; before: unknown; after: unknown };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

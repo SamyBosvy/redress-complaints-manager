@@ -106,7 +106,7 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {summary.map(s => <Stat key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
           </div>
-          {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" />}
+          {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." />}
           <div className="grid gap-3 md:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="text-base">Top categories</CardTitle></CardHeader>

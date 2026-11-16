@@ -210,15 +210,15 @@ export function comparison(value: number | null, previous: number | null) {
   const absolute = value === null || previous === null ? null : value - previous;
   return { value, previous, absolute, percent: absolute === null || previous === null || previous === 0 ? null : absolute / Math.abs(previous) * 100 };
 }
-export interface ReportSearch { period?: string; from?: string; to?: string; compare?: boolean }
+export interface ReportSearch { period?: string | undefined; from?: string | undefined; to?: string | undefined; compare?: boolean | undefined }
 export function parseReportSearch(s: Record<string, unknown>): ReportSearch {
-  return { period: typeof s.period === 'string' ? s.period : undefined, from: typeof s.from === 'string' ? s.from : undefined, to: typeof s.to === 'string' ? s.to : undefined, compare: s.compare === true || s.compare === 'true' };
+  return { period: typeof s['period'] === 'string' ? s['period'] : undefined, from: typeof s['from'] === 'string' ? s['from'] : undefined, to: typeof s['to'] === 'string' ? s['to'] : undefined, compare: s['compare'] === true || s['compare'] === 'true' };
 }
 export function selectedPeriod(s: ReportSearch, today: string): PeriodRange {
-  const preset = Object.hasOwn(PERIOD_PRESETS, s.period ?? '') ? s.period as PeriodPreset : 'this_year';
+  const preset = Object.hasOwn(PERIOD_PRESETS, s['period'] ?? '') ? s['period'] as PeriodPreset : 'this_year';
   const fallback = periodRange(preset, today);
   const valid = (v?: string) => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && isoDay(new Date(v)) === v;
-  return preset === 'custom' && valid(s.from) && valid(s.to) && String(s.from) <= String(s.to) ? { from: String(s.from), to: String(s.to) } : fallback;
+  return preset === 'custom' && valid(s['from']) && valid(s['to']) && String(s['from']) <= String(s['to']) ? { from: String(s['from']), to: String(s['to']) } : fallback;
 }
 export interface Holiday { country_code: string; holiday_date: string }
 export function resolutionDays(row: ReportRow, holidays: Holiday[] = []) {

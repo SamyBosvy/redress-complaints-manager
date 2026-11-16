@@ -3,7 +3,7 @@ import { TRANSITIONS,nextStatuses,closeComplete,fourEyes,workflowError,FOUR_EYES
 import { importPreviewLabel } from './import-preview';
 const complete:CloseChecklist={outcome:'upheld',rootCause:'10000000-0000-4000-8000-000000000001',withdrawalReason:'',finalSent:true,adr:true,redressNone:true,goodwillNone:true,redress:'',goodwill:'',redressCurrency:'EUR',goodwillCurrency:'PLN'};
 describe('Workflow decisions',()=>{
-  for(const [status,targets] of Object.entries(TRANSITIONS))for(const role of ['org_admin','complaints_manager','agent','qa_reviewer','read_only'] as const)it(`${status} / ${role}`,()=>{expect(nextStatuses(status as keyof typeof TRANSITIONS,role,true)).toEqual(role==='read_only'?[]:targets.filter(t=>t!=='final_response_sent'||status==='pending_qa'));});
+  for(const [status,targets] of Object.entries(TRANSITIONS))for(const role of ['org_admin','complaints_manager','agent','qa_reviewer','read_only'] as const)it(`${status} / ${role}`,()=>{expect(nextStatuses(status as keyof typeof TRANSITIONS,role,true)).toEqual(role==='read_only'?[]:targets.filter(t=>t!=='reopened').filter(t=>t!=='final_response_sent'||status==='pending_qa'));});
   it('agent cannot edit another assigned case',()=>expect(nextStatuses('received','agent',true,false)).toEqual([]));
   it('QA disabled excludes pending QA',()=>expect(nextStatuses('acknowledged','agent',false)).not.toContain('pending_qa'));
   it('acknowledgement requirement',()=>expect(transitionRequirement('acknowledged','received',[],null)).toBe('Send the acknowledgement letter first'));

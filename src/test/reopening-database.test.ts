@@ -15,7 +15,6 @@ CREATE TABLE root_causes(id uuid,org_id uuid,name text,active boolean);
 CREATE TABLE rule_sets(id uuid,org_id uuid,ack_days int,final_days int,extended_days int);
 CREATE TABLE holidays(org_id uuid,country_code text,holiday_date date);
 CREATE TABLE audit_log(id bigint GENERATED ALWAYS AS IDENTITY,org_id uuid,actor uuid,table_name text,row_id text,action text,before jsonb,after jsonb);
-CREATE FUNCTION audit_minimise(text,jsonb) RETURNS jsonb LANGUAGE sql AS $$ SELECT $2 $$;
 CREATE FUNCTION is_org_member(uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM org_members WHERE org_id=$1 AND user_id=auth.uid() AND active) $$;
 CREATE OR REPLACE FUNCTION has_org_role(uuid,app_role[]) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM org_members WHERE org_id=$1 AND user_id=auth.uid() AND active AND role=ANY($2::text[])) $$;
 GRANT USAGE ON SCHEMA auth TO authenticated;GRANT SELECT,UPDATE ON complaints TO authenticated;GRANT SELECT ON org_members,org_countries TO authenticated;

@@ -25,6 +25,7 @@ import { Route as ComplainFormIdRouteImport } from './routes/complain.$formId'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticated/app.audit'
 import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
+import { Route as AuthenticatedAppMyDayRouteImport } from './routes/_authenticated/app.my-day'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
 import { Route as AuthenticatedAppPrivacyRouteImport } from './routes/_authenticated/app.privacy'
 import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
@@ -118,6 +119,11 @@ const AuthenticatedAppAuditRoute = AuthenticatedAppAuditRouteImport.update({
 const AuthenticatedAppFormsRoute = AuthenticatedAppFormsRouteImport.update({
   id: '/forms',
   path: '/forms',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppMyDayRoute = AuthenticatedAppMyDayRouteImport.update({
+  id: '/my-day',
+  path: '/my-day',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
+  '/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/complain/$formId': typeof ComplainFormIdRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
   '/app/forms': typeof AuthenticatedAppFormsRoute
+  '/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/app/new': typeof AuthenticatedAppNewRoute
   '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/complain/$formId': typeof ComplainFormIdRoute
   '/_authenticated/app/audit': typeof AuthenticatedAppAuditRoute
   '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
+  '/_authenticated/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
   '/_authenticated/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/complain/$formId'
     | '/app/audit'
     | '/app/forms'
+    | '/app/my-day'
     | '/app/new'
     | '/app/privacy'
     | '/app/qa'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/complain/$formId'
     | '/app/audit'
     | '/app/forms'
+    | '/app/my-day'
     | '/app/new'
     | '/app/privacy'
     | '/app/qa'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
     | '/complain/$formId'
     | '/_authenticated/app/audit'
     | '/_authenticated/app/forms'
+    | '/_authenticated/app/my-day'
     | '/_authenticated/app/new'
     | '/_authenticated/app/privacy'
     | '/_authenticated/app/qa'
@@ -527,6 +539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppFormsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/my-day': {
+      id: '/_authenticated/app/my-day'
+      path: '/my-day'
+      fullPath: '/app/my-day'
+      preLoaderRoute: typeof AuthenticatedAppMyDayRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/new': {
       id: '/_authenticated/app/new'
       path: '/new'
@@ -667,6 +686,7 @@ const AuthenticatedAppSettingsRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
+  AuthenticatedAppMyDayRoute: typeof AuthenticatedAppMyDayRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
   AuthenticatedAppPrivacyRoute: typeof AuthenticatedAppPrivacyRoute
   AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
@@ -680,6 +700,7 @@ interface AuthenticatedAppRouteChildren {
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAuditRoute: AuthenticatedAppAuditRoute,
   AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
+  AuthenticatedAppMyDayRoute: AuthenticatedAppMyDayRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
   AuthenticatedAppPrivacyRoute: AuthenticatedAppPrivacyRoute,
   AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,

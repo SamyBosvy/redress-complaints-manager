@@ -1,4 +1,7 @@
-import { ReportCharts, reportLink, ViewComplaints } from '@/components/report-charts';
+import { responseMetrics } from '@/lib/response-metrics';
+import { auditDateBoundary } from '@/lib/audit';
+import { firmDate } from '@/lib/reopening';
+import { Chart, ReportCharts, reportLink, ViewComplaints } from '@/components/report-charts';
 import type { QueueSearch } from '@/lib/queue';
 import { EmptyState } from '@/components/empty-state';
 import { TableSkeleton } from '@/components/table-skeleton';
@@ -10,7 +13,7 @@ import { Download, FileText } from "lucide-react";
 import { membershipQuery, useMembership } from "@/lib/org";
 import { membersQuery, CATEGORIES, PRODUCTS, CHANNELS } from "@/lib/complaints";
 import { COUNTRIES } from "@/lib/countries";
-import { regulatoryQuery, regulatoryReport, regulatoryCsvRows, summaryComparison, PERIOD_PRESETS, parseReportSearch, selectedPeriod, previousPeriod, breakdown, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
+import { regulatoryQuery, regulatoryReport, regulatoryCsvRows, summaryComparison, reportBuckets, PERIOD_PRESETS, parseReportSearch, selectedPeriod, previousPeriod, breakdown, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
 import { loadPdfFont } from '@/lib/pdf-font';
 import { toast } from 'sonner';
 import { downloadFile, toCsv } from "@/lib/csv";
@@ -49,19 +52,20 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const nameOf = (u: string | null) => (u ? members.find((x) => x.user_id === u)?.name ?? "Former user" : "Unassigned");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const zone=m.org.time_zone;
+  const today = firmDate(new Date(),zone);
   const range = selectedPeriod(search, today);
   const { from, to } = range;
   const priorRange = previousPeriod(range);
   const [dim, setDim] = useState<"product" | "category" | "country" | "channel" | "agent">("product");
-  const currentQuery = useQuery(regulatoryQuery(orgId, to));
-  const priorQuery = useQuery({ ...regulatoryQuery(orgId, priorRange.to), enabled: !!search.compare });
+  const currentQuery = useQuery(regulatoryQuery(orgId, to, zone));
+  const priorQuery = useQuery({ ...regulatoryQuery(orgId, priorRange.to, zone), enabled: !!search.compare });
   const isLoading = currentQuery.isLoading || (!!search.compare && priorQuery.isLoading);
   const failed = currentQuery.isError || (!!search.compare && priorQuery.isError);
   const allRows = currentQuery.data?.rows ?? [];
   const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from);
-  const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr,currentQuery.data?.reopenings);
-  const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr,priorQuery.data?.reopenings);
+  const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr,currentQuery.data?.reopenings,zone);
+  const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr,priorQuery.data?.reopenings,zone);
   
   const updateSearch = (patch: Partial<typeof search>) => { void navigate({ search: prev => ({ ...prev, ...patch }) }); };
   const dimKey = (r: ReportRow) =>
@@ -106,11 +110,14 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
       {isLoading ? <TableSkeleton columns={6} /> : failed ? null : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {summary.map(s => <Stat search={reportLink(allRows,s.label,undefined,range)} key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
+            {summary.map(s => <Stat search={s.label==='% of cases needing a holding response'?{tab:'all',holding:'yes',holding_by:auditDateBoundary(to,zone,true),receipt_start:auditDateBoundary(from,zone),receipt_end:auditDateBoundary(to,zone,true)}:isResponse(s.label)?undefined:reportLink(allRows,s.label,undefined,range)} key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
           </div>
           {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." />}
           <section className="border-t pt-5"><h2 className="mb-3 font-semibold">By ADR outcome</h2><div className="max-w-full overflow-x-auto"><table className="w-full text-sm"><thead><tr><th scope="col" className="text-left">Decision</th><th scope="col">Count</th><th scope="col">Share</th>{search.compare && <th scope="col">Previous</th>}</tr></thead><tbody>{(report.tables.find(t=>t.title==='By ADR outcome')?.rows ?? []).map(r=><tr key={r.label} className="border-t"><td className="py-3">{r.label}<ViewComplaints search={reportLink(allRows,'By ADR outcome',r.label,range)}/></td><td className="text-center">{r.count}</td><td className="text-center">{r.share}%</td>{search.compare && <td className="text-center">{previous.tables.find(t=>t.title==='By ADR outcome')?.rows.find(p=>p.label===r.label)?.count ?? 0}</td>}</tr>)}</tbody></table></div>{!report.tables.find(t=>t.title==='By ADR outcome')?.rows.length && <p className="text-sm text-muted-foreground">No ADR decisions in this period.</p>}</section>
           <section className="border-t pt-5"><h2 className="mb-3 font-semibold">By reopen reason</h2><table className="w-full text-sm"><thead><tr><th className="text-left">Reason</th><th>Count</th>{search.compare&&<th>Previous</th>}</tr></thead><tbody>{(report.tables.find(t=>t.title==='By reopen reason')?.rows??[]).map(r=><tr key={r.label} className="border-t"><td className="py-3">{r.label}<ViewComplaints search={reportLink(allRows,'By reopen reason',r.label,range)}/></td><td className="text-center">{r.count}</td>{search.compare&&<td className="text-center">{previous.tables.find(t=>t.title==='By reopen reason')?.rows.find(p=>p.label===r.label)?.count??0}</td>}</tr>)}</tbody></table></section>
+          <Chart title={`Acknowledged on time per ${reportBuckets(range).unit}`} kind="line" series="Acknowledged on time" percent compare={!!search.compare} points={reportBuckets(range).buckets.map((b,i)=>{const p=reportBuckets(priorRange).buckets[i];return {label:b.label,value:responseMetrics(allRows,b,currentQuery.data?.holidays,zone).onTimePct,previous:p?responseMetrics(priorQuery.data?.rows??[],p,priorQuery.data?.holidays,zone).onTimePct:null};})}/>
+          {(report.responseTables??[]).map(t=><section key={t.title} className="space-y-3 border-t pt-5"><h2 className="font-semibold">{t.title}</h2><div className="max-w-full overflow-x-auto"><table className="w-full text-sm"><thead><tr>{t.headers.map(h=><th key={h} scope="col" className="px-2 text-left">{h}</th>)}{search.compare&&<th scope="col">Previous (same metrics)</th>}</tr></thead><tbody>{t.rows.map(r=><tr key={String(r[0])} className="border-t">{r.map((v,i)=><td key={i} className="px-2 py-3">{i===0?(t.title.endsWith('agent')?nameOf(v==='Unassigned'?null:String(v)):countryName(String(v))):v}</td>)}{search.compare&&<td>{previous.responseTables?.find(p=>p.title===t.title)?.rows.find(p=>p[0]===r[0])?.slice(1).join(' / ')??'n/a'}</td>}</tr>)}</tbody></table></div></section>)}
+          <details><summary className="cursor-pointer font-semibold">Response methodology</summary>{report.methodology?.map(text=><p key={text} className="mt-3 text-sm text-muted-foreground">{text}</p>)}</details>
           <ReportCharts rows={allRows} previousRows={priorQuery.data?.rows ?? []} range={range} previousRange={priorRange} compare={!!search.compare}/>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -162,14 +169,16 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   );
 }
 
-function Stat({ label, value, comparisonText, search }: { label: string; value: string | number; comparisonText?: string | undefined; search: QueueSearch }) {
+function Stat({ label, value, comparisonText, search }: { label: string; value: string | number; comparisonText?: string | undefined; search?: QueueSearch | undefined }) {
   return (
     <Card>
       <CardContent className="pt-5">
-        <Button variant="link" className="h-auto max-w-full whitespace-normal p-0 text-2xl" asChild><Link to="/app" search={search}>{value}</Link></Button>
+        {search?<Button variant="link" className="h-auto max-w-full whitespace-normal p-0 text-2xl" asChild><Link to="/app" search={search}>{value}</Link></Button>:<p className="text-2xl font-semibold">{value}</p>}
         <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         {comparisonText && <p className="mt-2 break-words text-xs text-muted-foreground">{comparisonText}</p>}
       </CardContent>
     </Card>
   );
 }
+
+function isResponse(label:string){return ['Acknowledged on time','Acknowledgement overdue now','Median business days to acknowledge','Holding responses sent','Resolved after holding response within extended deadline'].includes(label);}

@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
 });
 
 const ALL = "__all";
-const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis"] as const;
+const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
 
 function Queue() {
   const m = useMembership()!;
@@ -138,11 +138,11 @@ function Queue() {
   if (search.country) chips.push({ key: "country", label: `Country: ${COUNTRIES[search.country] ?? search.country}` });
   if (search.agent) chips.push({ key: "agent", label: `Agent: ${search.agent === "none" ? "Unassigned" : nameOf(search.agent)}` });
   if (search.vulnerable) chips.push({ key: "vulnerable", label: search.vulnerable === "true" ? "Vulnerable" : "Not flagged" });
-  for (const key of ['received_from','received_to','outcome','root_cause','resolved','within_deadline','channel'] as const) if(search[key]) chips.push({key,label:`${key.replaceAll('_',' ')}: ${search[key]}`});
+  for (const key of ['received_from','received_to','outcome','root_cause','resolved','within_deadline','channel','adr_from','adr_to','adr_metric','adr_decision','adr_currency'] as const) if(search[key]) chips.push({key,label:`${key.replaceAll('_',' ')}: ${search[key]}`});
   if(search.report_ids) chips.push({key:'report_ids',label:'Report snapshot'});
   const clearAll = () =>
     navigate({
-      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,page: 1 }),
+      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,adr_from:undefined,adr_to:undefined,adr_metric:undefined,adr_decision:undefined,adr_currency:undefined,page: 1 }),
       replace: true,
     });
 
@@ -175,6 +175,7 @@ function Queue() {
           <TabsTrigger value="risk">At risk <span className="ml-1 tabular text-warning">{counts.atRisk}</span></TabsTrigger>
           <TabsTrigger value="overdue">Overdue <span className="ml-1 tabular text-destructive">{counts.overdue}</span></TabsTrigger>
           <TabsTrigger value="ack">Ack overdue <span className="ml-1 tabular text-destructive">{counts.ackOverdue}</span></TabsTrigger>
+          <TabsTrigger value="adr">ADR</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
         </TabsList>
       </Tabs>

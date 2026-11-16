@@ -11,7 +11,7 @@ export const METHODOLOGY = [
   'Within deadline uses the recorded final deadline, or extended deadline when a holding response exists. Cases without a resolution date or deadline are excluded from that rate.',
   'Amounts are recorded redress and goodwill on resolved cases, reported separately per recorded currency; they are never converted or summed across currencies. No payment-date ledger exists, so these are not cash-flow totals.',
   'Comparisons use the same-length period immediately before, except calendar quarters and years use the previous calendar quarter/year. Percentage change is n/a when the previous value is zero or missing.',
-  'Historical status is reconstructed from immutable events. Outcomes, classifications, payments and deadlines reflect current working records; erased records and subsequent edits can affect historical results. ADR counts use status at period end.',
+  'Historical status is reconstructed from immutable events. Outcomes, classifications, payments and deadlines reflect current working records; erased records and subsequent edits can affect historical results. ADR escalations use escalation date; decisions, overturn rate and awards use decision date, irrespective of complaint receipt date. Overturn rate counts overturned and partially overturned decisions divided by all non-pending decisions; n/a when none. ADR awards remain separate by currency.',
 ];
 export function regulatoryPackPdf(firm: RegulatoryFirm, report: RegulatoryReport, fonts: PdfFonts, previous?: RegulatoryReport) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });

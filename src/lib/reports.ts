@@ -1,3 +1,4 @@
+import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PRODUCTS, CATEGORIES, CHANNELS } from "./complaints";
@@ -234,7 +235,7 @@ export function resolutionDays(row: ReportRow, holidays: Holiday[] = []) {
 }
 export interface RegulatoryTable { title: string; rows: { label: string; count: number; share: number; upheld: number | null; within: number | null }[] }
 export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[] }
-export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = []): RegulatoryReport {
+export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = []): RegulatoryReport {
   const eligible = all.filter(r => r.received_at.slice(0, 10) <= range.to);
   const rows = eligible.filter(r => r.received_at.slice(0, 10) >= range.from);
   const resolvedAtEnd = (r: ReportRow) => !!r.closed_at && r.closed_at.slice(0, 10) <= range.to;
@@ -251,7 +252,9 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
     { label: 'Resolved within deadline', value: pct(knownDeadline.filter(r => resolvedWithinDeadline(r)).length, knownDeadline.length), unit: '%' },
     { label: 'Median days to resolve', value: median, unit: 'business days' }, { label: 'Average days to resolve', value: avg === null ? null : Math.round(avg * 10) / 10, unit: 'business days' },
     ...(['upheld', 'partially_upheld', 'not_upheld', 'withdrawn'] as const).map(outcome => ({ label: outcome.replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()), value: pct(resolved.filter(r => r.outcome === outcome).length, resolved.length), unit: '%' })),
-    { label: 'Escalated to ADR', value: rows.filter(r => r.status === 'escalated_to_adr').length },
+    { label: 'Escalated to ADR', value: adrMetrics(adr, range).escalated.length },
+    { label: 'ADR decisions', value: adrMetrics(adr, range).decided.length },
+    { label: 'ADR overturn rate', value: adrMetrics(adr, range).overturnRate, unit: '%' },
   ];
   const payment = (kind: 'redress' | 'goodwill') => paidByCurrency(resolved.map(r => ({ ...r, ...(kind === 'redress' ? { goodwill_amount: null } : { redress_amount: null }) })));
   for (const kind of ['redress', 'goodwill'] as const) for (const [currency, value] of Object.entries(payment(kind))) summary.push({ label: `${kind === 'redress' ? 'Redress' : 'Goodwill'} paid — ${currency}`, value, unit: currency });
@@ -264,6 +267,9 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
       return { label, count: group.length, share: pct(group.length, rows.length) ?? 0, upheld: pct(rs.filter(r => r.outcome === 'upheld' || r.outcome === 'partially_upheld').length, rs.length), within: pct(wd.filter(r => resolvedWithinDeadline(r)).length, wd.length) };
     }).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) };
   });
+  const am = adrMetrics(adr, range);
+  for (const [currency, value] of Object.entries(am.awards)) summary.push({ label: `ADR awards — ${currency}`, value, unit: currency });
+  tables.push({ title: 'By ADR outcome', rows: Object.entries(ADR_DECISIONS).filter(([k]) => k !== 'pending').map(([key,label]) => ({label,count:am.decided.filter(a => a.decision === key).length,share:pct(am.decided.filter(a => a.decision === key).length,am.decided.length) ?? 0,upheld:null,within:null})).filter(r => r.count > 0) });
   return { range, summary, tables };
 }
 export const TABLE_HEADERS = ['Group', 'Count', '% of total', 'Upheld / partial %', 'Within deadline %'];
@@ -271,7 +277,7 @@ export function summaryComparison(current: RegulatoryReport, previous?: Regulato
   const labels = [...new Set([...current.summary, ...(previous?.summary ?? [])].map(s => s.label))];
   return labels.map(label => {
     const c = current.summary.find(s => s.label === label), p = previous?.summary.find(s => s.label === label);
-    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? (label.includes(' paid — ') ? 0 : null), p?.value ?? (label.includes(' paid — ') ? 0 : null)) };
+    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null), p?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null)) };
   });
 }
 export function regulatoryCsvRows(report: RegulatoryReport, previous?: RegulatoryReport): (string | number)[][] {
@@ -290,11 +296,12 @@ export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
       for (let offset = 0; ; offset += 500) { const { data, error } = await fetchPage(offset); if (error) throw error; rows.push(...(data ?? [])); if ((data?.length ?? 0) < 500) break; }
       return rows;
     };
-    const [rows, causes, events, holidays] = await Promise.all([
+    const [rows, causes, events, holidays, adr] = await Promise.all([
       fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).lt('received_at', isoDay(new Date(Date.parse(end) + DAY)) + 'T00:00:00Z').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
+      fetchPages(offset => supabase.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).lte('escalated_on',end).order('id').range(offset,offset+499)),
     ]);
     const projected = rows.map(row => {
       const history = events.filter(e => e.complaint_id === row.id && e.created_at.slice(0, 10) <= end);
@@ -307,7 +314,7 @@ export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
       return { ...row, status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
     });
-    return { rows: projected as ReportRow[], holidays };
+    return { rows: projected as ReportRow[], holidays, adr };
   },
 });
 
@@ -319,7 +326,12 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
   if (metric === 'Resolved within deadline' || metric === 'within') { s.resolved = 'yes'; s.within_deadline = 'yes'; }
   const outcome = ({ Upheld: 'upheld', 'Partially upheld': 'partially_upheld', 'Not upheld': 'not_upheld', Withdrawn: 'withdrawn' } as Record<string, string>)[metric];
   if (outcome) { s.outcome = outcome; s.resolved = 'yes'; }
-  if (metric === 'Escalated to ADR') s.status = 'escalated_to_adr';
+  if (metric === 'Escalated to ADR' || metric.startsWith('ADR ') || metric === 'By ADR outcome') {
+    s.received_from = undefined; s.received_to = undefined; s.adr_from = range.from; s.adr_to = range.to;
+    s.adr_metric = metric === 'Escalated to ADR' ? 'escalated' : metric === 'ADR overturn rate' ? 'overturned' : 'decided';
+    if (metric === 'By ADR outcome' && group) s.adr_decision = Object.entries(ADR_DECISIONS).find(([,label])=>label===group)?.[0];
+    if (metric.startsWith('ADR awards — ')) s.adr_currency = metric.slice('ADR awards — '.length);
+  }
   const dimensions: Record<string, keyof QueueSearch> = { 'By product': 'product', 'By category': 'category', 'By country': 'country', 'By channel': 'channel', 'By root cause': 'root_cause', 'By agent': 'agent' };
   const dimension = dimensions[metric];
   if (dimension && group !== undefined) {
@@ -330,6 +342,7 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
   return s;
 }
 export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
+  if (s.adr_metric && !evalFilterOps(r as unknown as Record<string, unknown>, reportFilterOps(s))) return false;
   const date = r.received_at.slice(0, 10);
   const resolved = !!r.closed_at && (!s.received_to || r.closed_at.slice(0, 10) <= s.received_to);
   return (!s.received_from || date >= s.received_from) && (!s.received_to || date <= s.received_to)
@@ -366,9 +379,18 @@ export function reportBuckets(range: PeriodRange) {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const nextDay = (d: string) => new Date(Date.parse(d) + DAY).toISOString().slice(0, 10);
 /** Server-side filter operations on complaint_queue equivalent to matchesReportFilters (status/product/category/country/agent are applied by the queue's existing filters). */
-export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte'; col: string; v?: string | boolean };
+export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte' | 'in'; col: string; v?: string | boolean };
 export function reportFilterOps(s: QueueSearch): FilterOp[] {
   const ops: FilterOp[] = [];
+  if (s.adr_metric) {
+    const col = s.adr_metric === 'escalated' ? 'adr_escalated_on' : 'adr_decision_on';
+    ops.push({op:'not_null',col});
+    if(s.adr_from) ops.push({op:'gte',col,v:s.adr_from});
+    if(s.adr_to) ops.push({op:'lt',col,v:nextDay(s.adr_to)});
+    if(s.adr_metric === 'overturned') ops.push({op:'in',col:'adr_decision',v:'overturned,partially_overturned'});
+    if(s.adr_decision) ops.push({op:'eq',col:'adr_decision',v:s.adr_decision});
+    if(s.adr_currency) {ops.push({op:'eq',col:'adr_award_currency',v:s.adr_currency});ops.push({op:'not_null',col:'adr_award_amount'});}
+  }
   if (s.received_from) ops.push({ op: 'gte', col: 'received_at', v: s.received_from });
   if (s.received_to) ops.push({ op: 'lt', col: 'received_at', v: nextDay(s.received_to) });
   const resolved = s.within_deadline ? 'yes' : s.resolved;
@@ -387,6 +409,7 @@ export function reportFilterOps(s: QueueSearch): FilterOp[] {
 export function evalFilterOps(row: Record<string, unknown>, ops: FilterOp[]) {
   return ops.every(({ op, col, v }) => {
     const x = row[col] as string | boolean | null | undefined;
+    if (op === 'in') return String(v).split(',').includes(String(x));
     if (op === 'is_null') return x == null; if (op === 'not_null') return x != null;
     if (op === 'eq') return x === v;
     if (x == null) return op === 'null_or_gte';

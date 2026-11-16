@@ -12,7 +12,7 @@ export function queueEmptyState(orgTotal: number, matchingTotal: number, role: A
 
 export const PAGE_SIZE = 50;
 
-export const QUEUE_TABS = ["mine", "team", "risk", "overdue", "ack", "all"] as const;
+export const QUEUE_TABS = ["mine", "team", "risk", "overdue", "ack", "adr", "all"] as const;
 export type QueueTab = (typeof QUEUE_TABS)[number];
 
 export const QUEUE_SORTS = ["time_left", "reference", "customer", "status", "agent"] as const;
@@ -33,6 +33,9 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  adr_from?: string | undefined; adr_to?: string | undefined;
+  adr_metric?: 'escalated' | 'decided' | 'overturned' | undefined;
+  adr_decision?: string | undefined; adr_currency?: string | undefined;
   received_from?: string | undefined;
   received_to?: string | undefined;
   outcome?: string | undefined;
@@ -62,6 +65,10 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v ? v : undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    adr_from:date(s['adr_from']),adr_to:date(s['adr_to']),
+    adr_metric: ['escalated','decided','overturned'].includes(String(s['adr_metric'])) ? s['adr_metric'] as QueueSearch['adr_metric'] : undefined,
+    adr_decision: ['pending','upheld_firm','overturned','partially_overturned','settled','withdrawn'].includes(String(s['adr_decision'])) ? String(s['adr_decision']) : undefined,
+    adr_currency: ['EUR','GBP','PLN','CZK','HUF','RON','SEK','DKK','NOK','CHF','BGN','ISK','USD'].includes(String(s['adr_currency'])) ? String(s['adr_currency']) : undefined,
     received_from: date(s["received_from"]), received_to: date(s["received_to"]),
     outcome: ['upheld','partially_upheld','not_upheld','withdrawn'].includes(String(s["outcome"])) ? String(s["outcome"]) : undefined,
     root_cause: str(s["root_cause"]), resolved: yesNo(s["resolved"]), within_deadline: yesNo(s["within_deadline"]), channel: str(s["channel"]),
@@ -188,6 +195,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (tab === "team") q = q.in("status", CLOCK_RUNNING);
   if (tab === "risk") q = q.in("status", CLOCK_RUNNING).gte("days_left", 0).lte("days_left", 3);
   if (tab === "overdue") q = q.in("status", CLOCK_RUNNING).lt("days_left", 0);
+  if (tab === "adr") q = q.eq("status", "escalated_to_adr");
   if (tab === "ack") q = q.eq("status", "received").lt("ack_due", todayISO());
   if (p.report_ids) q = q.in('id', p.report_ids === 'none' ? ['00000000-0000-0000-0000-000000000000'] : p.report_ids.split(','));
   if (p.status) q = q.eq("status", p.status);
@@ -197,7 +205,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (p.agent) q = p.agent === "none" ? q.is("assigned_to", null) : q.eq("assigned_to", p.agent);
   if (p.vulnerable) q = q.eq("vulnerable", p.vulnerable === "true");
   for (const f of reportFilterOps(p)) {
-    if (f.op === 'gte') q = q.gte(f.col, String(f.v)); else if (f.op === 'lt') q = q.lt(f.col, String(f.v));
+    if (f.op === 'in') q = q.in(f.col, String(f.v).split(',')); else if (f.op === 'gte') q = q.gte(f.col, String(f.v)); else if (f.op === 'lt') q = q.lt(f.col, String(f.v));
     else if (f.op === 'eq') q = q.eq(f.col, f.v as string | boolean); else if (f.op === 'is_null') q = q.is(f.col, null);
     else if (f.op === 'not_null') q = q.not(f.col, 'is', null); else q = q.or(`${f.col}.is.null,${f.col}.gte.${String(f.v)}`);
   }

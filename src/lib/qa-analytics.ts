@@ -5,7 +5,7 @@ import type { QaReview } from './qa';
 
 export const QA_CRITERIA = [['accuracy','Accuracy'],['fair_outcome','Fair outcome'],['clear_communication','Clear communication'],['deadlines_met','Deadlines met'],['adr_rights','ADR rights given']] as const;
 export type QaAnalyticsRow = QaReview & { assigned_to_at_review?: string | null; complaints: { reference: string; complainant_name: string; assigned_to: string | null } | null; letters?: { sent_by: string } | null };
-export type QaSearch = ReportSearch & { view?: 'list'|'analytics'; agent?: string; reviewer?: string; criterion?: string; result?: 'pass'|'fail'; kind?: 'approval'|'sample'; decided?: boolean };
+export type QaSearch = ReportSearch & { view?: 'list'|'analytics'|undefined; agent?: string|undefined; reviewer?: string|undefined; criterion?: string|undefined; criterion_result?: 'pass'|'fail'|'reviewed'|undefined; result?: 'pass'|'fail'|undefined; kind?: 'approval'|'sample'|undefined; decided?: boolean|undefined };
 export const QA_METHODOLOGY = [
   'Decided reviews are approved, returned, passed or failed with a decision timestamp, grouped by the firm-local decision date. Pass means approved or passed; rates exclude pending reviews.',
   'Handler attribution: stored handler at review time, otherwise letter sent_by, otherwise current complaint assigned_to. No historical handler column currently exists; sampling attribution can change after reassignment. Agent views include only their attributed reviews.',
@@ -15,7 +15,7 @@ export const QA_METHODOLOGY = [
 export function parseQaSearch(raw: Record<string,unknown>): QaSearch {
   const date=(v:unknown)=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v?v:undefined;
   const uuid=(v:unknown)=>typeof v==='string'&&(/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(v)||v==='unassigned')?v:undefined;
-  return {period:typeof raw['period']==='string'?raw['period']:undefined,from:date(raw['from']),to:date(raw['to']),compare:raw['compare']===true||raw['compare']==='true',view:raw['view']==='analytics'?'analytics':'list',agent:uuid(raw['agent']),reviewer:uuid(raw['reviewer']),criterion:QA_CRITERIA.some(([k])=>k===raw['criterion'])?String(raw['criterion']):undefined,result:raw['result']==='pass'||raw['result']==='fail'?raw['result']:undefined,kind:raw['kind']==='approval'||raw['kind']==='sample'?raw['kind']:undefined,decided:raw['decided']===true||raw['decided']==='true'};
+  return {period:typeof raw['period']==='string'?raw['period']:undefined,from:date(raw['from']),to:date(raw['to']),compare:raw['compare']===true||raw['compare']==='true',view:raw['view']==='analytics'?'analytics':'list',agent:uuid(raw['agent']),reviewer:uuid(raw['reviewer']),criterion:QA_CRITERIA.some(([k])=>k===raw['criterion'])?String(raw['criterion']):undefined,criterion_result:raw['criterion_result']==='pass'||raw['criterion_result']==='reviewed'?raw['criterion_result']:'fail',result:raw['result']==='pass'||raw['result']==='fail'?raw['result']:undefined,kind:raw['kind']==='approval'||raw['kind']==='sample'?raw['kind']:undefined,decided:raw['decided']===true||raw['decided']==='true'};
 }
 export function qaHandler(row: QaAnalyticsRow): string | null { return row.assigned_to_at_review ?? row.letters?.sent_by ?? row.complaints?.assigned_to ?? null; }
 export function qaOwnRows(rows: QaAnalyticsRow[], role: string | null, userId: string) { return role==='agent'?rows.filter(r=>qaHandler(r)===userId):rows; }
@@ -25,7 +25,7 @@ export function qaCriterion(r:QaAnalyticsRow,key:string) { return auditObject(au
 export function matchesQaFilters(row:QaAnalyticsRow,s:QaSearch,zone:string) {
   if ((s.decided||s.from||s.to||s.result) && !qaDecided(row)) return false;
   const day=row.decided_at?firmDate(new Date(row.decided_at),zone):'';
-  return (!s.from||day>=s.from)&&(!s.to||day<=s.to)&&(!s.agent||(qaHandler(row)??'unassigned')===s.agent)&&(!s.reviewer||(row.reviewer??'unassigned')===s.reviewer)&&(!s.kind||row.kind===s.kind)&&(!s.result||qaPassed(row)===(s.result==='pass'))&&(!s.criterion||qaCriterion(row,s.criterion)['result']==='fail');
+  return (!s.from||day>=s.from)&&(!s.to||day<=s.to)&&(!s.agent||(qaHandler(row)??'unassigned')===s.agent)&&(!s.reviewer||(row.reviewer??'unassigned')===s.reviewer)&&(!s.kind||row.kind===s.kind)&&(!s.result||qaPassed(row)===(s.result==='pass'))&&(!s.criterion||(s.criterion_result==='reviewed'?['pass','fail'].includes(String(qaCriterion(row,s.criterion)['result'])):qaCriterion(row,s.criterion)['result']===(s.criterion_result??'fail')));
 }
 export function qaFilterOps(s:QaSearch,zone:string) {
   const ops:{op:'gte'|'lt'|'eq'|'in'|'is';column:string;value:string|string[]|null}[]=[];
@@ -34,7 +34,7 @@ export function qaFilterOps(s:QaSearch,zone:string) {
   if(s.decided||s.from||s.to||s.result)ops.push({op:'in',column:'status',value:s.result==='pass'?['approved','passed']:s.result==='fail'?['returned','failed']:['approved','passed','returned','failed']});
   if(s.reviewer)ops.push({op:s.reviewer==='unassigned'?'is':'eq',column:'reviewer',value:s.reviewer==='unassigned'?null:s.reviewer});
   if(s.kind)ops.push({op:'eq',column:'kind',value:s.kind});
-  if(s.criterion)ops.push({op:'eq',column:`scorecard->${s.criterion}->>result`,value:'fail'});
+  if(s.criterion)ops.push({op:s.criterion_result==='reviewed'?'in':'eq',column:`scorecard->${s.criterion}->>result`,value:s.criterion_result==='reviewed'?['pass','fail']:s.criterion_result??'fail'});
   return ops;
 }
 export function qaDrillDown(range:PeriodRange,filters:Partial<QaSearch>={}):QaSearch { return {view:'list',period:'custom',from:range.from,to:range.to,decided:true,...filters}; }

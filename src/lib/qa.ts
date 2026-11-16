@@ -40,7 +40,11 @@ export const qaReviewsQuery = (orgId: string, filters: QaSearch = {}, zone = 'Eu
       for(const f of qaFilterOps(filters,zone)) {
         if(f.op==='in'&&Array.isArray(f.value))query=query.in(f.column,f.value);
         else if(f.op==='is')query=query.is(f.column,null);
-        else if(typeof f.value==='string')query=query[f.op==='gte'?'gte':f.op==='lt'?'lt':'eq'](f.column,f.value);
+        else if(typeof f.value==='string') {
+          if(f.op==='gte')query=query.gte(f.column,f.value);
+          else if(f.op==='lt')query=query.lt(f.column,f.value);
+          else query=query.eq(f.column,f.value);
+        }
       }
       return query;
       });

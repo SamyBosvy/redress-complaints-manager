@@ -7,7 +7,7 @@ const range={from:'2026-01-01',to:'2026-01-31'};
 describe('report drilldowns',()=>{
  it('matches every summary counting cohort and outcome numerator',()=>{
  const expected:Record<string,number>={'Complaints received':2,Resolved:2,'Open at period end':1,'Resolved within deadline':1,'Median days to resolve':2,'Average days to resolve':2,Upheld:1,'Partially upheld':0,'Not upheld':0,Withdrawn:1,'Escalated to ADR':0,'Redress paid — EUR':1,'Redress paid — GBP':1};
- for(const [metric,count] of Object.entries(expected)){const selected=drillDownRows(rows,metric,undefined,range);expect(selected.length,metric).toBe(count);const s=parseQueueSearch(buildDrillDownSearch(metric,undefined,range));if(!metric.includes(' paid — '))expect(rows.filter(r=>matchesReportFilters(r,s)).length,metric).toBe(count);expect(s.tab).toBe('all');}
+ for(const [metric,count] of Object.entries(expected)){const selected=drillDownRows(rows,metric,undefined,range);expect(selected.length,metric).toBe(count);const s=parseQueueSearch({...buildDrillDownSearch(metric,undefined,range)});if(!metric.includes(' paid — '))expect(rows.filter(r=>matchesReportFilters(r,s)).length,metric).toBe(count);expect(s.tab).toBe('all');}
  });
  it('matches each regulatory table row including legacy and missing root causes',()=>{for(const table of regulatoryReport(rows,range).tables)for(const group of table.rows)expect(drillDownRows(rows,table.title,group.label,range).length).toBe(group.count);});
  it('maps agent groups',()=>expect(buildDrillDownSearch('By agent','none',range).agent).toBe('none'));

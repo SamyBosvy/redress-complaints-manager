@@ -61,10 +61,10 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v ? v : undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
-    received_from: date(s.received_from), received_to: date(s.received_to),
-    outcome: ['upheld','partially_upheld','not_upheld','withdrawn'].includes(String(s.outcome)) ? String(s.outcome) : undefined,
-    root_cause: str(s.root_cause), resolved: yesNo(s.resolved), within_deadline: yesNo(s.within_deadline), channel: str(s.channel),
-    report_ids: typeof s.report_ids === 'string' && /^(none|[a-zA-Z0-9-]+(,[a-zA-Z0-9-]+)*)$/.test(s.report_ids) ? s.report_ids : undefined,
+    received_from: date(s["received_from"]), received_to: date(s["received_to"]),
+    outcome: ['upheld','partially_upheld','not_upheld','withdrawn'].includes(String(s["outcome"])) ? String(s["outcome"]) : undefined,
+    root_cause: str(s["root_cause"]), resolved: yesNo(s["resolved"]), within_deadline: yesNo(s["within_deadline"]), channel: str(s["channel"]),
+    report_ids: typeof s["report_ids"] === 'string' && /^(none|[a-zA-Z0-9-]+(,[a-zA-Z0-9-]+)*)$/.test(s["report_ids"]) ? s["report_ids"] : undefined,
     tab: (QUEUE_TABS as readonly string[]).includes(s["tab"] as string) ? (s["tab"] as QueueTab) : undefined,
     q: typeof s["q"] === "string" ? (s["q"] as string) : "",
     status: str(s["status"]),

@@ -97,3 +97,6 @@
 
 - [x] Item #36: managed reopening records/RPC, firm-local date checks, settings, case dialog and report/filter integration.
 - [ ] Item #36 signed-in/mobile readback — requires a usable account and case fixtures.
+
+- [x] Item #37: shared paginated audit history, URL/local-date filters, readable masked diffs and CSV/JSON export receipts; no database or billing changes.
+- [ ] Item #37 signed-in audit paging/export/mobile verification — requires a usable account and audit records.

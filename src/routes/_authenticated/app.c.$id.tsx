@@ -1,3 +1,4 @@
+import { AuditHistory } from '@/components/audit-history';
 import { CaseReopen } from '@/components/case-reopen';
 import { CaseAdr } from '@/components/case-adr';
 import { EditComplaintDetails } from '@/components/edit-complaint-details';
@@ -250,6 +251,7 @@ function CaseView() {
         </div>
       </div>
 
+      {['org_admin', 'complaints_manager', 'read_only'].includes(m.role ?? '') && <div className="mt-8"><AuditHistory orgId={orgId} role={m.role} zone={m.org?.time_zone ?? 'Europe/Dublin'} filters={{}} caseId={id} /></div>}
       {nextOpen && <Dialog open onOpenChange={setNextOpen}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>Next step</DialogTitle></DialogHeader>{nextStatuses(status,m.role,m.org?.qa_required ?? false,canEdit).map(next=>{const requirement=transitionRequirement(next,status,letters,c.holding_reason);return <div key={next} className="space-y-1"><Button className="w-full whitespace-normal" variant="outline" disabled={transitionBusy || (next!=='closed' && (!!requirement || lettersResult.isPending || lettersResult.isError))} onClick={async()=>{if(next==='closed'){setNextOpen(false);setCloseOpen(true);return;}setTransitionBusy(true);try{if(await update({status:next}))setNextOpen(false);}finally{setTransitionBusy(false);}}}>{STATUSES[next]}</Button>{requirement && <p className="text-sm text-muted-foreground">{requirement}</p>}</div>;})}</DialogContent></Dialog>}
       {closeOpen && <CloseChecklistDialog causes={causes} c={c} finalSent={['final_response_sent','escalated_to_adr'].includes(status) && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
       {letterOpen && <LetterDialog c={c} onClose={() => setLetterOpen(false)} onSent={refresh} />}

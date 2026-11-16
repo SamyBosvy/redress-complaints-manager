@@ -30,3 +30,6 @@
 
 ## Reopening
 - Reopening uses the role-checked RPC and append-only records; firm_date controls database date boundaries. Why: prevent direct status bypass and machine-zone-dependent dates.
+
+## Audit browsing
+- Audit page and case section share org-scoped keyset queries and role-masked exports; checksums cover final downloaded bytes including footer/BOM. Why: scalable child-case history and independently verifiable files without changing database access.

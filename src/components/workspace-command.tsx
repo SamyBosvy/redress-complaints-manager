@@ -40,7 +40,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, dens
       if (!action) return;
       event.preventDefault();
       if (action === 'help') setHelp(true);
-      else void navigate({ to: action === 'new' ? '/app/new' : action === 'reports' ? '/app/reports' : '/app' });
+      else void navigate({ to: action === 'new' ? '/app/new' : action === 'reports' ? '/app/reports' : action === 'day' ? '/app/my-day' : '/app' });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -85,6 +85,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, dens
           <dt><kbd>⌘K / Ctrl+K</kbd></dt><dd>Search</dd>
           {canNew && <><dt><kbd>N</kbd></dt><dd>New complaint</dd></>}
           <dt><kbd>G then Q</kbd></dt><dd>Queue</dd>
+          {pages.some(page=>page.to==='/app/my-day') && <><dt><kbd>G then D</kbd></dt><dd>My day</dd></>}
           {canReports && <><dt><kbd>G then R</kbd></dt><dd>Reports</dd></>}
           <dt><kbd>J / K</kbd></dt><dd>Next / previous queue row</dd>
           <dt><kbd>Enter</kbd></dt><dd>Open focused complaint</dd>

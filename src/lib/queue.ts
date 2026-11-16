@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { CLOCK_RUNNING, STATUSES, type QueueRow, type Status } from "./complaints";
 import { reportFilterOps } from "./reports";
 import type { AppRole } from './org';
+import { DAY_SECTIONS, type DaySection } from './my-day';
+import { fetchDaySection } from './my-day-query';
 
 export function queueEmptyState(orgTotal: number, matchingTotal: number, role: AppRole | null) {
   if (orgTotal === 0) return { kind: 'empty' as const, canLog: role !== null && role !== 'read_only', canShare: role === 'org_admin' };
@@ -33,6 +35,9 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  day_section?: DaySection | undefined;
+  day_date?: string | undefined;
+  day_zone?: string | undefined;
   holding?: string | undefined; holding_by?: string | undefined; receipt_start?: string | undefined; receipt_end?: string | undefined;
   reopened?: string | undefined; reopen_from?: string | undefined; reopen_to?: string | undefined; reopen_reason?: string | undefined;
   adr_from?: string | undefined; adr_to?: string | undefined;
@@ -68,6 +73,9 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const instant=(v:unknown)=>typeof v==='string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(v)&&Number.isFinite(Date.parse(v))?v:undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    day_section: DAY_SECTIONS.includes(s['day_section'] as DaySection) ? s['day_section'] as DaySection : undefined,
+    day_date: date(s['day_date']),
+    day_zone: (()=>{try{if(typeof s['day_zone']==='string'){new Intl.DateTimeFormat('en',{timeZone:s['day_zone']});return s['day_zone'];}}catch{}return undefined;})(),
     holding:yesNo(s['holding']), holding_by:instant(s['holding_by']),receipt_start:instant(s['receipt_start']),receipt_end:instant(s['receipt_end']),
     reopened:yesNo(s['reopened']),reopen_from:date(s['reopen_from']),reopen_to:date(s['reopen_to']),reopen_reason:['new_evidence','customer_disagreed','handling_error','regulator_adr_request','other'].includes(String(s['reopen_reason']))?String(s['reopen_reason']):undefined,
     adr_from:date(s['adr_from']),adr_to:date(s['adr_to']),
@@ -235,6 +243,7 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 }
 
 export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
+  if(p.day_section&&p.day_date&&p.day_zone)return fetchDaySection(orgId,p.userId,p.day_section,p.day_date,p.day_zone,p.page??1,PAGE_SIZE);
   const size = PAGE_SIZE;
   const sort = p.sort ?? "time_left";
   const dir = p.dir ?? "asc";

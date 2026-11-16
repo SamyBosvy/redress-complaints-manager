@@ -1,3 +1,4 @@
+import { DAY_LABELS } from '@/lib/my-day';
 import { EmptyState } from '@/components/empty-state';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
 });
 
 const ALL = "__all";
-const FILTER_KEYS = ["holding", "holding_by", "receipt_start", "receipt_end", "reopened", "reopen_from", "reopen_to", "reopen_reason", "status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
+const FILTER_KEYS = ["day_section", "day_date", "day_zone", "holding", "holding_by", "receipt_start", "receipt_end", "reopened", "reopen_from", "reopen_to", "reopen_reason", "status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
 
 function Queue() {
   const m = useMembership()!;
@@ -131,6 +132,7 @@ function Queue() {
     : COUNTRIES;
 
   const chips: { key: keyof QueueSearch; label: string }[] = [];
+  if(search.day_section) chips.push({key:'day_section',label:`My day: ${DAY_LABELS[search.day_section]} (${search.day_date})`});
   if ((search.q ?? "").trim()) chips.push({ key: "q", label: `Search: ${(search.q ?? "").trim()}` });
   if (search.status) chips.push({ key: "status", label: `Status: ${STATUSES[search.status as Status] ?? search.status}` });
   if (search.category) chips.push({ key: "category", label: `Category: ${CATEGORIES[search.category as keyof typeof CATEGORIES] ?? search.category}` });
@@ -142,7 +144,7 @@ function Queue() {
   if(search.report_ids) chips.push({key:'report_ids',label:'Report snapshot'});
   const clearAll = () =>
     navigate({
-      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,adr_from:undefined,adr_to:undefined,adr_metric:undefined,adr_decision:undefined,adr_currency:undefined,reopened:undefined,reopen_from:undefined,reopen_to:undefined,reopen_reason:undefined,page: 1 }),
+      search: (prev) => ({ ...prev, day_section:undefined,day_date:undefined,day_zone:undefined,q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,adr_from:undefined,adr_to:undefined,adr_metric:undefined,adr_decision:undefined,adr_currency:undefined,reopened:undefined,reopen_from:undefined,reopen_to:undefined,reopen_reason:undefined,page: 1 }),
       replace: true,
     });
 

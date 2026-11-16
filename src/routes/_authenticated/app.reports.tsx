@@ -63,7 +63,7 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   const isLoading = currentQuery.isLoading || (!!search.compare && priorQuery.isLoading);
   const failed = currentQuery.isError || (!!search.compare && priorQuery.isError);
   const allRows = currentQuery.data?.rows ?? [];
-  const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from);
+  const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from && r.received_at.slice(0,10) <= to);
   const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr,currentQuery.data?.reopenings,zone);
   const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr,priorQuery.data?.reopenings,zone);
   

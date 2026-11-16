@@ -1,4 +1,4 @@
-import { acknowledgedAt, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
+import { acknowledgedAt, responseDate, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
 import { auditDateBoundary } from './audit';
 import {REOPEN_REASONS,reopeningMetrics,type ReopeningRow} from './reopening';
 import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
@@ -290,7 +290,7 @@ export function summaryComparison(current: RegulatoryReport, previous?: Regulato
   const labels = [...new Set([...current.summary, ...(previous?.summary ?? [])].map(s => s.label))];
   return labels.map(label => {
     const c = current.summary.find(s => s.label === label), p = previous?.summary.find(s => s.label === label);
-    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null), p?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null)) };
+    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null), (label==='Acknowledgement overdue now'?null:p?.value) ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null)) };
   });
 }
 export function regulatoryCsvRows(report: RegulatoryReport, previous?: RegulatoryReport): (string | number)[][] {
@@ -312,7 +312,7 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       return rows;
     };
     const [rows, causes, events, holidays, adr, reopenings, letters] = await Promise.all([
-      fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).lt('received_at', auditDateBoundary(end,timeZone,true)).order('id').range(offset, offset + 499)),
+      fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
@@ -321,10 +321,10 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       fetchPages(offset=>supabase.from('letters').select('complaint_id,kind,sent_at').eq('org_id',orgId).eq('status','sent').in('kind',['acknowledgement','holding']).order('id').range(offset,offset+499)),
     ]);
     const projected = rows.map(row => {
-      const history = events.filter(e => e.complaint_id === row.id && e.created_at.slice(0, 10) <= end);
+      const history = events.filter(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) <= end);
       const statusOf = (e: typeof events[number], key: string) => e.detail && typeof e.detail === 'object' && !Array.isArray(e.detail) ? String(e.detail[key] ?? '') : '';
       const latest = history.at(-1);
-      const future = events.find(e => e.complaint_id === row.id && e.created_at.slice(0, 10) > end);
+      const future = events.find(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) > end);
       const status = (latest ? statusOf(latest, 'after') : future ? statusOf(future, 'before') : row.status) as ReportRow['status'];
       const resolved = CLOSED.includes(status);
       let lastReopened = -1; history.forEach((e, i) => { if (statusOf(e, 'after') === 'reopened') lastReopened = i; });

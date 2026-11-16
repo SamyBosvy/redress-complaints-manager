@@ -93,7 +93,7 @@ function Templates() {
   const agent=members.find(x=>x.user_id===(previewCase?.assigned_to??m?.user.id));
   const values=previewCase?caseMergeValues(previewCase,{firm:m?.org?.legal_name??'',address:m?.org?.firm_address,agent:agent?.name,agentEmail:agent?.email,adrName:adr?.adr_name,adrContact:[adr?.adr_contact,adr?.adr_website].filter(Boolean).join(', '),language:lang,extended:kind==='holding',rootCause:previewCase.root_cause_id||previewCase.root_cause_category?rootCauseLabel(previewCase.root_cause_id,previewCase.root_cause_category,causes,false):''}):SAMPLE_VALUES;
   const renderedSubject=mergeTemplate(subject,values),renderedBody=mergeTemplate(body,values);
-  async function pdf() {try {const {letterPdf}=await import('@/lib/letter-pdf');letterPdf({firm:values.firm_name??'',address:values.firm_address,date:values.date_of_letter??'',subject:renderedSubject,body:renderedBody},await loadPdfFont()).save('template-preview.pdf');}catch{toast.error('Could not generate the preview PDF.');}}
+  async function pdf() {try {const {letterPdf}=await import('@/lib/letter-pdf');letterPdf({firm:values.firm_name??'',address:values.firm_address??null,date:values.date_of_letter??'',subject:renderedSubject,body:renderedBody},await loadPdfFont()).save('template-preview.pdf');}catch{toast.error('Could not generate the preview PDF.');}}
 
   return (
     <div className="mx-auto max-w-7xl" onKeyDown={e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();void save();}}}>

@@ -36,7 +36,7 @@ export function insertAtCursor(text: string, field: keyof MergeValues, start: nu
   const from = Math.max(0, Math.min(text.length, start));
   return { text: text.slice(0, from) + token + text.slice(Math.max(from, end)), cursor: from + token.length };
 }
-export function caseMergeValues(c: Partial<QueueRow>, context: { firm: string; address?: string | null; firmEmail?: string | null; agent?: string; agentEmail?: string; adrName?: string | null; adrContact?: string; rootCause?: string; language?: string; date?: Date; extended?: boolean }): MergeValues {
+export function caseMergeValues(c: Partial<QueueRow>, context: { firm: string; address?: string | null | undefined; firmEmail?: string | null; agent?: string | undefined; agentEmail?: string | undefined; adrName?: string | null | undefined; adrContact?: string; rootCause?: string; language?: string; date?: Date; extended?: boolean }): MergeValues {
   const language = context.language ?? c.language ?? 'en';
   const locale = ({ en: 'en-GB', fr: 'fr-FR', es: 'es-ES', pt: 'pt-PT', pl: 'pl-PL', nl: 'nl-NL' } as Record<string, string>)[language] ?? 'en-GB';
   const date = (value?: string | null) => value ? formatDate(value) : '';

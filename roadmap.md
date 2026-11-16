@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Item #22 first half: grouped merge fields, cursor insertion/search, validation, live sample/case preview/PDF, counts and unsaved/save shortcuts; no schema or billing changes.
+- [ ] Item #22: verify signed-in editor/save/real-case preview and mobile layout — no auth users; firm complaints email has no existing stored source and remains a visible placeholder. Version history is deferred to second half.
+
 - [x] Items #15 + #18: reasoned detail edits with deadline confirmation and managed root causes; managed migrations 0016–0018, journal/snapshots/types refreshed, unchanged existing RLS/0015 guards and hosted read-only schema checks; final checks reported in chat.
 - [ ] Verify Items #15 + #18 signed-in edits/settings/closure/report exports and mobile views — needs a usable account and organisation.
 

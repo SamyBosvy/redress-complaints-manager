@@ -33,8 +33,9 @@ export function regulatoryPackPdf(firm: RegulatoryFirm, report: RegulatoryReport
     if (t.rows.length) table(TABLE_HEADERS, t.rows.map(r => [r.label, r.count, `${r.share}%`, r.upheld === null ? 'n/a' : `${r.upheld}%`, r.within === null ? 'n/a' : `${r.within}%`]));
     else { doc.setFontSize(10); doc.text('No complaints in this period', 14, 40); }
   }
+  for(const t of report.responseTables??[]){doc.addPage();heading(t.title);table([...t.headers,...(previous?['Previous values']:[])],t.rows.map(r=>[...r,...(previous?[previous.responseTables?.find(p=>p.title===t.title)?.rows.find(p=>p[0]===r[0])?.slice(1).join(' / ')??'n/a']:[])]));}
   doc.addPage(); heading('Methodology');
-  table(['Definitions and limitations'], METHODOLOGY.map(text => [text]));
+  table(['Definitions and limitations'], [...METHODOLOGY,...(report.methodology??[])].map(text => [text]));
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     doc.setPage(i); doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(8);

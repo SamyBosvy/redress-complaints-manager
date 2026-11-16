@@ -48,7 +48,7 @@ export function maskAuditValue(value: unknown, field: string, admin: boolean): u
   if (/email|phone|iban|account_number|telephone/i.test(field)) return '••••';
   if (typeof value !== 'string') return value;
   if (/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2}))?$/.test(value) || UUID.test(value)) return value;
-  return value.replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '••••').replace(/\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/gi, '••••').replace(/\+?\d[\d ()-]{7,}\d/g, '••••');
+  return value.replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '••••').replace(/\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/gi, '••••').replace(/\bRDR-\d{4}-\d{6}\b|\b\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?|(?<![\w.+-])(?:\+\d{1,3}[ ()-]+\d(?:[ ()-]+\d{1,4}){2,}|0\d{2}[ ()-]+\d{3}[ ()-]+\d{4})(?![\w-])/g, match => /^(?:RDR-|\d{4}-)/.test(match) ? match : '••••');
 }
 export function auditFormat(value: unknown, field: string, zone: string, admin: boolean): string {
   const masked = maskAuditValue(value, field, admin);

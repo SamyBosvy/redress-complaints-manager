@@ -1,3 +1,4 @@
+import { CaseReopen } from '@/components/case-reopen';
 import { CaseAdr } from '@/components/case-adr';
 import { EditComplaintDetails } from '@/components/edit-complaint-details';
 import { canEditDetails } from '@/lib/complaint-details';
@@ -147,7 +148,7 @@ function CaseView() {
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{c.complainant_name}</h1>
-            <StatusPill status={status} />
+            <StatusPill status={status} /><CaseReopen orgId={orgId} id={id} role={m.role} mode={m.org?.reopen_deadline_mode??'restart'} c={c} onSaved={refresh}/>
           </div>
           {c.anonymised_at && <p className="mt-1 text-sm text-muted-foreground">Working records anonymised · Historical audit retained</p>}
           {c.legal_hold && <p className="mt-1 text-sm text-warning">Legal hold · Excluded from retention anonymisation</p>}
@@ -198,7 +199,7 @@ function CaseView() {
           </Card>
 
           <OutcomeCard causes={causes} c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
-          <CaseAdr orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
+          <CaseAdr timeZone={m.org?.time_zone??'Europe/Dublin'} orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
           <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
           <Card title="Internal notes and attachments">

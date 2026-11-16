@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
 });
 
 const ALL = "__all";
-const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
+const FILTER_KEYS = ["reopened", "reopen_from", "reopen_to", "reopen_reason", "status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
 
 function Queue() {
   const m = useMembership()!;

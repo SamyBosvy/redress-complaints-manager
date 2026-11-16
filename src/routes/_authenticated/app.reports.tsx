@@ -60,8 +60,8 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   const failed = currentQuery.isError || (!!search.compare && priorQuery.isError);
   const allRows = currentQuery.data?.rows ?? [];
   const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from);
-  const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr);
-  const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr);
+  const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr,currentQuery.data?.reopenings);
+  const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr,priorQuery.data?.reopenings);
   
   const updateSearch = (patch: Partial<typeof search>) => { void navigate({ search: prev => ({ ...prev, ...patch }) }); };
   const dimKey = (r: ReportRow) =>
@@ -110,6 +110,7 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
           </div>
           {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." />}
           <section className="border-t pt-5"><h2 className="mb-3 font-semibold">By ADR outcome</h2><div className="max-w-full overflow-x-auto"><table className="w-full text-sm"><thead><tr><th scope="col" className="text-left">Decision</th><th scope="col">Count</th><th scope="col">Share</th>{search.compare && <th scope="col">Previous</th>}</tr></thead><tbody>{(report.tables.find(t=>t.title==='By ADR outcome')?.rows ?? []).map(r=><tr key={r.label} className="border-t"><td className="py-3">{r.label}<ViewComplaints search={reportLink(allRows,'By ADR outcome',r.label,range)}/></td><td className="text-center">{r.count}</td><td className="text-center">{r.share}%</td>{search.compare && <td className="text-center">{previous.tables.find(t=>t.title==='By ADR outcome')?.rows.find(p=>p.label===r.label)?.count ?? 0}</td>}</tr>)}</tbody></table></div>{!report.tables.find(t=>t.title==='By ADR outcome')?.rows.length && <p className="text-sm text-muted-foreground">No ADR decisions in this period.</p>}</section>
+          <section className="border-t pt-5"><h2 className="mb-3 font-semibold">By reopen reason</h2><table className="w-full text-sm"><thead><tr><th className="text-left">Reason</th><th>Count</th>{search.compare&&<th>Previous</th>}</tr></thead><tbody>{(report.tables.find(t=>t.title==='By reopen reason')?.rows??[]).map(r=><tr key={r.label} className="border-t"><td className="py-3">{r.label}<ViewComplaints search={reportLink(allRows,'By reopen reason',r.label,range)}/></td><td className="text-center">{r.count}</td>{search.compare&&<td className="text-center">{previous.tables.find(t=>t.title==='By reopen reason')?.rows.find(p=>p.label===r.label)?.count??0}</td>}</tr>)}</tbody></table></section>
           <ReportCharts rows={allRows} previousRows={priorQuery.data?.rows ?? []} range={range} previousRange={priorRange} compare={!!search.compare}/>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">

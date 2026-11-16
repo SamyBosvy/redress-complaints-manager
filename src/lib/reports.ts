@@ -1,3 +1,4 @@
+import {REOPEN_REASONS,reopeningMetrics,type ReopeningRow} from './reopening';
 import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -235,7 +236,7 @@ export function resolutionDays(row: ReportRow, holidays: Holiday[] = []) {
 }
 export interface RegulatoryTable { title: string; rows: { label: string; count: number; share: number; upheld: number | null; within: number | null }[] }
 export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[] }
-export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = []): RegulatoryReport {
+export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = [], reopenings: ReopeningRow[] = []): RegulatoryReport {
   const eligible = all.filter(r => r.received_at.slice(0, 10) <= range.to);
   const rows = eligible.filter(r => r.received_at.slice(0, 10) >= range.from);
   const resolvedAtEnd = (r: ReportRow) => !!r.closed_at && r.closed_at.slice(0, 10) <= range.to;
@@ -267,6 +268,9 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
       return { label, count: group.length, share: pct(group.length, rows.length) ?? 0, upheld: pct(rs.filter(r => r.outcome === 'upheld' || r.outcome === 'partially_upheld').length, rs.length), within: pct(wd.filter(r => resolvedWithinDeadline(r)).length, wd.length) };
     }).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) };
   });
+  const rm=reopeningMetrics(reopenings,range,resolved.length);
+  summary.push({label:'Reopened',value:rm.count},{label:'Reopen rate',value:rm.rate,unit:'%'});
+  tables.push({title:'By reopen reason',rows:Object.entries(REOPEN_REASONS).map(([key,label])=>{const count=new Set(rm.rows.filter(r=>r.reason_category===key).map(r=>r.complaint_id)).size;return {label,count,share:pct(count,rm.count)??0,upheld:null,within:null};}).filter(r=>r.count>0)});
   const am = adrMetrics(adr, range);
   for (const [currency, value] of Object.entries(am.awards)) summary.push({ label: `ADR awards — ${currency}`, value, unit: currency });
   tables.push({ title: 'By ADR outcome', rows: Object.entries(ADR_DECISIONS).filter(([k]) => k !== 'pending').map(([key,label]) => ({label,count:am.decided.filter(a => a.decision === key).length,share:pct(am.decided.filter(a => a.decision === key).length,am.decided.length) ?? 0,upheld:null,within:null})).filter(r => r.count > 0) });
@@ -296,12 +300,13 @@ export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
       for (let offset = 0; ; offset += 500) { const { data, error } = await fetchPage(offset); if (error) throw error; rows.push(...(data ?? [])); if ((data?.length ?? 0) < 500) break; }
       return rows;
     };
-    const [rows, causes, events, holidays, adr] = await Promise.all([
+    const [rows, causes, events, holidays, adr, reopenings] = await Promise.all([
       fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).lt('received_at', isoDay(new Date(Date.parse(end) + DAY)) + 'T00:00:00Z').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).lte('escalated_on',end).order('id').range(offset,offset+499)),
+      fetchPages(offset=>supabase.from('complaint_reopenings').select('complaint_id,reopened_at,reason_category').eq('org_id',orgId).lt('reopened_at',isoDay(new Date(Date.parse(end)+DAY))+'T00:00:00Z').order('id').range(offset,offset+499)),
     ]);
     const projected = rows.map(row => {
       const history = events.filter(e => e.complaint_id === row.id && e.created_at.slice(0, 10) <= end);
@@ -314,7 +319,7 @@ export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
       return { ...row, status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
     });
-    return { rows: projected as ReportRow[], holidays, adr };
+    return { rows: projected as ReportRow[], holidays, adr, reopenings };
   },
 });
 
@@ -332,6 +337,7 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
     if (metric === 'By ADR outcome' && group) s.adr_decision = Object.entries(ADR_DECISIONS).find(([,label])=>label===group)?.[0];
     if (metric.startsWith('ADR awards — ')) s.adr_currency = metric.slice('ADR awards — '.length);
   }
+  if(['Reopened','Reopen rate','By reopen reason'].includes(metric)){s.received_from=undefined;s.received_to=undefined;s.reopened='yes';s.reopen_from=range.from;s.reopen_to=range.to;if(group)s.reopen_reason=Object.entries(REOPEN_REASONS).find(([,v])=>v===group)?.[0];}
   const dimensions: Record<string, keyof QueueSearch> = { 'By product': 'product', 'By category': 'category', 'By country': 'country', 'By channel': 'channel', 'By root cause': 'root_cause', 'By agent': 'agent' };
   const dimension = dimensions[metric];
   if (dimension && group !== undefined) {
@@ -382,6 +388,10 @@ const nextDay = (d: string) => new Date(Date.parse(d) + DAY).toISOString().slice
 export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte' | 'in'; col: string; v?: string | boolean };
 export function reportFilterOps(s: QueueSearch): FilterOp[] {
   const ops: FilterOp[] = [];
+  if(s.reopened)ops.push({op:'eq',col:'has_reopened',v:s.reopened==='yes'});
+  if(s.reopen_from)ops.push({op:'gte',col:'complaint_reopenings.reopened_at',v:s.reopen_from});
+  if(s.reopen_to)ops.push({op:'lt',col:'complaint_reopenings.reopened_at',v:nextDay(s.reopen_to)});
+  if(s.reopen_reason)ops.push({op:'eq',col:'complaint_reopenings.reason_category',v:s.reopen_reason});
   if (s.adr_metric) {
     const col = s.adr_metric === 'escalated' ? 'adr_escalated_on' : 'adr_decision_on';
     ops.push({op:'not_null',col});

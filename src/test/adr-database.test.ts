@@ -7,7 +7,7 @@ const org='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-
 const sql=(n:string)=>readFileSync(`drizzle/migrations/${n}`,'utf8');
 beforeAll(async()=>{
  const original=readFileSync('src/test/workflow-database.test.ts','utf8').match(/await db.exec\(`([\s\S]*?)`\);/)?.[1];if(!original)throw new Error('Missing fixture');
- await db.exec(original);
+ await db.exec(original);await db.exec("SET TIME ZONE 'UTC'");
  await db.exec(sql('0015_compliance_hardening.sql'));
  await db.exec(`CREATE ROLE authenticated;CREATE ROLE anon;CREATE ROLE service_role;
  ALTER TABLE complaints ADD COLUMN received_at timestamptz DEFAULT '2026-01-01',ADD COLUMN legal_hold boolean DEFAULT false,ADD COLUMN closed_at timestamptz;

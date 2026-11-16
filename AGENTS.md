@@ -48,3 +48,5 @@
 
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
 
+
+- Reopening uses the role-checked RPC and append-only records; firm_date controls database date boundaries. Why: prevent direct status bypass and machine-zone-dependent dates.

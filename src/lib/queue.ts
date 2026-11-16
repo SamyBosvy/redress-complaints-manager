@@ -33,6 +33,7 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  reopened?: string | undefined; reopen_from?: string | undefined; reopen_to?: string | undefined; reopen_reason?: string | undefined;
   adr_from?: string | undefined; adr_to?: string | undefined;
   adr_metric?: 'escalated' | 'decided' | 'overturned' | undefined;
   adr_decision?: string | undefined; adr_currency?: string | undefined;
@@ -65,6 +66,7 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v ? v : undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    reopened:yesNo(s['reopened']),reopen_from:date(s['reopen_from']),reopen_to:date(s['reopen_to']),reopen_reason:['new_evidence','customer_disagreed','handling_error','regulator_adr_request','other'].includes(String(s['reopen_reason']))?String(s['reopen_reason']):undefined,
     adr_from:date(s['adr_from']),adr_to:date(s['adr_to']),
     adr_metric: ['escalated','decided','overturned'].includes(String(s['adr_metric'])) ? s['adr_metric'] as QueueSearch['adr_metric'] : undefined,
     adr_decision: ['pending','upheld_firm','overturned','partially_overturned','settled','withdrawn'].includes(String(s['adr_decision'])) ? String(s['adr_decision']) : undefined,
@@ -218,8 +220,10 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function queueSelect(cols:string,p:QueueParams){return p.reopen_from||p.reopen_to||p.reopen_reason ? cols+",complaint_reopenings!inner(reopened_at,reason_category)" : cols;}
+
 async function countRows(orgId: string, p: QueueParams, segment?: readonly Status[]): Promise<number> {
-  let q = supabase.from("complaint_queue").select("id", { count: "exact", head: true }).eq("org_id", orgId);
+  let q = supabase.from("complaint_queue").select(queueSelect("id",p), { count: "exact", head: true }).eq("org_id", orgId);
   q = applyFilters(q, p);
   if (segment) q = q.in("status", segment);
   const { count, error } = await q;
@@ -238,7 +242,7 @@ export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<Que
     const slices = pageSlices(runningCount, stoppedCount, page, size);
     const parts = await Promise.all(
       slices.map(async (s) => {
-        let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT), p).eq("org_id", orgId);
+        let q = applyFilters(supabase.from("complaint_queue").select(queueSelect(QUEUE_SELECT,p)), p).eq("org_id", orgId);
         q = q.in("status", s.segment === "running" ? CLOCK_RUNNING : stopped);
         const ordered =
           s.segment === "running"
@@ -246,18 +250,18 @@ export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<Que
             : q.order("received_at", { ascending: false }).order("id", { ascending: true });
         const { data, error } = await ordered.range(s.from, s.to);
         if (error) throw error;
-        return data;
+        return data as unknown as QueueItem[];
       }),
     );
     return { rows: parts.flat(), total: runningCount + stoppedCount, page, pageSize: size };
   }
-  let q = applyFilters(supabase.from("complaint_queue").select(QUEUE_SELECT, { count: "exact" }), p).eq("org_id", orgId);
+  let q = applyFilters(supabase.from("complaint_queue").select(queueSelect(QUEUE_SELECT,p), { count: "exact" }), p).eq("org_id", orgId);
   const ordered = q
     .order(SORT_COLUMNS[sort], { ascending: dir === "asc", nullsFirst: false })
     .order("id", { ascending: true });
   const { data, count, error } = await ordered.range((page - 1) * size, page * size - 1);
   if (error) throw error;
-  return { rows: data, total: count ?? 0, page, pageSize: size };
+  return { rows: data as unknown as QueueItem[], total: count ?? 0, page, pageSize: size };
 }
 
 export const queueQuery = (orgId: string, p: QueueParams) =>

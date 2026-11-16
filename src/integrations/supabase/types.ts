@@ -52,6 +52,88 @@ export type Database = {
           },
         ]
       }
+      adr_cases: {
+        Row: {
+          adr_body_name: string
+          adr_reference: string | null
+          award_amount: number | null
+          award_currency: string | null
+          complaint_id: string
+          created_at: string
+          created_by: string | null
+          decision: string
+          decision_on: string | null
+          escalated_on: string
+          firm_notified_on: string | null
+          firm_response_due: string | null
+          firm_response_sent_on: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          adr_body_name: string
+          adr_reference?: string | null
+          award_amount?: number | null
+          award_currency?: string | null
+          complaint_id: string
+          created_at?: string
+          created_by?: string | null
+          decision?: string
+          decision_on?: string | null
+          escalated_on: string
+          firm_notified_on?: string | null
+          firm_response_due?: string | null
+          firm_response_sent_on?: string | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          adr_body_name?: string
+          adr_reference?: string | null
+          award_amount?: number | null
+          award_currency?: string | null
+          complaint_id?: string
+          created_at?: string
+          created_by?: string | null
+          decision?: string
+          decision_on?: string | null
+          escalated_on?: string
+          firm_notified_on?: string | null
+          firm_response_due?: string | null
+          firm_response_sent_on?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adr_cases_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: true
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adr_cases_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: true
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adr_cases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1081,6 +1163,11 @@ export type Database = {
       complaint_queue: {
         Row: {
           ack_due: string | null
+          adr_award_amount: number | null
+          adr_award_currency: string | null
+          adr_decision: string | null
+          adr_decision_on: string | null
+          adr_escalated_on: string | null
           anonymised_at: string | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["complaint_category"] | null
@@ -1124,98 +1211,6 @@ export type Database = {
           updated_at: string | null
           vulnerable: boolean | null
           vulnerable_note: string | null
-        }
-        Insert: {
-          ack_due?: string | null
-          anonymised_at?: string | null
-          assigned_to?: string | null
-          category?: Database["public"]["Enums"]["complaint_category"] | null
-          channel?: Database["public"]["Enums"]["complaint_channel"] | null
-          closed_at?: string | null
-          complainant_email?: string | null
-          complainant_name?: string | null
-          complainant_phone?: string | null
-          country_code?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          current_due?: never
-          customer_ref?: string | null
-          days_left?: never
-          desired_outcome?: string | null
-          extended_due?: string | null
-          final_due?: string | null
-          goodwill_amount?: number | null
-          goodwill_currency?: string | null
-          holding_reason?: string | null
-          holding_sent_at?: string | null
-          id?: string | null
-          language?: string | null
-          legal_hold?: boolean | null
-          org_id?: string | null
-          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
-          priority?: Database["public"]["Enums"]["complaint_priority"] | null
-          product?: Database["public"]["Enums"]["complaint_product"] | null
-          received_at?: string | null
-          redress_amount?: number | null
-          redress_currency?: string | null
-          reference?: string | null
-          resolved_within_deadline?: never
-          root_cause_category?: string | null
-          root_cause_id?: string | null
-          root_cause_note?: string | null
-          rule_set_id?: string | null
-          seq?: number | null
-          status?: Database["public"]["Enums"]["complaint_status"] | null
-          summary?: string | null
-          updated_at?: string | null
-          vulnerable?: boolean | null
-          vulnerable_note?: string | null
-        }
-        Update: {
-          ack_due?: string | null
-          anonymised_at?: string | null
-          assigned_to?: string | null
-          category?: Database["public"]["Enums"]["complaint_category"] | null
-          channel?: Database["public"]["Enums"]["complaint_channel"] | null
-          closed_at?: string | null
-          complainant_email?: string | null
-          complainant_name?: string | null
-          complainant_phone?: string | null
-          country_code?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          current_due?: never
-          customer_ref?: string | null
-          days_left?: never
-          desired_outcome?: string | null
-          extended_due?: string | null
-          final_due?: string | null
-          goodwill_amount?: number | null
-          goodwill_currency?: string | null
-          holding_reason?: string | null
-          holding_sent_at?: string | null
-          id?: string | null
-          language?: string | null
-          legal_hold?: boolean | null
-          org_id?: string | null
-          outcome?: Database["public"]["Enums"]["complaint_outcome"] | null
-          priority?: Database["public"]["Enums"]["complaint_priority"] | null
-          product?: Database["public"]["Enums"]["complaint_product"] | null
-          received_at?: string | null
-          redress_amount?: number | null
-          redress_currency?: string | null
-          reference?: string | null
-          resolved_within_deadline?: never
-          root_cause_category?: string | null
-          root_cause_id?: string | null
-          root_cause_note?: string | null
-          rule_set_id?: string | null
-          seq?: number | null
-          status?: Database["public"]["Enums"]["complaint_status"] | null
-          summary?: string | null
-          updated_at?: string | null
-          vulnerable?: boolean | null
-          vulnerable_note?: string | null
         }
         Relationships: [
           {

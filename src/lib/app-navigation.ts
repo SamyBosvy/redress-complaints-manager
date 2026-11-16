@@ -4,7 +4,7 @@ const NAVIGATION = [
   { label: 'Work', links: [
     { label: 'Queue', to: '/app', icon: 'queue', roles: ['org_admin', 'complaints_manager', 'agent', 'qa_reviewer', 'read_only'] },
     { label: 'New complaint', to: '/app/new', icon: 'new', roles: ['org_admin', 'complaints_manager', 'agent', 'qa_reviewer'] },
-    { label: 'QA review', to: '/app/qa', icon: 'qa', roles: ['org_admin', 'complaints_manager', 'qa_reviewer'] },
+    { label: 'QA review', to: '/app/qa', icon: 'qa', roles: ['org_admin', 'complaints_manager', 'qa_reviewer', 'read_only', 'agent'] },
   ] },
   { label: 'Insight', links: [
     { label: 'Reports', to: '/app/reports', icon: 'reports', roles: ['org_admin', 'complaints_manager', 'read_only'] },

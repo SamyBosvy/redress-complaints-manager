@@ -6,11 +6,11 @@ describe('app shell navigation visibility', () => {
   const cases: [AppRole, string[][]][] = [
     ['org_admin', [['Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Public form', 'Privacy & data', 'Settings']]],
     ['complaints_manager', [['Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Settings']]],
-    ['agent', [['Queue', 'New complaint'], ['Templates']]],
+    ['agent', [['Queue', 'New complaint', 'QA review'], ['Templates']]],
     ['qa_reviewer', [['Queue', 'New complaint', 'QA review'], ['Templates']]],
-    ['read_only', [['Queue'], ['Reports', 'Audit log']]],
+    ['read_only', [['Queue', 'QA review'], ['Reports', 'Audit log']]],
   ];
-  it.each(cases)('preserves every existing link permission for %s', (role, expected) => {
+  it.each(cases)('keeps existing links and exposes role-scoped QA analytics for %s', (role, expected) => {
     expect(appNavigation(role).map(group => group.links.map(link => link.label))).toEqual(expected);
   });
   it('groups admin links under Work, Insight and Admin in order', () => {

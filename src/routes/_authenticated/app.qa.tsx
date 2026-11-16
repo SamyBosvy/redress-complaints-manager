@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { membershipQuery, useMembership } from "@/lib/org";
-import { QA_KINDS, QA_STATUSES, SCORECARD, emptyScorecard, qaReviewsQuery, scorecardPassed, type QaReview, type Scorecard } from "@/lib/qa";
+import { QA_KINDS, QA_STATUSES, SCORECARD, emptyScorecard, qaReviewsQuery, scorecardPassed, type Scorecard } from "@/lib/qa";
 import { formatDate } from "@/lib/letters";
 import { QaAnalytics, QaPeriodControls } from '@/components/qa-analytics';
 import { parseQaSearch, qaOwnRows, type QaAnalyticsRow } from '@/lib/qa-analytics';
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/app/qa")({
   loader: async ({ context, deps }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     if(!m?.org)return;
-    await Promise.all([context.queryClient.ensureQueryData(qaReviewsQuery(m.org.id,deps.view==='analytics'?{}:deps,m.org.time_zone)),context.queryClient.ensureQueryData(membersQuery(m.org.id))]);
+    await Promise.all([context.queryClient.ensureQueryData(qaReviewsQuery(m.org.id,deps.view==='analytics'?{}:{...deps,...(deps.decided?selectedPeriod(deps,firmDate(new Date(),m.org.time_zone)):{})},m.org.time_zone)),context.queryClient.ensureQueryData(membersQuery(m.org.id))]);
   },
   head: () => ({ meta: [{ title: "QA review — Redress" }, { name: "description", content: "Approve final responses and review sampled complaints." }, { property: "og:title", content: "QA review — Redress" }, { property: "og:description", content: "Approve final responses and review sampled complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   pendingComponent: () => <TableSkeleton columns={5} />,
@@ -47,9 +47,10 @@ function QaContent({membership:m}:{membership:NonNullable<ReturnType<typeof useM
   const orgId = m.org.id;
   const search=Route.useSearch(),navigate=Route.useNavigate(),zone=m.org.time_zone;
   const range=selectedPeriod(search,firmDate(new Date(),zone));
+  const listFilters={...search,...(search.decided?{from:range.from,to:range.to}:{})};
   const update=(patch:Partial<typeof search>)=>{void navigate({search:prev=>({...prev,...patch})});};
   const qc = useQueryClient();
-  const { data: allReviews } = useSuspenseQuery(qaReviewsQuery(orgId,search.view==='analytics'?{}:search,zone));
+  const { data: allReviews } = useSuspenseQuery(qaReviewsQuery(orgId,search.view==='analytics'?{}:listFilters,zone));
   const reviews=qaOwnRows(allReviews,m.role,m.user.id);
   const {data:members}=useSuspenseQuery(membersQuery(orgId));
   const name=(id:string)=>id==='unassigned'?'Unassigned':members.find(x=>x.user_id===id)?.name??'Former user';
@@ -90,7 +91,7 @@ function QaContent({membership:m}:{membership:NonNullable<ReturnType<typeof useM
       <Tabs value={search.view??'list'} onValueChange={value=>update({view:value==='analytics'?'analytics':'list'})} className="my-5"><TabsList aria-label="QA views"><TabsTrigger value="list">Reviews</TabsTrigger><TabsTrigger value="analytics">Analytics</TabsTrigger></TabsList></Tabs>
       <QaPeriodControls search={search} range={range} update={patch=>update({...patch,...(search.view==='analytics'?{}:{decided:true})})}/>
       {search.view==='analytics'?<div className="mt-6"><QaAnalytics rows={reviews} range={range} zone={zone} role={m.role} userId={m.user.id} compare={!!search.compare} name={name}/></div>:<>
-      <div className="my-4 flex flex-wrap gap-3">{([{key:'agent',label:'Agent',options:[['all','All agents'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'reviewer',label:'Reviewer',options:[['all','All reviewers'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'criterion',label:'Failed criterion',options:[['all','Any criterion'],...SCORECARD.map(([k,l])=>[k,l])]},{key:'result',label:'Result',options:[['all','Any result'],['pass','Pass'],['fail','Fail']]},{key:'kind',label:'Review kind',options:[['all','Any kind'],['approval','Letter approval'],['sample','Sampling']]}] as const).map(f=><div key={f.key} className="space-y-1"><Label htmlFor={`qa-filter-${f.key}`}>{f.label}</Label><Select value={search[f.key]??'all'} onValueChange={value=>update(parseQaSearch({...search,[f.key]:value==='all'?undefined:value}))}><SelectTrigger id={`qa-filter-${f.key}`} className="w-44"><SelectValue/></SelectTrigger><SelectContent>{f.options.map(([key,label])=><SelectItem key={key??'all'} value={key??'all'}>{label}</SelectItem>)}</SelectContent></Select></div>)}<Button variant="outline" onClick={()=>void navigate({search:{view:'list'}})}>Clear filters</Button></div>
+      <div className="my-4 flex flex-wrap gap-3">{([{key:'agent',label:'Agent',options:[['all','All agents'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'reviewer',label:'Reviewer',options:[['all','All reviewers'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'criterion',label:'Failed criterion',options:[['all','Any criterion'],...SCORECARD.map(([k,l])=>[k,l])]},{key:'result',label:'Result',options:[['all','Any result'],['pass','Pass'],['fail','Fail']]},{key:'kind',label:'Review kind',options:[['all','Any kind'],['approval','Letter approval'],['sample','Sampling']]}] as const).map(f=><div key={f.key} className="space-y-1"><Label htmlFor={`qa-filter-${f.key}`}>{f.label}</Label><Select value={search[f.key]??'all'} onValueChange={value=>update(parseQaSearch({...search,[f.key]:value==='all'?undefined:value,...(f.key==='criterion'?{criterion_result:'fail'}:{})}))}><SelectTrigger id={`qa-filter-${f.key}`} className="w-44"><SelectValue/></SelectTrigger><SelectContent>{f.options.map(([key,label])=><SelectItem key={key??'all'} value={key??'all'}>{label}</SelectItem>)}</SelectContent></Select></div>)}<Button variant="outline" onClick={()=>void navigate({search:{view:'list'}})}>Clear filters</Button></div>
 
       <h2 className="mt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Awaiting review</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border bg-card">

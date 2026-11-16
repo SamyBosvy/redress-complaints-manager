@@ -48,5 +48,3 @@
 
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
 
-
-- ADR records are tenant-scoped trigger-validated child data; reports and filter-only drill-downs use escalation/decision dates, not receipt cohorts. Why: preserve case guards and match ADR counts at scale.

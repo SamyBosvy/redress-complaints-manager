@@ -63,7 +63,7 @@ function Queue() {
   const today = new Date().toISOString().slice(0, 10);
   const nameOf = (id: string | null) => (id ? members.find((x) => x.user_id === id)?.name ?? "—" : "Unassigned");
   const update = (patch: Partial<QueueSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch, report_ids: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_ids, page: patch.page ?? 1 }), replace: true });
+    navigate({ search: (prev) => ({ ...prev, ...patch, report_ids: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_ids, report_basis: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_basis, page: patch.page ?? 1 }), replace: true });
   const setTab = (v: string) => update({ tab: v as QueueTab });
   const openCase = (id: string) => navigate({ to: "/app/c/$id", params: { id } });
 

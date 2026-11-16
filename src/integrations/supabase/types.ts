@@ -1299,6 +1299,10 @@ export type Database = {
         Args: { _hashes: Json; _org: string }
         Returns: undefined
       }
+      reorder_root_causes: {
+        Args: { _ids: string[]; _org: string }
+        Returns: undefined
+      }
       resolve_rule_set: {
         Args: { _country: string; _org: string; _product: string }
         Returns: string

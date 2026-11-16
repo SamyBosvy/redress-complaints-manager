@@ -36,6 +36,7 @@ import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppSettingsCalendarsRouteImport } from './routes/_authenticated/app.settings.calendars'
 import { Route as AuthenticatedAppSettingsCountriesRouteImport } from './routes/_authenticated/app.settings.countries'
 import { Route as AuthenticatedAppSettingsImportRouteImport } from './routes/_authenticated/app.settings.import'
+import { Route as AuthenticatedAppSettingsRootCausesRouteImport } from './routes/_authenticated/app.settings.root-causes'
 import { Route as AuthenticatedAppSettingsRulesRouteImport } from './routes/_authenticated/app.settings.rules'
 import { Route as AuthenticatedAppSettingsUsersRouteImport } from './routes/_authenticated/app.settings.users'
 import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
@@ -180,6 +181,12 @@ const AuthenticatedAppSettingsImportRoute =
     path: '/import',
     getParentRoute: () => AuthenticatedAppSettingsRoute,
   } as any)
+const AuthenticatedAppSettingsRootCausesRoute =
+  AuthenticatedAppSettingsRootCausesRouteImport.update({
+    id: '/root-causes',
+    path: '/root-causes',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
 const AuthenticatedAppSettingsRulesRoute =
   AuthenticatedAppSettingsRulesRouteImport.update({
     id: '/rules',
@@ -224,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
   '/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
+  '/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -253,6 +261,7 @@ export interface FileRoutesByTo {
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
   '/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
+  '/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -286,6 +295,7 @@ export interface FileRoutesById {
   '/_authenticated/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
   '/_authenticated/app/settings/countries': typeof AuthenticatedAppSettingsCountriesRoute
   '/_authenticated/app/settings/import': typeof AuthenticatedAppSettingsImportRoute
+  '/_authenticated/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/_authenticated/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/_authenticated/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/app/settings/calendars'
     | '/app/settings/countries'
     | '/app/settings/import'
+    | '/app/settings/root-causes'
     | '/app/settings/rules'
     | '/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/app/settings/calendars'
     | '/app/settings/countries'
     | '/app/settings/import'
+    | '/app/settings/root-causes'
     | '/app/settings/rules'
     | '/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -380,6 +392,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/settings/calendars'
     | '/_authenticated/app/settings/countries'
     | '/_authenticated/app/settings/import'
+    | '/_authenticated/app/settings/root-causes'
     | '/_authenticated/app/settings/rules'
     | '/_authenticated/app/settings/users'
     | '/api/public/jobs/privacy'
@@ -591,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsImportRouteImport
       parentRoute: typeof AuthenticatedAppSettingsRoute
     }
+    '/_authenticated/app/settings/root-causes': {
+      id: '/_authenticated/app/settings/root-causes'
+      path: '/root-causes'
+      fullPath: '/app/settings/root-causes'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRootCausesRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
     '/_authenticated/app/settings/rules': {
       id: '/_authenticated/app/settings/rules'
       path: '/rules'
@@ -619,6 +639,7 @@ interface AuthenticatedAppSettingsRouteChildren {
   AuthenticatedAppSettingsCalendarsRoute: typeof AuthenticatedAppSettingsCalendarsRoute
   AuthenticatedAppSettingsCountriesRoute: typeof AuthenticatedAppSettingsCountriesRoute
   AuthenticatedAppSettingsImportRoute: typeof AuthenticatedAppSettingsImportRoute
+  AuthenticatedAppSettingsRootCausesRoute: typeof AuthenticatedAppSettingsRootCausesRoute
   AuthenticatedAppSettingsRulesRoute: typeof AuthenticatedAppSettingsRulesRoute
   AuthenticatedAppSettingsUsersRoute: typeof AuthenticatedAppSettingsUsersRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
@@ -631,6 +652,8 @@ const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildr
     AuthenticatedAppSettingsCountriesRoute:
       AuthenticatedAppSettingsCountriesRoute,
     AuthenticatedAppSettingsImportRoute: AuthenticatedAppSettingsImportRoute,
+    AuthenticatedAppSettingsRootCausesRoute:
+      AuthenticatedAppSettingsRootCausesRoute,
     AuthenticatedAppSettingsRulesRoute: AuthenticatedAppSettingsRulesRoute,
     AuthenticatedAppSettingsUsersRoute: AuthenticatedAppSettingsUsersRoute,
     AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,

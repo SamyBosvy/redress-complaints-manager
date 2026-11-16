@@ -47,6 +47,7 @@ export function maskAuditValue(value: unknown, field: string, admin: boolean): u
   if (typeof value === 'object') return Array.isArray(value) ? value.map(v => maskAuditValue(v, field, false)) : Object.fromEntries(Object.entries(value).map(([k, v]) => [k, maskAuditValue(v, k, false)]));
   if (/email|phone|iban|account_number|telephone/i.test(field)) return '••••';
   if (typeof value !== 'string') return value;
+  if (/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2}))?$/.test(value) || UUID.test(value)) return value;
   return value.replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '••••').replace(/\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b/gi, '••••').replace(/\+?\d[\d ()-]{7,}\d/g, '••••');
 }
 export function auditFormat(value: unknown, field: string, zone: string, admin: boolean): string {

@@ -15,6 +15,7 @@ import { LANGUAGES, countriesQuery, membersQuery } from "@/lib/complaints";
 import { MERGE_GROUPS, MERGE_LABELS, SAMPLE_VALUES, caseMergeValues, mergeTemplate, unknownPlaceholders, insertAtCursor, type MergeValues, TEMPLATE_KINDS, hasAdrBlock, isFinal, type TemplateKind } from "@/lib/letters";
 import { rootCausesQuery, rootCauseLabel } from '@/lib/root-causes';
 import { loadPdfFont } from '@/lib/pdf-font';
+import { lineDiff, restoreTemplate, templateVersionsQuery } from '@/lib/template-versions';
 import { cn } from "@/lib/utils";
 
 export const templatesQuery = (orgId: string) =>
@@ -48,6 +49,8 @@ function Templates() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [baseline, setBaseline] = useState({subject:'',body:''});
+  const [restoredFrom,setRestoredFrom] = useState<string|null>(null);
+  const [versionId,setVersionId] = useState('');
   const [busy,setBusy] = useState(false);
   const [fieldSearch,setFieldSearch] = useState('');
   const [caseSearch,setCaseSearch] = useState('');
@@ -56,13 +59,15 @@ function Templates() {
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const target = useRef<'subject'|'body'>('body');
-  const dirty = subject !== baseline.subject || body !== baseline.body;
+  const dirty = restoredFrom !== null || subject !== baseline.subject || body !== baseline.body;
   useBlocker({ shouldBlockFn: () => dirty && !window.confirm('Discard unsaved template changes?'), enableBeforeUnload: dirty });
-  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next); }, [current?.id, kind, lang]);
+  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId(''); }, [current?.id, kind, lang]);
   useEffect(() => {const timer=setTimeout(()=>setDebounced(caseSearch.trim()),250);return()=>clearTimeout(timer);},[caseSearch]);
   const {data:countries=[]}=useQuery(countriesQuery(orgId));
   const {data:members=[]}=useQuery(membersQuery(orgId));
   const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
+  const {data:versions=[],isError:versionsError}=useQuery(templateVersionsQuery(orgId,current?.id??''));
+  const selectedVersion=versions.find(v=>v.id===versionId);
   const {data:matches=[],isError:searchError}=useQuery({queryKey:['template-preview-search',orgId,debounced],enabled:debounced.length>=3,queryFn:async()=>{
     const term=debounced.replace(/[\\%_]/g,'\\$&');
     const {data,error}=await supabase.from('complaint_queue').select('*').eq('org_id',orgId).is('anonymised_at',null).ilike('reference',`%${term}%`).limit(8);
@@ -75,10 +80,10 @@ function Templates() {
     if(!canEdit||!valid||busy)return;
     setBusy(true);
     try {
-      const {error}=await supabase.from('templates').upsert({org_id:orgId,kind,language:lang,subject,body,updated_at:new Date().toISOString()},{onConflict:'org_id,kind,language'});
+      const {error}=await supabase.from('templates').upsert({org_id:orgId,kind,language:lang,subject,body,restored_from:restoredFrom,updated_at:new Date().toISOString()},{onConflict:'org_id,kind,language'});
       if(error)throw error;
-      setBaseline({subject,body});
-      await qc.invalidateQueries({queryKey:['templates',orgId]});toast.success('Template saved.');
+      setBaseline({subject,body});setRestoredFrom(null);
+      await qc.invalidateQueries({queryKey:['templates',orgId]});await qc.invalidateQueries({queryKey:['template-versions',orgId]});toast.success('Template saved.');
     }catch {toast.error('Could not save the template. Your changes are still here.');}finally{setBusy(false);}
   }
   function changeTemplate(next:()=>void) {if(!dirty||window.confirm('Discard unsaved template changes?'))next();}
@@ -91,7 +96,8 @@ function Templates() {
   }
   const adr=countries.find(x=>x.country_code===previewCase?.country_code);
   const agent=members.find(x=>x.user_id===(previewCase?.assigned_to??m?.user.id));
-  const values=previewCase?caseMergeValues(previewCase,{firm:m?.org?.legal_name??'',address:m?.org?.firm_address,agent:agent?.name,agentEmail:agent?.email,adrName:adr?.adr_name,adrContact:[adr?.adr_contact,adr?.adr_website].filter(Boolean).join(', '),language:lang,extended:kind==='holding',rootCause:previewCase.root_cause_id||previewCase.root_cause_category?rootCauseLabel(previewCase.root_cause_id,previewCase.root_cause_category,causes,false):''}):SAMPLE_VALUES;
+  const orgValues={firm_name:m?.org?.legal_name||SAMPLE_VALUES.firm_name||'',firm_address:m?.org?.firm_address||SAMPLE_VALUES.firm_address||'',firm_complaints_email:m?.org?.complaints_email||SAMPLE_VALUES.firm_complaints_email||''};
+  const values=previewCase?caseMergeValues(previewCase,{firm:m?.org?.legal_name??'',address:m?.org?.firm_address,firmEmail:m?.org?.complaints_email,agent:agent?.name,agentEmail:agent?.email,adrName:adr?.adr_name,adrContact:[adr?.adr_contact,adr?.adr_website].filter(Boolean).join(', '),language:lang,extended:kind==='holding',rootCause:previewCase.root_cause_id||previewCase.root_cause_category?rootCauseLabel(previewCase.root_cause_id,previewCase.root_cause_category,causes,false):''}):{...SAMPLE_VALUES,...orgValues};
   const renderedSubject=mergeTemplate(subject,values),renderedBody=mergeTemplate(body,values);
   async function pdf() {try {const {letterPdf}=await import('@/lib/letter-pdf');letterPdf({firm:values.firm_name??'',address:values.firm_address??null,date:values.date_of_letter??'',subject:renderedSubject,body:renderedBody},await loadPdfFont()).save('template-preview.pdf');}catch{toast.error('Could not generate the preview PDF.');}}
 
@@ -139,6 +145,12 @@ function Templates() {
           {canEdit&&<div className="mt-4"><Button disabled={!valid||busy} onClick={save}>{busy?'Saving…':'Save template'}</Button></div>}
           <aside className="mt-6 border-t pt-4"><Label htmlFor="merge-search">Merge fields</Label><Input id="merge-search" placeholder="Search fields…" value={fieldSearch} onChange={e=>setFieldSearch(e.target.value)}/>
           {Object.entries(MERGE_GROUPS).map(([group,fields])=>{const visible=fields.filter(f=>(MERGE_LABELS[f]+' '+f).toLowerCase().includes(fieldSearch.toLowerCase()));return visible.length?<div key={group} className="mt-4"><h3 className="text-sm font-semibold">{group}</h3>{visible.map(f=><Button key={f} variant="ghost" disabled={!canEdit} onClick={()=>insert(f)} className="h-auto w-full justify-start whitespace-normal py-2 text-left"><span className="min-w-0"><span className="block">{MERGE_LABELS[f]}</span><span className="block break-all text-xs text-muted-foreground">{`{${f}}`} · {SAMPLE_VALUES[f]}</span></span></Button>)}</div>:null;})}</aside>
+          <section className="mt-6 border-t pt-4" aria-labelledby="version-history"><h2 id="version-history" className="font-semibold">Version history</h2>
+          {versionsError&&<p className="mt-2 text-sm text-muted-foreground">Version history is unavailable.</p>}
+          {!current&&<p className="mt-2 text-sm text-muted-foreground">Save this template to start its history.</p>}
+          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto">{versions.map(v=><Button key={v.id} variant={v.id===versionId?'secondary':'ghost'} aria-pressed={v.id===versionId} className="h-auto w-full justify-start whitespace-normal text-left" onClick={()=>setVersionId(v.id)}>{new Date(v.saved_at).toLocaleString('en-GB')} · {members.find(x=>x.user_id===v.saved_by)?.name??'System'}{v.restored_from?' · Restored':''}</Button>)}</div>
+          {selectedVersion&&<div className="mt-3"><p className="text-sm text-muted-foreground">Selected version compared with current editor text.</p><pre className="mt-2 max-h-72 overflow-auto border bg-muted p-3 text-xs" aria-label="Line differences">{lineDiff(selectedVersion.subject+'\n'+selectedVersion.body,subject+'\n'+body).map((line,index)=><div key={index} className={line.kind==='added'?'bg-success/15':line.kind==='removed'?'bg-destructive/15':''}><span className="font-semibold">{line.kind==='added'?'+ Added: ':line.kind==='removed'?'− Removed: ':'  '}</span>{line.text}</div>)}</pre>{canEdit&&<Button className="mt-2" variant="outline" onClick={()=>{const next=restoreTemplate(selectedVersion);setSubject(next.subject);setBody(next.body);setRestoredFrom(next.restored_from);toast.info('Version loaded. Save to restore it.');}}>Restore this version</Button>}</div>}
+          </section>
           </section><section className="min-w-0"><h2 className="font-semibold">Live preview</h2><Label htmlFor="preview-case" className="mt-3 block">Preview with case…</Label><Input id="preview-case" placeholder="Search case reference…" value={caseSearch} onChange={e=>setCaseSearch(e.target.value)}/>
           {searchError&&<p role="status" className="mt-2 text-sm text-muted-foreground">Case search is unavailable.</p>}
           {debounced.length>=3&&!matches.length&&!searchError&&<p className="mt-2 text-sm text-muted-foreground">No matching cases.</p>}

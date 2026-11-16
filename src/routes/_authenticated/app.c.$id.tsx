@@ -344,7 +344,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   const key = `${kind}:${lang}`;
   if (loadedKey !== key) {
     const t = templates.find((x) => x.kind === kind && x.language === lang) ?? templates.find((x) => x.kind === kind && x.language === "en");
-    const values = caseMergeValues(c, { firm: m.org?.legal_name ?? '', address: m.org?.firm_address, agent: agent?.name, agentEmail:agent?.email, adrName: adr?.adr_name, adrContact: [adr?.adr_contact, adr?.adr_website].filter(Boolean).join(', '), language:lang, extended:kind==='holding', rootCause:causes.find(x=>x.id===c.root_cause_id)?.name??c.root_cause_category??'' });
+    const values = caseMergeValues(c, { firm: m.org?.legal_name ?? '', address: m.org?.firm_address, firmEmail:m.org?.complaints_email, agent: agent?.name, agentEmail:agent?.email, adrName: adr?.adr_name, adrContact: [adr?.adr_contact, adr?.adr_website].filter(Boolean).join(', '), language:lang, extended:kind==='holding', rootCause:causes.find(x=>x.id===c.root_cause_id)?.name??c.root_cause_category??'' });
     setSubject(mergeTemplate(t?.subject ?? "", values));
     setBody(mergeTemplate(t?.body ?? "", values));
     setLoadedKey(key);

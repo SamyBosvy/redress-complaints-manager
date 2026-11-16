@@ -615,6 +615,7 @@ export type Database = {
       organisations: {
         Row: {
           base_currency: string
+          complaints_email: string | null
           created_at: string
           created_by: string
           firm_address: string
@@ -632,6 +633,7 @@ export type Database = {
         }
         Insert: {
           base_currency?: string
+          complaints_email?: string | null
           created_at?: string
           created_by: string
           firm_address?: string
@@ -649,6 +651,7 @@ export type Database = {
         }
         Update: {
           base_currency?: string
+          complaints_email?: string | null
           created_at?: string
           created_by?: string
           firm_address?: string
@@ -984,6 +987,54 @@ export type Database = {
           },
         ]
       }
+      template_versions: {
+        Row: {
+          body: string
+          id: string
+          org_id: string
+          restored_from: string | null
+          saved_at: string
+          saved_by: string | null
+          subject: string
+          template_id: string
+        }
+        Insert: {
+          body: string
+          id?: string
+          org_id: string
+          restored_from?: string | null
+          saved_at?: string
+          saved_by?: string | null
+          subject: string
+          template_id: string
+        }
+        Update: {
+          body?: string
+          id?: string
+          org_id?: string
+          restored_from?: string | null
+          saved_at?: string
+          saved_by?: string | null
+          subject?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_versions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_versions_restoration_fk"
+            columns: ["org_id", "restored_from"]
+            isOneToOne: false
+            referencedRelation: "template_versions"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           body: string
@@ -991,6 +1042,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
           org_id: string
+          restored_from: string | null
           subject: string
           updated_at: string
         }
@@ -1000,6 +1052,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
           org_id: string
+          restored_from?: string | null
           subject?: string
           updated_at?: string
         }
@@ -1009,6 +1062,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["template_kind"]
           language?: string
           org_id?: string
+          restored_from?: string | null
           subject?: string
           updated_at?: string
         }

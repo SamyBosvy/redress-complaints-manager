@@ -236,7 +236,7 @@ export function resolutionDays(row: ReportRow, holidays: Holiday[] = []) {
   return days;
 }
 export interface RegulatoryTable { title: string; rows: { label: string; count: number; share: number; upheld: number | null; within: number | null }[] }
-export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[]; methodology?: string[]; responseTables?: { title: string; headers: string[]; rows: (string | number)[][] }[] }
+export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[]; methodology?: string[]; qaTables?: { title: string; headers: string[]; rows: (string | number)[][] }[]; responseTables?: { title: string; headers: string[]; rows: (string | number)[][] }[] }
 export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = [], reopenings: ReopeningRow[] = [], timeZone = 'Europe/Dublin', now = new Date()): RegulatoryReport {
   const eligible = all.filter(r => r.received_at.slice(0, 10) <= range.to);
   const rows = eligible.filter(r => r.received_at.slice(0, 10) >= range.from);
@@ -297,6 +297,7 @@ export function regulatoryCsvRows(report: RegulatoryReport, previous?: Regulator
   for (const s of summaryComparison(report, previous)) output.push([s.label, s.value ?? 'n/a', s.unit ?? '', ...(previous ? [s.previous ?? 'n/a', s.absolute ?? 'n/a', s.percent ?? 'n/a'] : [])]);
   for (const t of report.tables) { output.push([], [t.title], TABLE_HEADERS); if (!t.rows.length) output.push(['No complaints in this period']); for (const r of t.rows) output.push([r.label, r.count, r.share, r.upheld ?? 'n/a', r.within ?? 'n/a']); }
   for(const t of report.responseTables??[]){output.push([],[t.title],[...t.headers,...(previous?['Previous values (same column order)']:[])]);for(const row of t.rows){const prior=previous?.responseTables?.find(p=>p.title===t.title)?.rows.find(p=>p[0]===row[0]);output.push([...row,...(previous?[prior?.slice(1).join(' / ')??'n/a']:[])]);}}
+  for(const t of report.qaTables??[]){output.push([],[t.title],[...t.headers,...(previous?['Previous values (same column order)']:[])]);for(const row of t.rows)output.push([...row,...(previous?[previous.qaTables?.find(p=>p.title===t.title)?.rows.find(p=>p[0]===row[0])?.slice(1).join(' / ')??'n/a']:[])]);}
   output.push([],['Response methodology'],...(report.methodology??[]).map(text=>[text]));
   return output;
 }

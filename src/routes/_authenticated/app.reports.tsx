@@ -23,6 +23,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { qaReviewsQuery } from '@/lib/qa';
+import { qaAnalytics, qaAnalyticsTables, QA_METHODOLOGY } from '@/lib/qa-analytics';
 
 export const Route = createFileRoute("/_authenticated/app/reports")({
   validateSearch: parseReportSearch,
@@ -60,12 +62,14 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   const [dim, setDim] = useState<"product" | "category" | "country" | "channel" | "agent">("product");
   const currentQuery = useQuery(regulatoryQuery(orgId, to, zone));
   const priorQuery = useQuery({ ...regulatoryQuery(orgId, priorRange.to, zone), enabled: !!search.compare });
-  const isLoading = currentQuery.isLoading || (!!search.compare && priorQuery.isLoading);
-  const failed = currentQuery.isError || (!!search.compare && priorQuery.isError);
+  const qaQuery = useQuery(qaReviewsQuery(orgId));
+  const isLoading = currentQuery.isLoading || qaQuery.isLoading || (!!search.compare && priorQuery.isLoading);
+  const failed = currentQuery.isError || qaQuery.isError || (!!search.compare && priorQuery.isError);
   const allRows = currentQuery.data?.rows ?? [];
   const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from && r.received_at.slice(0,10) <= to);
   const report = regulatoryReport(allRows, range, currentQuery.data?.holidays, currentQuery.data?.adr,currentQuery.data?.reopenings,zone);
   const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays, priorQuery.data?.adr,priorQuery.data?.reopenings,zone);
+  for(const [pack,period] of [[report,range],[previous,priorRange]] as const){pack.qaTables=qaAnalyticsTables(qaAnalytics(qaQuery.data??[],period,zone,m.role,m.user.id),id=>nameOf(id==='unassigned'?null:id)).filter(t=>['QA summary','QA per criterion','QA by agent'].includes(t.title));pack.methodology=[...pack.methodology??[],...QA_METHODOLOGY];}
   
   const updateSearch = (patch: Partial<typeof search>) => { void navigate({ search: prev => ({ ...prev, ...patch }) }); };
   const dimKey = (r: ReportRow) =>
@@ -104,7 +108,7 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
         </div>
       </div>
       <p className="text-sm text-muted-foreground">{from} to {to}{search.compare ? ` · Compared with ${priorRange.from} to ${priorRange.to}` : ''}</p>
-      <div className="flex flex-wrap gap-3"><Button variant="outline" onClick={exportPackCsv} disabled={isLoading || failed}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button><Button variant="outline" onClick={exportPackPdf} disabled={isLoading || failed}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button></div>
+      <div className="flex flex-wrap gap-3"><Button variant="outline" onClick={exportPackCsv} disabled={isLoading || failed}><Download aria-hidden="true" className="h-4 w-4" /> Export CSV</Button><Button variant="outline" onClick={exportPackPdf} disabled={isLoading || failed}><FileText aria-hidden="true" className="h-4 w-4" /> Export PDF</Button><Button variant="outline" asChild><Link to="/app/qa" search={{...search,view:'analytics'}}>QA analytics</Link></Button></div>
       {failed && <p role="alert" className="text-destructive">Could not load the reporting period. Please try again.</p>}
 
       {isLoading ? <TableSkeleton columns={6} /> : failed ? null : (

@@ -34,3 +34,6 @@
 
 ## Audit browsing
 - Audit page and case section share org-scoped keyset queries and role-masked exports; checksums cover final downloaded bytes including footer/BOM. Why: scalable child-case history and independently verifiable files without changing database access.
+
+## QA analytics
+- QA analytics shares pure attribution/local-date metrics and URL predicates; org-scoped review reads paginate with stable ordering, available-column filters run in PostgREST and derived handler filters run after paging. Why: exact scalable drill-downs without schema or four-eyes changes.

@@ -14,25 +14,46 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { membershipQuery, useMembership } from "@/lib/org";
 import { QA_KINDS, QA_STATUSES, SCORECARD, emptyScorecard, qaReviewsQuery, scorecardPassed, type QaReview, type Scorecard } from "@/lib/qa";
 import { formatDate } from "@/lib/letters";
+import { QaAnalytics, QaPeriodControls } from '@/components/qa-analytics';
+import { parseQaSearch, qaOwnRows, type QaAnalyticsRow } from '@/lib/qa-analytics';
+import { selectedPeriod } from '@/lib/reports';
+import { firmDate } from '@/lib/reopening';
+import { membersQuery } from '@/lib/complaints';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { maskAuditValue } from '@/lib/audit';
 
 export const Route = createFileRoute("/_authenticated/app/qa")({
-  loader: async ({ context }) => {
+  validateSearch: parseQaSearch,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
-    await context.queryClient.ensureQueryData(qaReviewsQuery(m!.org!.id));
+    if(!m?.org)return;
+    await Promise.all([context.queryClient.ensureQueryData(qaReviewsQuery(m.org.id,deps.view==='analytics'?{}:deps,m.org.time_zone)),context.queryClient.ensureQueryData(membersQuery(m.org.id))]);
   },
   head: () => ({ meta: [{ title: "QA review — Redress" }, { name: "description", content: "Approve final responses and review sampled complaints." }, { property: "og:title", content: "QA review — Redress" }, { property: "og:description", content: "Approve final responses and review sampled complaints." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   pendingComponent: () => <TableSkeleton columns={5} />,
   component: QaPage,
 });
 
-type ReviewRow = QaReview & { complaints: { reference: string; complainant_name: string; assigned_to: string | null } | null; letters?: {sent_by:string} | null };
+type ReviewRow = QaAnalyticsRow;
 
 function QaPage() {
-  const m = useMembership()!;
-  const orgId = m.org!.id;
+  const m = useMembership();
+  if(!m?.org)return null;
+  return <QaContent membership={{...m,org:m.org}}/>;
+}
+function QaContent({membership:m}:{membership:NonNullable<ReturnType<typeof useMembership>>&{org:NonNullable<NonNullable<ReturnType<typeof useMembership>>['org']>}}) {
+  const orgId = m.org.id;
+  const search=Route.useSearch(),navigate=Route.useNavigate(),zone=m.org.time_zone;
+  const range=selectedPeriod(search,firmDate(new Date(),zone));
+  const update=(patch:Partial<typeof search>)=>{void navigate({search:prev=>({...prev,...patch})});};
   const qc = useQueryClient();
-  const { data: reviews } = useSuspenseQuery(qaReviewsQuery(orgId));
-  const canDecide = ["org_admin", "complaints_manager", "qa_reviewer"].includes(m.role!);
+  const { data: allReviews } = useSuspenseQuery(qaReviewsQuery(orgId,search.view==='analytics'?{}:search,zone));
+  const reviews=qaOwnRows(allReviews,m.role,m.user.id);
+  const {data:members}=useSuspenseQuery(membersQuery(orgId));
+  const name=(id:string)=>id==='unassigned'?'Unassigned':members.find(x=>x.user_id===id)?.name??'Former user';
+  const canDecide = ["org_admin", "complaints_manager", "qa_reviewer"].includes(m.role??'');
   const [returnFor, setReturnFor] = useState<ReviewRow | null>(null);
   const [scoreFor, setScoreFor] = useState<ReviewRow | null>(null);
   const [comments, setComments] = useState("");
@@ -65,6 +86,11 @@ function QaPage() {
     <div className="mx-auto max-w-5xl">
       <h1 className="text-2xl font-semibold">QA review</h1>
       <p className="mt-1 text-sm text-muted-foreground tabular">{pending.length} awaiting review.</p>
+
+      <Tabs value={search.view??'list'} onValueChange={value=>update({view:value==='analytics'?'analytics':'list'})} className="my-5"><TabsList aria-label="QA views"><TabsTrigger value="list">Reviews</TabsTrigger><TabsTrigger value="analytics">Analytics</TabsTrigger></TabsList></Tabs>
+      <QaPeriodControls search={search} range={range} update={patch=>update({...patch,...(search.view==='analytics'?{}:{decided:true})})}/>
+      {search.view==='analytics'?<div className="mt-6"><QaAnalytics rows={reviews} range={range} zone={zone} role={m.role} userId={m.user.id} compare={!!search.compare} name={name}/></div>:<>
+      <div className="my-4 flex flex-wrap gap-3">{([{key:'agent',label:'Agent',options:[['all','All agents'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'reviewer',label:'Reviewer',options:[['all','All reviewers'],...members.map(m=>[m.user_id,m.name]),['unassigned','Unassigned']]},{key:'criterion',label:'Failed criterion',options:[['all','Any criterion'],...SCORECARD.map(([k,l])=>[k,l])]},{key:'result',label:'Result',options:[['all','Any result'],['pass','Pass'],['fail','Fail']]},{key:'kind',label:'Review kind',options:[['all','Any kind'],['approval','Letter approval'],['sample','Sampling']]}] as const).map(f=><div key={f.key} className="space-y-1"><Label htmlFor={`qa-filter-${f.key}`}>{f.label}</Label><Select value={search[f.key]??'all'} onValueChange={value=>update(parseQaSearch({...search,[f.key]:value==='all'?undefined:value}))}><SelectTrigger id={`qa-filter-${f.key}`} className="w-44"><SelectValue/></SelectTrigger><SelectContent>{f.options.map(([key,label])=><SelectItem key={key??'all'} value={key??'all'}>{label}</SelectItem>)}</SelectContent></Select></div>)}<Button variant="outline" onClick={()=>void navigate({search:{view:'list'}})}>Clear filters</Button></div>
 
       <h2 className="mt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Awaiting review</h2>
       <div className="mt-2 overflow-x-auto rounded-lg border bg-card">
@@ -111,13 +137,15 @@ function QaPage() {
                 <td className="px-4 py-3">{QA_KINDS[r.kind as keyof typeof QA_KINDS]}</td>
                 <td className="px-4 py-3"><span className={r.status === "failed" || r.status === "returned" ? "text-destructive" : "text-success"}>{QA_STATUSES[r.status]}</span></td>
                 <td className="px-4 py-3 tabular">{formatDate(r.decided_at)}</td>
-                <td className="hidden max-w-64 truncate px-4 py-3 text-muted-foreground md:table-cell">{r.comments ?? "—"}</td>
+                <td className="hidden max-w-64 truncate px-4 py-3 text-muted-foreground md:table-cell">{String(maskAuditValue(r.comments,'comments',m.role==='org_admin')??'—')}</td>
               </tr>
             ))}
             {done.length === 0 && <tr><td colSpan={5}><EmptyState icon={CheckCheck} title="No completed reviews yet" description="No review decisions have been recorded." /></td></tr>}
           </tbody>
         </table>
       </div>
+
+      </>}
 
       <Dialog open={!!returnFor} onOpenChange={(o) => !o && setReturnFor(null)}>
         <DialogContent>

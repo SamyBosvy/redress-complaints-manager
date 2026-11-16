@@ -10,7 +10,7 @@ export const TRANSITIONS: Record<Status, Status[]> = {
   reopened: ['under_investigation', 'pending_qa', 'final_response_sent', 'closed'],
   pending_qa: ['under_investigation', 'final_response_sent', 'closed'],
   final_response_sent: ['closed', 'escalated_to_adr'],
-  closed: ['reopened', 'escalated_to_adr'], escalated_to_adr: [],
+  closed: ['reopened', 'escalated_to_adr'], escalated_to_adr: ['closed'],
 };
 export function nextStatuses(status: Status, role: AppRole | null, qa: boolean, editable = true) {
   if (!editable || !role || role === 'read_only') return [];
@@ -27,6 +27,7 @@ export function closeComplete(c: CloseChecklist) {
 }
 export function transitionRequirement(next: Status, current: Status, letters: readonly { kind: string; status: string }[], reason: string | null | undefined) {
   const sent = (kind: string) => letters.some(l => l.kind === kind && l.status === 'sent');
+  if (next === 'escalated_to_adr') return 'Record escalation in the ADR section';
   if (next === 'closed') return 'Complete the close checklist';
   if (next === 'acknowledged' && !sent('acknowledgement')) return 'Send the acknowledgement letter first';
   if (next === 'holding_response_sent' && (!sent('holding') || !reason?.trim())) return 'Send a holding letter and record the reason for delay';

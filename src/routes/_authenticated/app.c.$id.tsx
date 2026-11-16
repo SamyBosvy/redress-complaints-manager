@@ -1,3 +1,4 @@
+import { CaseAdr } from '@/components/case-adr';
 import { EditComplaintDetails } from '@/components/edit-complaint-details';
 import { canEditDetails } from '@/lib/complaint-details';
 import { rootCausesQuery,type RootCause } from '@/lib/root-causes';
@@ -197,6 +198,7 @@ function CaseView() {
           </Card>
 
           <OutcomeCard causes={causes} c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
+          <CaseAdr orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
           <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
           <Card title="Internal notes and attachments">
@@ -248,7 +250,7 @@ function CaseView() {
       </div>
 
       {nextOpen && <Dialog open onOpenChange={setNextOpen}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>Next step</DialogTitle></DialogHeader>{nextStatuses(status,m.role,m.org?.qa_required ?? false,canEdit).map(next=>{const requirement=transitionRequirement(next,status,letters,c.holding_reason);return <div key={next} className="space-y-1"><Button className="w-full whitespace-normal" variant="outline" disabled={transitionBusy || (next!=='closed' && (!!requirement || lettersResult.isPending || lettersResult.isError))} onClick={async()=>{if(next==='closed'){setNextOpen(false);setCloseOpen(true);return;}setTransitionBusy(true);try{if(await update({status:next}))setNextOpen(false);}finally{setTransitionBusy(false);}}}>{STATUSES[next]}</Button>{requirement && <p className="text-sm text-muted-foreground">{requirement}</p>}</div>;})}</DialogContent></Dialog>}
-      {closeOpen && <CloseChecklistDialog causes={causes} c={c} finalSent={status==='final_response_sent' && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
+      {closeOpen && <CloseChecklistDialog causes={causes} c={c} finalSent={['final_response_sent','escalated_to_adr'].includes(status) && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
       {letterOpen && <LetterDialog c={c} onClose={() => setLetterOpen(false)} onSent={refresh} />}
     </div>
   );
@@ -258,6 +260,7 @@ type Ev = { kind: string; detail: unknown };
 function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
+    case "adr_escalated": case "adr_decision": return <p>{d.text || "ADR working record removed"}</p>;
     case "details_edited": return <div><p>Details updated: {d.reason}</p><ul className="mt-1 space-y-1">{Object.entries(d.changes??{}).map(([key,value])=><li key={key} className="break-words">{key.replace(/_/g," ")}: {String(value.old??"—")} → {String(value.new??"—")}</li>)}</ul></div>;
     case "created": return <p>Complaint logged via {CHANNELS[d.channel as keyof typeof CHANNELS] ?? d.channel}</p>;
     case "status": return <p>Status: {STATUSES[d.before as Status]} → <strong>{STATUSES[d.after as Status]}</strong></p>;

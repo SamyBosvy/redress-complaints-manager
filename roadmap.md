@@ -91,3 +91,6 @@
 - [x] Item #34: accessible dashboard charts, report snapshot drill-downs and removable queue filters; no schema or billing changes.
 - [ ] Item #34 signed-in drill-down/mobile verification — requires an account and complaint fixture.
 - [x] Item34 fix: server-side drill-down filters, capped snapshots, template_versions REVOKE (0020)
+
+- [x] Item #35: ADR working records, guarded escalation/decision/closure, queue tab and dated filter-only reporting/PDF/CSV.
+- [ ] Item #35 signed-in/mobile readback — requires a usable account and case fixtures.

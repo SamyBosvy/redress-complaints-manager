@@ -11,3 +11,7 @@
 
 ## Queue bulk actions
 - Selection helpers live in bulk-actions.ts; matching selection reuses queue paging/filters, and 50-case batches use existing org-scoped RLS updates with trigger audit/activity, never client-inserted events or bulk status changes. Why: preserve existing permissions and workflow boundaries.
+
+## Detail edits and root causes
+- Detail edits use edit_complaint_details and transaction-scoped trigger context for one masked timeline event and one full audit diff; business-day deadlines share complaint_deadlines. Why: preserve existing guards without duplicate activity.
+- Root causes use an org-scoped foreign key and active-only new choices; reporting resolves current managed names and preserves legacy text, while closure requires a managed id. Why: retain historical choices without allowing free-text closure.

@@ -113,6 +113,27 @@
       "when": 1794779561573,
       "tag": "0015_compliance_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794794197711,
+      "tag": "0016_complaint_details_and_root_causes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794794252961,
+      "tag": "0017_root_cause_order_and_shared_deadlines",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794794467459,
+      "tag": "0018_detail_assignment_null_guard",
+      "breakpoints": true
     }
   ]
 }

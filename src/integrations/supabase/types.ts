@@ -178,6 +178,7 @@ export type Database = {
           redress_none: boolean
           reference: string
           root_cause_category: string | null
+          root_cause_id: string | null
           root_cause_note: string | null
           rule_set_id: string | null
           seq: number
@@ -225,6 +226,7 @@ export type Database = {
           redress_none?: boolean
           reference?: string
           root_cause_category?: string | null
+          root_cause_id?: string | null
           root_cause_note?: string | null
           rule_set_id?: string | null
           seq?: number
@@ -272,6 +274,7 @@ export type Database = {
           redress_none?: boolean
           reference?: string
           root_cause_category?: string | null
+          root_cause_id?: string | null
           root_cause_note?: string | null
           rule_set_id?: string | null
           seq?: number
@@ -283,6 +286,13 @@ export type Database = {
           withdrawal_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "complaint_root_cause_org_fk"
+            columns: ["org_id", "root_cause_id"]
+            isOneToOne: false
+            referencedRelation: "root_causes"
+            referencedColumns: ["org_id", "id"]
+          },
           {
             foreignKeyName: "complaints_org_id_fkey"
             columns: ["org_id"]
@@ -862,6 +872,38 @@ export type Database = {
           },
         ]
       }
+      root_causes: {
+        Row: {
+          active: boolean
+          id: string
+          name: string
+          org_id: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          name: string
+          org_id: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          name?: string
+          org_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "root_causes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rule_set_assignments: {
         Row: {
           country_code: string | null
@@ -1153,6 +1195,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      complaint_deadlines: {
+        Args: {
+          _country: string
+          _org: string
+          _product: string
+          _received: string
+        }
+        Returns: Json
+      }
       create_org_invite: {
         Args: {
           _email: string
@@ -1163,6 +1214,10 @@ export type Database = {
         Returns: string
       }
       create_organisation: { Args: { _legal_name: string }; Returns: string }
+      edit_complaint_details: {
+        Args: { _case: string; _org: string; _patch: Json; _reason: string }
+        Returns: undefined
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -1242,6 +1297,10 @@ export type Database = {
       }
       recovery_store: {
         Args: { _hashes: Json; _org: string }
+        Returns: undefined
+      }
+      reorder_root_causes: {
+        Args: { _ids: string[]; _org: string }
         Returns: undefined
       }
       resolve_rule_set: {

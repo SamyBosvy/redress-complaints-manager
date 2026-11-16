@@ -1,0 +1,18 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { useQuery,useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { ArrowUp,ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
+import { rootCausesQuery,type RootCause } from '@/lib/root-causes';
+import { useMembership } from '@/lib/org';
+import { pageHead } from '@/lib/settings';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { AccessibleField } from '@/components/accessible-field';
+export const Route=createFileRoute('/_authenticated/app/settings/root-causes')({head:()=>pageHead('Root causes','Manage complaint root causes for your organisation.'),component:RootCauses});
+function RootCauses(){const m=useMembership();const org=m?.org?.id??'';const qc=useQueryClient();const {data:causes=[],isPending,isError}=useQuery(rootCausesQuery(org));const [name,setName]=useState('');const [busy,setBusy]=useState(false);const edit=m?.role==='org_admin';
+ async function save(id:string|null,patch:Partial<RootCause>){setBusy(true);try{const result=id?await supabase.from('root_causes').update(patch).eq('org_id',org).eq('id',id):await supabase.from('root_causes').insert({org_id:org,name:patch.name??'',sort_order:causes.length+1});if(result.error)throw result.error;setName('');await qc.invalidateQueries({queryKey:['root-causes',org]});}catch(e){toast.error(typeof e==='object'&&e&&'message'in e?String(e.message):'Could not save root cause.');}finally{setBusy(false);}}
+ async function move(index:number,direction:number){const row=causes[index],other=causes[index+direction];if(!row||!other)return;setBusy(true);try{const {error}=await supabase.rpc('reorder_root_causes',{_org:org,_ids:causes.map((c,i)=>i===index?other.id:i===index+direction?row.id:c.id)});if(error)throw error;await qc.invalidateQueries({queryKey:['root-causes',org]});}catch{toast.error('Could not reorder root causes.');}finally{setBusy(false);}}
+ return <div className="max-w-3xl space-y-5"><h2 className="font-semibold">Root causes</h2>{isPending?<p role="status">Loading root causes…</p>:isError?<p role="alert">Could not load root causes.</p>:causes.map((c,i)=><div key={c.id} className="flex flex-wrap items-center gap-2 border-b py-3"><AccessibleField label="Root cause name"><Input key={c.name} defaultValue={c.name} disabled={!edit||busy} maxLength={150} onBlur={e=>{if(e.target.value.trim()&&e.target.value.trim()!==c.name)void save(c.id,{name:e.target.value.trim()});}}/></AccessibleField>{!c.active&&<span className="text-sm text-muted-foreground">Inactive</span>}{edit&&<><Button variant="outline" disabled={busy} onClick={()=>save(c.id,{active:!c.active})}>{c.active?'Deactivate':'Activate'}</Button><Button variant="ghost" size="icon" title="Move up" aria-label={`Move ${c.name} up`} disabled={busy||i===0} onClick={()=>move(i,-1)}><ArrowUp/></Button><Button variant="ghost" size="icon" title="Move down" aria-label={`Move ${c.name} down`} disabled={busy||i===causes.length-1} onClick={()=>move(i,1)}><ArrowDown/></Button></>}</div>)}{edit&&<form className="flex flex-wrap items-end gap-3" onSubmit={e=>{e.preventDefault();void save(null,{name:name.trim()});}}><AccessibleField label="New root cause"><Input required value={name} maxLength={150} onChange={e=>setName(e.target.value)}/></AccessibleField><Button disabled={busy||!name.trim()}>Add root cause</Button></form>}</div>;
+}

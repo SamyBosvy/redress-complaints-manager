@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Items #15 + #18: reasoned detail edits with deadline confirmation and managed root causes; managed migrations 0016–0018, journal/snapshots/types refreshed, unchanged existing RLS/0015 guards and hosted read-only schema checks; final checks reported in chat.
+- [ ] Verify Items #15 + #18 signed-in edits/settings/closure/report exports and mobile views — needs a usable account and organisation.
+
 - [x] Batch 2: reviewed/applied compliance migration 0015 with managed journal/snapshot and refreshed types; legal Next step, closure checklist, four-eyes QA/draft restrictions and readable import labels.
 - [ ] Batch 2 signed-in case/QA/import persistence and mobile verification — blocked: hosted database has no users or organisations; no test accounts created.
 

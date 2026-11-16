@@ -1,14 +1,16 @@
+import { ReportCharts, reportLink, ViewComplaints } from '@/components/report-charts';
+import type { QueueSearch } from '@/lib/queue';
 import { EmptyState } from '@/components/empty-state';
 import { TableSkeleton } from '@/components/table-skeleton';
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Download, FileText } from "lucide-react";
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
 import { membershipQuery, useMembership } from "@/lib/org";
 import { membersQuery, CATEGORIES, PRODUCTS, CHANNELS } from "@/lib/complaints";
 import { COUNTRIES } from "@/lib/countries";
-import { regulatoryQuery, regulatoryReport, regulatoryCsvRows, summaryComparison, PERIOD_PRESETS, parseReportSearch, selectedPeriod, previousPeriod, computeMetrics, breakdown, rootCauseTrend, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
+import { regulatoryQuery, regulatoryReport, regulatoryCsvRows, summaryComparison, PERIOD_PRESETS, parseReportSearch, selectedPeriod, previousPeriod, breakdown, formatCurrencyTotals, type ReportRow } from "@/lib/reports";
 import { loadPdfFont } from '@/lib/pdf-font';
 import { toast } from 'sonner';
 import { downloadFile, toCsv } from "@/lib/csv";
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/app/reports")({
 
 const countryName = (code: string) => COUNTRIES[code] ?? code;
 const OUTCOMES: Record<string, string> = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" };
-const CHART_COLORS = ["#0F766E", "#14213D", "#D97706", "#B91C1C", "#15803D", "#6B7280"];
+
 
 function Reports() {
   const m = useMembership();
@@ -60,13 +62,13 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   const rows = allRows.filter(r => r.received_at.slice(0, 10) >= from);
   const report = regulatoryReport(allRows, range, currentQuery.data?.holidays);
   const previous = regulatoryReport(priorQuery.data?.rows ?? [], priorRange, priorQuery.data?.holidays);
-  const metrics = useMemo(() => computeMetrics(rows), [rows]);
+  
   const updateSearch = (patch: Partial<typeof search>) => { void navigate({ search: prev => ({ ...prev, ...patch }) }); };
   const dimKey = (r: ReportRow) =>
     dim === "product" ? PRODUCTS[r.product] : dim === "category" ? CATEGORIES[r.category] : dim === "country" ? countryName(r.country_code) : dim === "channel" ? CHANNELS[r.channel] : nameOf(r.assigned_to);
   const bd = useMemo(() => breakdown(rows, dimKey), [rows, dim, members]);
-  const trend = useMemo(() => rootCauseTrend(rows), [rows]);
-  const trendKeys = useMemo(() => [...new Set(rows.map((r) => r.root_cause_category).filter((k): k is string => !!k))].slice(0, 6), [rows]);
+
+
 
   const allowed = m.role === "org_admin" || m.role === "complaints_manager" || m.role === "read_only";
   if (!allowed) return <p className="text-muted-foreground">You do not have access to reports.</p>;
@@ -104,58 +106,10 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
       {isLoading ? <TableSkeleton columns={6} /> : failed ? null : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {summary.map(s => <Stat key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
+            {summary.map(s => <Stat search={reportLink(allRows,s.label,undefined,range)} key={s.label} label={s.label} value={s.value === null ? 'n/a' : `${s.value}${s.unit === '%' ? '%' : s.unit ? ` ${s.unit}` : ''}`} comparisonText={search.compare ? `Previous: ${s.previous ?? 'n/a'} · Change: ${s.absolute ?? 'n/a'} (${s.percent === null ? 'n/a' : s.percent.toFixed(1) + '%'})` : undefined} />)}
           </div>
           {!rows.length && <EmptyState icon={FileText} title="No complaints in this period" description="No complaints were received between the selected dates." />}
-          <div className="grid gap-3 md:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Top categories</CardTitle></CardHeader>
-              <CardContent>
-                {metrics.topCategories.length === 0 ? <p className="text-sm text-muted-foreground">No complaints in this period.</p> : (
-                  <ul className="space-y-1.5 text-sm">
-                    {metrics.topCategories.map(([k, n]) => (
-                      <li key={k} className="flex justify-between"><span>{CATEGORIES[k as keyof typeof CATEGORIES] ?? k}</span><span className="tabular font-medium">{n}</span></li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Top root causes</CardTitle></CardHeader>
-              <CardContent>
-                {metrics.topRootCauses.length === 0 ? <p className="text-sm text-muted-foreground">No root causes recorded yet.</p> : (
-                  <ul className="space-y-1.5 text-sm">
-                    {metrics.topRootCauses.map(([k, n]) => (
-                      <li key={k} className="flex justify-between"><span className="capitalize">{k.replace(/_/g, " ")}</span><span className="tabular font-medium">{n}</span></li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Root cause trends over time</CardTitle></CardHeader>
-            <CardContent>
-              {trend.length < 2 ? <p className="text-sm text-muted-foreground">Record root causes on closed complaints across at least two months to see trends.</p> : (
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trend}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="month" fontSize={12} />
-                      <YAxis allowDecimals={false} fontSize={12} />
-                      <Tooltip />
-                      <Legend />
-                      {trendKeys.map((k, i) => (
-                        <Line key={k} type="monotone" dataKey={k} name={k.replace(/_/g, " ")} stroke={CHART_COLORS[i % CHART_COLORS.length] ?? "#0F766E"} strokeWidth={2} dot={false} />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
+          <ReportCharts rows={allRows} previousRows={priorQuery.data?.rows ?? []} range={range} previousRange={priorRange} compare={!!search.compare}/>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">Breakdown</CardTitle>
@@ -185,7 +139,7 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
                 <tbody>
                   {bd.map((r) => (
                     <tr key={r.key} className="border-b last:border-0">
-                      <td className="py-2.5 pr-4">{r.key}</td>
+                      <td className="py-2.5 pr-4">{r.key}<ViewComplaints search={reportLink(allRows,`By ${dim}`,dim === 'agent' ? (members.find(x=>x.name===r.key)?.user_id ?? 'none') : r.key,range)}/></td>
                       <td className="py-2.5 pr-4 tabular">{r.total}</td>
                       <td className="py-2.5 pr-4 tabular">{r.resolved}</td>
                       <td className="py-2.5 pr-4 tabular">{r.withinPct === null ? "—" : r.withinPct + "%"}</td>
@@ -206,11 +160,11 @@ function ReportsContent({ membership: m, search, navigate }: { membership: NonNu
   );
 }
 
-function Stat({ label, value, comparisonText }: { label: string; value: string | number; comparisonText?: string | undefined }) {
+function Stat({ label, value, comparisonText, search }: { label: string; value: string | number; comparisonText?: string | undefined; search: QueueSearch }) {
   return (
     <Card>
       <CardContent className="pt-5">
-        <p className="break-words text-2xl font-semibold tabular">{value}</p>
+        <Button variant="link" className="h-auto max-w-full whitespace-normal p-0 text-2xl" asChild><Link to="/app" search={search}>{value}</Link></Button>
         <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         {comparisonText && <p className="mt-2 break-words text-xs text-muted-foreground">{comparisonText}</p>}
       </CardContent>

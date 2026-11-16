@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { jsPDF } from 'jspdf';
 import { describe, expect, it } from 'vitest';
 import { letterPdf } from './letter-pdf';
+import { regulatoryReport } from './reports';
 import { regulatoryPackPdf } from './regulatory-pdf';
 import { personalDataPdf } from './privacy-pdf';
 import { PDF_FONT, embedPdfFont } from './pdf-font';
@@ -32,7 +33,7 @@ describe('Unicode PDF embedding', () => {
   });
   for (const [name, create] of [
     ['letter', () => letterPdf({ firm: 'Firma Łódź', address: 'ul. Żółta 12\nŁódź, Polska', date: '28/10/2026', subject: text, body: text }, font)],
-    ['regulatory pack', () => regulatoryPackPdf('Société Łódź', '2026-10-01', '2026-10-28', [[text, 'EUR 1,240 · PLN 3,500']], font)],
+    ['regulatory pack', () => regulatoryPackPdf({ name: 'Société Łódź', address: text, generatedBy: 'Owner', generatedAt: '2026-10-28' }, regulatoryReport([], { from: '2026-10-01', to: '2026-10-28' }), font)],
     ['privacy pack', () => personalDataPdf({ firm: text, generatedAt: '2026-10-28', tables: {}, attachments: [] }, font)],
   ] as const) {
     it(`embeds a TrueType Unicode font and character map in the ${name}`, () => {

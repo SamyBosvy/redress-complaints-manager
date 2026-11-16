@@ -19,3 +19,6 @@
 ## Template merging
 - Template previews and case letters share caseMergeValues and letterPdf; missing values remain visible, and template saves reject unknown fields or missing final ADR placeholders. Why: keep preview and sent-letter merging consistent without schema changes.
 - Template versions are written only by template save triggers and are append-only; restores load editor text and save restored_from. Why: complete history without client-written records.
+
+## Regulatory reports
+- Regulatory periods/comparisons and currency-safe summaries/tables share reports.ts; org-scoped paginated status history reconstructs period-end resolution, and regulatory-pdf uses local Unicode fonts with repeated table headers. Why: consistent CSV/PDF/UI without changing workflow guards.

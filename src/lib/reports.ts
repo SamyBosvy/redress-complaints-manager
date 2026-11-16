@@ -9,9 +9,9 @@ export type ReportRow = Pick<
   Database["public"]["Tables"]["complaints"]["Row"],
   | "id" | "reference" | "status" | "category" | "product" | "country_code" | "channel"
   | "assigned_to" | "vulnerable" | "outcome" | "redress_amount" | "redress_currency"
-  | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "root_cause_id" | "received_at" | "closed_at"
+  | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "received_at" | "closed_at"
   | "final_due" | "extended_due" | "holding_sent_at"
->;
+> & { root_cause_id?: string | null | undefined };
 
 const COLS =
   "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at";

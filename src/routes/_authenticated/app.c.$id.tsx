@@ -28,7 +28,7 @@ import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
-import { TEMPLATE_KINDS, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
+import { TEMPLATE_KINDS, caseMergeValues, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
 import { templatesQuery } from "./app.templates";
 import type { Database } from "@/integrations/supabase/types";
 import { CURRENCIES } from '@/lib/currencies';
@@ -338,17 +338,13 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   const [reason, setReason] = useState("");
   const [loadedKey, setLoadedKey] = useState("");
   const adr = countries.find((x) => x.country_code === c.country_code);
-  const agent = members.find((x) => x.user_id === (c.assigned_to ?? m.user.id))?.name ?? "";
+  const agent = members.find((x) => x.user_id === (c.assigned_to ?? m.user.id));
+  const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
 
   const key = `${kind}:${lang}`;
   if (loadedKey !== key) {
     const t = templates.find((x) => x.kind === kind && x.language === lang) ?? templates.find((x) => x.kind === kind && x.language === "en");
-    const deadline = kind === "holding" || c.holding_sent_at ? c.extended_due : c.final_due;
-    const values = {
-      customer_name: c.complainant_name, reference: c.reference, date_received: formatDate(c.received_at),
-      final_deadline: formatDate(deadline), adr_body_name: adr?.adr_name ?? "", agent_name: agent, firm_name: m.org!.legal_name,
-      adr_body_contact: [adr?.adr_contact, adr?.adr_website].filter(Boolean).join(", "),
-    };
+    const values = caseMergeValues(c, { firm: m.org?.legal_name ?? '', address: m.org?.firm_address, agent: agent?.name, agentEmail:agent?.email, adrName: adr?.adr_name, adrContact: [adr?.adr_contact, adr?.adr_website].filter(Boolean).join(', '), language:lang, extended:kind==='holding', rootCause:causes.find(x=>x.id===c.root_cause_id)?.name??c.root_cause_category??'' });
     setSubject(mergeTemplate(t?.subject ?? "", values));
     setBody(mergeTemplate(t?.body ?? "", values));
     setLoadedKey(key);

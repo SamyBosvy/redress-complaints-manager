@@ -222,6 +222,67 @@ export type Database = {
           },
         ]
       }
+      complaint_reopenings: {
+        Row: {
+          complaint_id: string
+          deadline_mode: string
+          id: string
+          org_id: string
+          previous_final_due: string | null
+          previous_status: Database["public"]["Enums"]["complaint_status"]
+          reason: string
+          reason_category: string
+          reopened_at: string
+          reopened_by: string
+        }
+        Insert: {
+          complaint_id: string
+          deadline_mode: string
+          id?: string
+          org_id: string
+          previous_final_due?: string | null
+          previous_status: Database["public"]["Enums"]["complaint_status"]
+          reason: string
+          reason_category: string
+          reopened_at?: string
+          reopened_by: string
+        }
+        Update: {
+          complaint_id?: string
+          deadline_mode?: string
+          id?: string
+          org_id?: string
+          previous_final_due?: string | null
+          previous_status?: Database["public"]["Enums"]["complaint_status"]
+          reason?: string
+          reason_category?: string
+          reopened_at?: string
+          reopened_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_reopenings_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_reopenings_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_reopenings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           ack_due: string | null
@@ -708,9 +769,11 @@ export type Database = {
           qa_required: boolean
           qa_sample_pct: number
           regulator: string | null
+          reopen_deadline_mode: string
           require_2fa: boolean
           retention_years: number
           setup_complete: boolean
+          time_zone: string
           trial_ends_at: string
         }
         Insert: {
@@ -726,9 +789,11 @@ export type Database = {
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
+          reopen_deadline_mode?: string
           require_2fa?: boolean
           retention_years?: number
           setup_complete?: boolean
+          time_zone?: string
           trial_ends_at?: string
         }
         Update: {
@@ -744,9 +809,11 @@ export type Database = {
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
+          reopen_deadline_mode?: string
           require_2fa?: boolean
           retention_years?: number
           setup_complete?: boolean
+          time_zone?: string
           trial_ends_at?: string
         }
         Relationships: []
@@ -1187,6 +1254,7 @@ export type Database = {
           final_due: string | null
           goodwill_amount: number | null
           goodwill_currency: string | null
+          has_reopened: boolean | null
           holding_reason: string | null
           holding_sent_at: string | null
           id: string | null
@@ -1280,6 +1348,7 @@ export type Database = {
         Args: { _case: string; _org: string; _patch: Json; _reason: string }
         Returns: undefined
       }
+      firm_date: { Args: { _at: string; _org: string }; Returns: string }
       has_org_role: {
         Args: {
           _org: string
@@ -1361,6 +1430,20 @@ export type Database = {
         Args: { _hashes: Json; _org: string }
         Returns: undefined
       }
+      reopen_complaint: {
+        Args: {
+          _case: string
+          _category: string
+          _mode?: string
+          _org: string
+          _reason: string
+        }
+        Returns: undefined
+      }
+      reopen_deadlines: {
+        Args: { _case: string; _mode: string; _org: string }
+        Returns: Json
+      }
       reorder_root_causes: {
         Args: { _ids: string[]; _org: string }
         Returns: undefined
@@ -1395,6 +1478,7 @@ export type Database = {
         Args: { _member: string; _org: string }
         Returns: undefined
       }
+      valid_time_zone: { Args: { _zone: string }; Returns: boolean }
     }
     Enums: {
       app_role:

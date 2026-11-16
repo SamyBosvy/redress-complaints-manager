@@ -27,3 +27,6 @@
 
 ## ADR
 - ADR records are tenant-scoped trigger-validated child data; reports and filter-only drill-downs use escalation/decision dates, not receipt cohorts. Why: preserve case guards and match ADR counts at scale.
+
+## Reopening
+- Reopening uses the role-checked RPC and append-only records; firm_date controls database date boundaries. Why: prevent direct status bypass and machine-zone-dependent dates.

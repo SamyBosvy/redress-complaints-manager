@@ -94,3 +94,6 @@
 
 - [x] Item #35: ADR working records, guarded escalation/decision/closure, queue tab and dated filter-only reporting/PDF/CSV.
 - [ ] Item #35 signed-in/mobile readback — requires a usable account and case fixtures.
+
+- [x] Item #36: managed reopening records/RPC, firm-local date checks, settings, case dialog and report/filter integration.
+- [ ] Item #36 signed-in/mobile readback — requires a usable account and case fixtures.

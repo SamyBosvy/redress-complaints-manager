@@ -1,0 +1,18 @@
+ALTER TABLE public.organisations ADD COLUMN complaints_email text;
+ALTER TABLE public.organisations ADD CONSTRAINT complaints_email_format CHECK (complaints_email IS NULL OR (length(complaints_email)<=254 AND complaints_email ~ '^[^[:space:]@]+@[^[:space:]@.]+(\.[^[:space:]@.]+)+$'));
+CREATE OR REPLACE FUNCTION public.organisation_settings_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF length(trim(NEW.legal_name)) NOT BETWEEN 1 AND 200 OR NEW.base_currency !~ '^[A-Z]{3}$' OR length(NEW.firm_address)>2000 THEN RAISE EXCEPTION 'Invalid organisation settings';END IF; IF NEW.complaints_email IS DISTINCT FROM OLD.complaints_email AND auth.uid() IS NOT NULL AND NOT public.has_org_role(OLD.id,ARRAY['org_admin']::public.app_role[]) THEN RAISE EXCEPTION 'Only Org Admins can change the complaints email'; END IF; IF NEW.require_2fa AND NOT OLD.require_2fa AND auth.uid() IS NOT NULL AND auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' THEN RAISE EXCEPTION 'Verify your authenticator before requiring 2FA';END IF;RETURN NEW;END $$;
+ALTER TABLE public.templates ADD COLUMN restored_from uuid;
+CREATE TABLE public.template_versions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),org_id uuid NOT NULL REFERENCES public.organisations(id),template_id uuid NOT NULL,subject text NOT NULL,body text NOT NULL,saved_by uuid,saved_at timestamptz NOT NULL DEFAULT now(),restored_from uuid,UNIQUE(org_id,id));
+GRANT SELECT ON public.template_versions TO authenticated;
+GRANT ALL ON public.template_versions TO service_role;
+ALTER TABLE public.template_versions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY template_versions_read ON public.template_versions FOR SELECT TO authenticated USING(public.is_org_member(org_id));
+ALTER TABLE public.template_versions ADD CONSTRAINT template_versions_restoration_fk FOREIGN KEY(org_id,restored_from) REFERENCES public.template_versions(org_id,id);
+CREATE INDEX template_versions_history ON public.template_versions(org_id,template_id,saved_at DESC);
+CREATE FUNCTION public.template_versions_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN RAISE EXCEPTION 'Template versions are append-only'; END $$;
+CREATE TRIGGER template_versions_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON public.template_versions FOR EACH STATEMENT EXECUTE FUNCTION public.template_versions_immutable();
+CREATE TRIGGER audit_template_versions AFTER INSERT ON public.template_versions FOR EACH ROW EXECUTE FUNCTION public.audit_capture();
+INSERT INTO public.template_versions(org_id,template_id,subject,body,saved_at) SELECT org_id,id,subject,body,updated_at FROM public.templates;
+CREATE FUNCTION public.capture_template_version() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF NEW.restored_from IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.template_versions v WHERE v.id=NEW.restored_from AND v.org_id=NEW.org_id AND v.template_id=NEW.id) THEN RAISE EXCEPTION 'Restore source must belong to this template'; END IF; INSERT INTO public.template_versions(org_id,template_id,subject,body,saved_by,restored_from) VALUES(NEW.org_id,NEW.id,NEW.subject,NEW.body,auth.uid(),NEW.restored_from); RETURN NEW; END $$;
+REVOKE EXECUTE ON FUNCTION public.capture_template_version() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER templates_capture_version AFTER INSERT OR UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.capture_template_version();

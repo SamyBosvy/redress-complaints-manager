@@ -59,7 +59,7 @@ function Templates() {
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const target = useRef<'subject'|'body'>('body');
-  const dirty = subject !== baseline.subject || body !== baseline.body;
+  const dirty = restoredFrom !== null || subject !== baseline.subject || body !== baseline.body;
   useBlocker({ shouldBlockFn: () => dirty && !window.confirm('Discard unsaved template changes?'), enableBeforeUnload: dirty });
   useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId(''); }, [current?.id, kind, lang]);
   useEffect(() => {const timer=setTimeout(()=>setDebounced(caseSearch.trim()),250);return()=>clearTimeout(timer);},[caseSearch]);
@@ -96,7 +96,7 @@ function Templates() {
   }
   const adr=countries.find(x=>x.country_code===previewCase?.country_code);
   const agent=members.find(x=>x.user_id===(previewCase?.assigned_to??m?.user.id));
-  const orgValues={firm_name:m?.org?.legal_name||SAMPLE_VALUES.firm_name,firm_address:m?.org?.firm_address||SAMPLE_VALUES.firm_address,firm_complaints_email:m?.org?.complaints_email||SAMPLE_VALUES.firm_complaints_email};
+  const orgValues={firm_name:m?.org?.legal_name||SAMPLE_VALUES.firm_name||'',firm_address:m?.org?.firm_address||SAMPLE_VALUES.firm_address||'',firm_complaints_email:m?.org?.complaints_email||SAMPLE_VALUES.firm_complaints_email||''};
   const values=previewCase?caseMergeValues(previewCase,{firm:m?.org?.legal_name??'',address:m?.org?.firm_address,firmEmail:m?.org?.complaints_email,agent:agent?.name,agentEmail:agent?.email,adrName:adr?.adr_name,adrContact:[adr?.adr_contact,adr?.adr_website].filter(Boolean).join(', '),language:lang,extended:kind==='holding',rootCause:previewCase.root_cause_id||previewCase.root_cause_category?rootCauseLabel(previewCase.root_cause_id,previewCase.root_cause_category,causes,false):''}):{...SAMPLE_VALUES,...orgValues};
   const renderedSubject=mergeTemplate(subject,values),renderedBody=mergeTemplate(body,values);
   async function pdf() {try {const {letterPdf}=await import('@/lib/letter-pdf');letterPdf({firm:values.firm_name??'',address:values.firm_address??null,date:values.date_of_letter??'',subject:renderedSubject,body:renderedBody},await loadPdfFont()).save('template-preview.pdf');}catch{toast.error('Could not generate the preview PDF.');}}

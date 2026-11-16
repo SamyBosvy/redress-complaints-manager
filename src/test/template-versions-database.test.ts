@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {beforeAll,beforeEach,afterAll,it,expect} from 'vitest';
 const db=new PGlite(),org='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002',user='30000000-0000-4000-8000-000000000001';
-beforeAll(async()=>{await db.exec(`CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role; CREATE SCHEMA auth;
+beforeAll(async()=>{await db.exec(`CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role; CREATE SCHEMA auth; GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('test.user',true),'')::uuid $$; CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
 CREATE TYPE public.app_role AS ENUM('org_admin','complaints_manager','agent','qa_reviewer','read_only');
 CREATE TABLE organisations(id uuid PRIMARY KEY,legal_name text DEFAULT 'Firm',base_currency text DEFAULT 'EUR',firm_address text DEFAULT '',require_2fa boolean DEFAULT false);

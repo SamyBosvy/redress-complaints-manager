@@ -11,7 +11,7 @@ export type ReportRow = Pick<
   | "assigned_to" | "vulnerable" | "outcome" | "redress_amount" | "redress_currency"
   | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "received_at" | "closed_at"
   | "final_due" | "extended_due" | "holding_sent_at"
->;
+> & { root_cause_id?: string | null | undefined };
 
 const COLS =
   "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at";
@@ -336,7 +336,7 @@ export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
     && (!s.resolved || resolved === (s.resolved === 'yes'))
     && (!s.within_deadline || (resolved && resolvedWithinDeadline(r) === (s.within_deadline === 'yes')))
     && (!s.outcome || r.outcome === s.outcome) && (!s.status || r.status === s.status)
-    && (!s.root_cause || (r.root_cause_category ?? 'Not recorded') === s.root_cause)
+    && (!s.root_cause || (UUID.test(s.root_cause) ? r.root_cause_id === s.root_cause : (r.root_cause_category ?? 'Not recorded') === s.root_cause))
     && (!s.product || r.product === s.product) && (!s.category || r.category === s.category)
     && (!s.country || r.country_code === s.country) && (!s.channel || r.channel === s.channel)
     && (!s.agent || (r.assigned_to ?? 'none') === s.agent);
@@ -361,4 +361,47 @@ export function reportBuckets(range: PeriodRange) {
     buckets.push({ from, to, label: weekly ? from : from.slice(0, 7) }); from = next;
   }
   return { unit: weekly ? 'week' : 'month', buckets };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const nextDay = (d: string) => new Date(Date.parse(d) + DAY).toISOString().slice(0, 10);
+/** Server-side filter operations on complaint_queue equivalent to matchesReportFilters (status/product/category/country/agent are applied by the queue's existing filters). */
+export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte'; col: string; v?: string | boolean };
+export function reportFilterOps(s: QueueSearch): FilterOp[] {
+  const ops: FilterOp[] = [];
+  if (s.received_from) ops.push({ op: 'gte', col: 'received_at', v: s.received_from });
+  if (s.received_to) ops.push({ op: 'lt', col: 'received_at', v: nextDay(s.received_to) });
+  const resolved = s.within_deadline ? 'yes' : s.resolved;
+  if (resolved === 'yes') { ops.push({ op: 'not_null', col: 'closed_at' }); if (s.received_to) ops.push({ op: 'lt', col: 'closed_at', v: nextDay(s.received_to) }); }
+  if (resolved === 'no') ops.push(s.received_to ? { op: 'null_or_gte', col: 'closed_at', v: nextDay(s.received_to) } : { op: 'is_null', col: 'closed_at' });
+  if (s.within_deadline) ops.push({ op: 'eq', col: 'resolved_within_deadline', v: s.within_deadline === 'yes' });
+  if (s.outcome) ops.push({ op: 'eq', col: 'outcome', v: s.outcome });
+  if (s.channel) ops.push({ op: 'eq', col: 'channel', v: s.channel });
+  if (s.root_cause) {
+    if (UUID.test(s.root_cause)) ops.push({ op: 'eq', col: 'root_cause_id', v: s.root_cause });
+    else { ops.push({ op: 'is_null', col: 'root_cause_id' }); ops.push(s.root_cause === 'Not recorded' ? { op: 'is_null', col: 'root_cause_category' } : { op: 'eq', col: 'root_cause_category', v: s.root_cause }); }
+  }
+  return ops;
+}
+/** Reference evaluation of reportFilterOps against a row shaped like complaint_queue (used by tests). */
+export function evalFilterOps(row: Record<string, unknown>, ops: FilterOp[]) {
+  return ops.every(({ op, col, v }) => {
+    const x = row[col] as string | boolean | null | undefined;
+    if (op === 'is_null') return x == null; if (op === 'not_null') return x != null;
+    if (op === 'eq') return x === v;
+    if (x == null) return op === 'null_or_gte';
+    return op === 'lt' ? String(x) < String(v) : String(x) >= String(v);
+  });
+}
+export const SNAPSHOT_CAP = 150;
+/** Drill-down link: filters only, plus snapshot IDs solely for historical period-end status (capped), else a current-status note. */
+export function buildReportLink(rows: ReportRow[], metric: string, group: string | undefined, range: PeriodRange, today = new Date().toISOString().slice(0, 10)): QueueSearch {
+  const s = buildDrillDownSearch(metric, group, range);
+  if (metric === 'By root cause' && group) { const id = rows.find(r => r.root_cause_id && r.root_cause_category === group)?.root_cause_id; if (id) s.root_cause = id; }
+  if ((metric === 'Open at period end' || metric === 'open') && range.to < today) {
+    const ids = drillDownRows(rows, metric, group, range).map(r => r.id);
+    if (ids.length <= SNAPSHOT_CAP) return { ...s, report_ids: ids.join(',') || 'none' };
+    return { ...s, report_basis: 'current' };
+  }
+  return s;
 }

@@ -1113,7 +1113,9 @@ export type Database = {
           redress_amount: number | null
           redress_currency: string | null
           reference: string | null
+          resolved_within_deadline: boolean | null
           root_cause_category: string | null
+          root_cause_id: string | null
           root_cause_note: string | null
           rule_set_id: string | null
           seq: number | null
@@ -1157,7 +1159,9 @@ export type Database = {
           redress_amount?: number | null
           redress_currency?: string | null
           reference?: string | null
+          resolved_within_deadline?: never
           root_cause_category?: string | null
+          root_cause_id?: string | null
           root_cause_note?: string | null
           rule_set_id?: string | null
           seq?: number | null
@@ -1201,7 +1205,9 @@ export type Database = {
           redress_amount?: number | null
           redress_currency?: string | null
           reference?: string | null
+          resolved_within_deadline?: never
           root_cause_category?: string | null
+          root_cause_id?: string | null
           root_cause_note?: string | null
           rule_set_id?: string | null
           seq?: number | null
@@ -1212,6 +1218,13 @@ export type Database = {
           vulnerable_note?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "complaint_root_cause_org_fk"
+            columns: ["org_id", "root_cause_id"]
+            isOneToOne: false
+            referencedRelation: "root_causes"
+            referencedColumns: ["org_id", "id"]
+          },
           {
             foreignKeyName: "complaints_org_id_fkey"
             columns: ["org_id"]

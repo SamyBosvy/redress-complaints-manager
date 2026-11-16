@@ -23,4 +23,4 @@
 ## Regulatory reports
 - Regulatory periods/comparisons and currency-safe summaries/tables share reports.ts; org-scoped paginated status history reconstructs period-end resolution, and regulatory-pdf uses local Unicode fonts with repeated table headers. Why: consistent CSV/PDF/UI without changing workflow guards.
 
-- Report drill-downs share pure receipt-cohort predicates and carry snapshot IDs for historical membership; queue filters use paginated org-scoped reads under RLS. Why: historical report totals must not silently become current-status totals.
+- Report drill-downs are filter-only server-side complaint_queue filters (reportFilterOps mirrors matchesReportFilters); snapshot IDs only for past period-end open counts up to SNAPSHOT_CAP, else a current-status note. Why: links and queries must scale without hiding historical differences.

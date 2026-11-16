@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CLOCK_RUNNING, STATUSES, type QueueRow, type Status } from "./complaints";
-import { matchesReportFilters, type ReportRow } from "./reports";
+import { reportFilterOps } from "./reports";
 import type { AppRole } from './org';
 
 export function queueEmptyState(orgTotal: number, matchingTotal: number, role: AppRole | null) {
@@ -41,6 +41,7 @@ export interface QueueSearch {
   within_deadline?: string | undefined;
   channel?: string | undefined;
   report_ids?: string | undefined;
+  report_basis?: 'current' | undefined;
   tab?: QueueTab | undefined;
   q?: string | undefined;
   status?: string | undefined;
@@ -64,6 +65,7 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
     received_from: date(s["received_from"]), received_to: date(s["received_to"]),
     outcome: ['upheld','partially_upheld','not_upheld','withdrawn'].includes(String(s["outcome"])) ? String(s["outcome"]) : undefined,
     root_cause: str(s["root_cause"]), resolved: yesNo(s["resolved"]), within_deadline: yesNo(s["within_deadline"]), channel: str(s["channel"]),
+    report_basis: s["report_basis"] === 'current' ? 'current' : undefined,
     report_ids: typeof s["report_ids"] === 'string' && /^(none|[a-zA-Z0-9-]+(,[a-zA-Z0-9-]+)*)$/.test(s["report_ids"]) ? s["report_ids"] : undefined,
     tab: (QUEUE_TABS as readonly string[]).includes(s["tab"] as string) ? (s["tab"] as QueueTab) : undefined,
     q: typeof s["q"] === "string" ? (s["q"] as string) : "",
@@ -172,7 +174,8 @@ interface QueueFilterable {
   eq(c: string, v: string | boolean): this;
   is(c: string, v: null): this;
   in(c: string, v: readonly string[]): this;
-  gte(c: string, v: number): this;
+  gte(c: string, v: number | string): this;
+  not(c: string, op: string, v: null): this;
   lte(c: string, v: number): this;
   lt(c: string, v: string | number): this;
   or(f: string): this;
@@ -193,6 +196,11 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (p.country) q = q.eq("country_code", p.country);
   if (p.agent) q = p.agent === "none" ? q.is("assigned_to", null) : q.eq("assigned_to", p.agent);
   if (p.vulnerable) q = q.eq("vulnerable", p.vulnerable === "true");
+  for (const f of reportFilterOps(p)) {
+    if (f.op === 'gte') q = q.gte(f.col, String(f.v)); else if (f.op === 'lt') q = q.lt(f.col, String(f.v));
+    else if (f.op === 'eq') q = q.eq(f.col, f.v as string | boolean); else if (f.op === 'is_null') q = q.is(f.col, null);
+    else if (f.op === 'not_null') q = q.not(f.col, 'is', null); else q = q.or(`${f.col}.is.null,${f.col}.gte.${String(f.v)}`);
+  }
   const needle = (p.q ?? "").trim().replace(/[%,_()."\\]/g, " ").trim();
   if (needle) q = q.or(`reference.ilike.%${needle}%,complainant_name.ilike.%${needle}%,customer_ref.ilike.%${needle}%`);
   return q;
@@ -212,18 +220,6 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 }
 
 export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
-  if (!p.report_ids && [p.received_from,p.received_to,p.outcome,p.root_cause,p.resolved,p.within_deadline,p.channel].some(Boolean)) {
-    const [{data: causes,error: causeError}] = await Promise.all([supabase.from('root_causes').select('id,name').eq('org_id',orgId)]);
-    if(causeError) throw causeError;
-    const ids: string[] = [];
-    for(let offset=0;;offset+=500) {
-      const {data,error} = await supabase.from('complaints').select('*').eq('org_id',orgId).order('id').range(offset,offset+499);
-      if(error) throw error;
-      for(const row of data ?? []) if(matchesReportFilters({...row,root_cause_category: causes?.find(c=>c.id===row.root_cause_id)?.name ?? row.root_cause_category} as ReportRow,p)) ids.push(row.id);
-      if((data?.length ?? 0)<500) break;
-    }
-    p = {...p,report_ids:ids.join(',') || 'none'};
-  }
   const size = PAGE_SIZE;
   const sort = p.sort ?? "time_left";
   const dir = p.dir ?? "asc";

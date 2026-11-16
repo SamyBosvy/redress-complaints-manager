@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
 });
 
 const ALL = "__all";
-const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids"] as const;
+const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis"] as const;
 
 function Queue() {
   const m = useMembership()!;
@@ -142,7 +142,7 @@ function Queue() {
   if(search.report_ids) chips.push({key:'report_ids',label:'Report snapshot'});
   const clearAll = () =>
     navigate({
-      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,page: 1 }),
+      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,report_basis:undefined,page: 1 }),
       replace: true,
     });
 
@@ -205,6 +205,7 @@ function Queue() {
             </span>
           ))}
           <Button variant="ghost" size="sm" onClick={clearAll}>Clear all</Button>
+          {search.report_basis === 'current' && <p className="w-full text-xs text-muted-foreground">Showing current status — the report counted status at period end.</p>}
         </div>
       )}
 

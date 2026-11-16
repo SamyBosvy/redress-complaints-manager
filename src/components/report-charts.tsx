@@ -1,22 +1,22 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { buildDrillDownSearch, drillDownRows, reportBuckets, resolvedWithinDeadline, type ReportRow, type PeriodRange } from '@/lib/reports';
+import { buildReportLink, drillDownRows, reportBuckets, resolvedWithinDeadline, type ReportRow, type PeriodRange } from '@/lib/reports';
 import type { QueueSearch } from '@/lib/queue';
 
 export function reportLink(rows: ReportRow[], metric: string, group: string | undefined, range: PeriodRange): QueueSearch {
-  const search = buildDrillDownSearch(metric, group, range);
-  return {...search, report_ids: drillDownRows(rows, metric, group, range).map(r=>r.id).join(',') || 'none'};
+  return buildReportLink(rows, metric, group, range);
 }
 export function ViewComplaints({search}: {search: QueueSearch}) {
   return <Button variant="link" size="sm" asChild><Link to="/app" search={search}>View complaints</Link></Button>;
 }
 type Point = {label:string; value:number|null; previous?:number; second?:number; search:QueueSearch; secondSearch?:QueueSearch; previousSearch?:QueueSearch | undefined};
 function Chart({title, points, kind, series, second, percent, compare}: {title:string;points:Point[];kind:'bar'|'line'|'horizontal'|'stack';series:string;second?:string;percent?:boolean;compare?:boolean}) {
+  const navigate=useNavigate();
   const open = (index: number, which?: 'second'|'previous') => {
     const point=points[index]; if(!point)return;
     const search=which==='second'? point.secondSearch : which==='previous'?point.previousSearch:point.search;
-    if(search) window.location.assign(`/app?${new URLSearchParams(Object.entries(search).flatMap(([k,v])=>v===undefined?[]:[[k,String(v)]])).toString()}`);
+    if(search) void navigate({to:'/app',search});
   };
   const data=points.map((p,i)=>({...p,index:i}));
   const chartProps={data,margin:{left:0,right:16,top:8,bottom:8}};
@@ -26,6 +26,7 @@ function Chart({title, points, kind, series, second, percent, compare}: {title:s
   </ResponsiveContainer></div><details><summary className="cursor-pointer text-sm text-primary">View as table</summary><div className="max-w-full overflow-x-auto"><table className="w-full text-sm"><thead><tr><th scope="col" className="text-left">Period / group</th><th scope="col">{series}</th>{second&&<th scope="col">{second}</th>}{compare&&<th scope="col">Previous period</th>}<th scope="col">Complaints</th></tr></thead><tbody>{points.map(p=><tr key={p.label} className="border-b"><th scope="row" className="py-2 text-left font-normal">{p.label}</th><td className="text-center">{p.value??'n/a'}{percent&&p.value!==null?'%':''}</td>{second&&<td className="text-center">{p.second}</td>}{compare&&<td className="text-center">{p.previous}</td>}<td><ViewComplaints search={p.search}/>{p.secondSearch&&<ViewComplaints search={p.secondSearch}/>} {p.previousSearch&&<ViewComplaints search={p.previousSearch}/>}</td></tr>)}</tbody></table></div></details></section>;
 }
 export function ReportCharts({rows,previousRows,range,previousRange,compare}: {rows:ReportRow[];previousRows:ReportRow[];range:PeriodRange;previousRange:PeriodRange;compare:boolean}) {
+  const navigate=useNavigate();
   const {buckets,unit}=reportBuckets(range); const prior=reportBuckets(previousRange).buckets;
   const volumes=buckets.map((b,i)=>({label:b.label,value:drillDownRows(rows,'Complaints received',undefined,b).length,search:reportLink(rows,'Complaints received',undefined,b),previous:prior[i]?drillDownRows(previousRows,'Complaints received',undefined,prior[i]).length:0,previousSearch:prior[i]?reportLink(previousRows,'Complaints received',undefined,prior[i]):undefined}));
   const open=buckets.map(b=>({label:b.label,value:drillDownRows(rows,'open',undefined,b).length,second:drillDownRows(rows,'resolved',undefined,{from:'0001-01-01',to:b.to}).length,search:reportLink(rows,'open',undefined,b),secondSearch:reportLink(rows,'resolved',undefined,{from:'0001-01-01',to:b.to})}));
@@ -34,5 +35,5 @@ export function ReportCharts({rows,previousRows,range,previousRange,compare}: {r
   const months=reportBuckets({...range,from:range.from,to:range.to}).buckets;
   const monthKeys=[...new Set(months.flatMap(b=>{const out:string[]=[];for(let t=Date.parse(b.from);t<=Date.parse(b.to);t+=86400000)out.push(new Date(t).toISOString().slice(0,7));return out;}))];
   const deadlines=monthKeys.map(label=>{const b={from:label+'-01',to:[new Date(Date.UTC(Number(label.slice(0,4)),Number(label.slice(5,7)),0)).toISOString().slice(0,10),range.to].sort()[0]??range.to};b.from=[b.from,range.from].sort().at(-1)??range.from;const known=drillDownRows(rows,'Resolved',undefined,b).filter(r=>resolvedWithinDeadline(r)!==null);return{label,value:known.length?Math.round(known.filter(r=>resolvedWithinDeadline(r)).length/known.length*1000)/10:null,search:reportLink(rows,'within',undefined,b)};});
-  return <div className="grid min-w-0 gap-8 lg:grid-cols-2"><Chart title={`Complaints received per ${unit}`} points={volumes} kind="bar" series="Received" compare={compare}/><Chart title="Open vs resolved at period end" points={open} kind="line" series="Open" second="Resolved"/><section className="min-w-0 space-y-3"><h2 className="text-lg font-semibold">Outcome split</h2><div className="flex h-12 overflow-hidden" aria-hidden="true">{outcomes.filter(p=>p.value).map((p,i)=><Button key={p.label} className="h-full min-w-0 rounded-none px-1" variant={i%2?'secondary':'default'} style={{flex:p.value}} onClick={()=>window.location.assign(`/app?${new URLSearchParams(Object.entries(p.search).flatMap(([k,v])=>v===undefined?[]:[[k,String(v)]])).toString()}`)}>{p.value}</Button>)}</div><table className="w-full text-sm"><thead><tr><th scope="col" className="text-left">Outcome</th><th scope="col">Count</th><th scope="col">Complaints</th></tr></thead><tbody>{outcomes.map(p=><tr key={p.label}><th scope="row" className="py-2 text-left font-normal">{p.label}</th><td className="text-center">{p.value}</td><td><ViewComplaints search={p.search}/></td></tr>)}</tbody></table></section><Chart title="Top 8 root causes" points={causes} kind="horizontal" series="Complaints"/><Chart title="Resolved within deadline per month" points={deadlines} kind="line" series="Within deadline" percent/></div>;
+  return <div className="grid min-w-0 gap-8 lg:grid-cols-2"><Chart title={`Complaints received per ${unit}`} points={volumes} kind="bar" series="Received" compare={compare}/><Chart title="Open vs resolved at period end" points={open} kind="line" series="Open" second="Resolved"/><section className="min-w-0 space-y-3"><h2 className="text-lg font-semibold">Outcome split</h2><div className="flex h-12 overflow-hidden" aria-hidden="true">{outcomes.filter(p=>p.value).map((p,i)=><Button key={p.label} className="h-full min-w-0 rounded-none px-1" variant={i%2?'secondary':'default'} style={{flex:p.value}} onClick={()=>void navigate({to:'/app',search:p.search})}>{p.value}</Button>)}</div><table className="w-full text-sm"><thead><tr><th scope="col" className="text-left">Outcome</th><th scope="col">Count</th><th scope="col">Complaints</th></tr></thead><tbody>{outcomes.map(p=><tr key={p.label}><th scope="row" className="py-2 text-left font-normal">{p.label}</th><td className="text-center">{p.value}</td><td><ViewComplaints search={p.search}/></td></tr>)}</tbody></table></section><Chart title="Top 8 root causes" points={causes} kind="horizontal" series="Complaints"/><Chart title="Resolved within deadline per month" points={deadlines} kind="line" series="Within deadline" percent/></div>;
 }

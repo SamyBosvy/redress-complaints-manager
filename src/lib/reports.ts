@@ -342,6 +342,7 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
   return s;
 }
 export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
+  if (s.adr_metric && !evalFilterOps(r as unknown as Record<string, unknown>, reportFilterOps(s))) return false;
   const date = r.received_at.slice(0, 10);
   const resolved = !!r.closed_at && (!s.received_to || r.closed_at.slice(0, 10) <= s.received_to);
   return (!s.received_from || date >= s.received_from) && (!s.received_to || date <= s.received_to)

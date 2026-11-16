@@ -64,7 +64,7 @@ function Queue() {
   const today = new Date().toISOString().slice(0, 10);
   const nameOf = (id: string | null) => (id ? members.find((x) => x.user_id === id)?.name ?? "—" : "Unassigned");
   const update = (patch: Partial<QueueSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch, day_section: Object.keys(patch).some(k=>k==='tab'||(FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])&&k!=='day_section')) ? undefined : patch.day_section ?? (Object.hasOwn(patch,'day_section') ? undefined : prev.day_section), report_ids: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_ids, report_basis: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_basis, page: patch.page ?? 1 }), replace: true });
+    navigate({ search: (prev) => ({ ...prev, ...patch, day_section: Object.keys(patch).some(k=>k==='tab'||(FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])&&k!=='day_section')) ? undefined : patch.day_section ?? (Object.hasOwn(patch,'day_section') ? undefined : search.day_section), report_ids: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_ids, report_basis: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : search.report_basis, page: patch.page ?? 1 }), replace: true });
   const setTab = (v: string) => update({ tab: v as QueueTab });
   const openCase = (id: string) => navigate({ to: "/app/c/$id", params: { id } });
 

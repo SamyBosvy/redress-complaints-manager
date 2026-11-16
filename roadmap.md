@@ -1,5 +1,9 @@
 # Redress roadmap
 
+- [x] Item #40: acknowledgement/holding metrics, local dates, exports/chart/comparison and masking regression tests; no schema or billing changes. Full suites: 511/512 in each zone initially; repaired masking and 24/24 targeted tests passed in each zone; automatic typecheck/build passed.
+- [ ] Item #40 signed-in report/export/mobile verification — no auth users; session minting confirmed unavailable.
+- [ ] Item #40 exact acknowledgement drill-downs — existing queue has no derived acknowledgement timestamp; requires an explicitly approved view change.
+
 - [x] Item #33 part 1: URL periods/comparison, currency-safe summaries, regulatory PDF cover/tables/methodology/footer and matching CSV.
 - [ ] Item #33: signed-in export/mobile verification — needs a usable account and organisation.
 - [ ] Part 2 only if a migration is needed: REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.template_versions FROM authenticated (defence-in-depth; RLS + trigger already block).

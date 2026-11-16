@@ -21,6 +21,7 @@
 - Template versions are written only by template save triggers and are append-only; restores load editor text and save restored_from. Why: complete history without client-written records.
 
 ## Regulatory reports
+- Response evidence uses sent letters then status-event fallback; metrics use firm-local dates, and unsupported derived queue links stay unavailable without a view change. Why: preserve exact counts without schema changes or oversized ID lists.
 - Regulatory periods/comparisons and currency-safe summaries/tables share reports.ts; org-scoped paginated status history reconstructs period-end resolution, and regulatory-pdf uses local Unicode fonts with repeated table headers. Why: consistent CSV/PDF/UI without changing workflow guards.
 
 - Report drill-downs are filter-only server-side complaint_queue filters (reportFilterOps mirrors matchesReportFilters); snapshot IDs only for past period-end open counts up to SNAPSHOT_CAP, else a current-status note. Why: links and queries must scale without hiding historical differences.

@@ -1,3 +1,4 @@
+import { acknowledgedAt, responseDate, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
 import {REOPEN_REASONS,reopeningMetrics,type ReopeningRow} from './reopening';
 import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
 import { queryOptions } from "@tanstack/react-query";
@@ -13,10 +14,10 @@ export type ReportRow = Pick<
   | "assigned_to" | "vulnerable" | "outcome" | "redress_amount" | "redress_currency"
   | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "received_at" | "closed_at"
   | "final_due" | "extended_due" | "holding_sent_at"
-> & { root_cause_id?: string | null | undefined };
+> & { root_cause_id?: string | null | undefined; ack_due?: string | null; acknowledged_at?: string | null; holding_letters?: string[] };
 
 const COLS =
-  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at";
+  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at, ack_due";
 
 export const reportQuery = (orgId: string, from: string, to: string) =>
   queryOptions({
@@ -235,8 +236,8 @@ export function resolutionDays(row: ReportRow, holidays: Holiday[] = []) {
   return days;
 }
 export interface RegulatoryTable { title: string; rows: { label: string; count: number; share: number; upheld: number | null; within: number | null }[] }
-export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[] }
-export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = [], reopenings: ReopeningRow[] = []): RegulatoryReport {
+export interface RegulatoryReport { range: PeriodRange; summary: { label: string; value: number | null; unit?: string }[]; tables: RegulatoryTable[]; methodology?: string[]; responseTables?: { title: string; headers: string[]; rows: (string | number)[][] }[] }
+export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays: Holiday[] = [], adr: AdrReportRow[] = [], reopenings: ReopeningRow[] = [], timeZone = 'Europe/Dublin', now = new Date()): RegulatoryReport {
   const eligible = all.filter(r => r.received_at.slice(0, 10) <= range.to);
   const rows = eligible.filter(r => r.received_at.slice(0, 10) >= range.from);
   const resolvedAtEnd = (r: ReportRow) => !!r.closed_at && r.closed_at.slice(0, 10) <= range.to;
@@ -274,50 +275,60 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
   const am = adrMetrics(adr, range);
   for (const [currency, value] of Object.entries(am.awards)) summary.push({ label: `ADR awards — ${currency}`, value, unit: currency });
   tables.push({ title: 'By ADR outcome', rows: Object.entries(ADR_DECISIONS).filter(([k]) => k !== 'pending').map(([key,label]) => ({label,count:am.decided.filter(a => a.decision === key).length,share:pct(am.decided.filter(a => a.decision === key).length,am.decided.length) ?? 0,upheld:null,within:null})).filter(r => r.count > 0) });
-  return { range, summary, tables };
+  const response = responseMetrics(all,range,holidays,timeZone,now);
+  summary.push({label:'Acknowledged on time',value:response.onTimePct,unit:'%'},{label:'Acknowledgement overdue now',value:response.overdue.length},{label:'Median business days to acknowledge',value:response.median,unit:'business days'},{label:'Holding responses sent',value:response.holdingLetters.length},{label:'% of cases needing a holding response',value:response.holdingPct,unit:'%'},{label:'Resolved after holding response within extended deadline',value:response.extendedPct,unit:'%'});
+  const responseTables = (['agent','country'] as const).map(dimension => {
+    const groups = new Map<string,ReportRow[]>();
+    for(const row of all){const key=dimension==='agent'?row.assigned_to??'Unassigned':row.country_code;groups.set(key,[...(groups.get(key)??[]),row]);}
+    return {title:`Acknowledgement and holding metrics by ${dimension}`,headers:['Group','Ack eligible','Ack on time %','Median ack days','Holding letters','Holding cases %','Extended on time %'],rows:[...groups].map(([key,group])=>{const m=responseMetrics(group,range,holidays,timeZone,now);return [key,m.ackCohort.length,m.onTimePct??'n/a',m.median??'n/a',m.holdingLetters.length,m.holdingPct??'n/a',m.extendedPct??'n/a'];})};
+  });
+  return { range, summary, tables, responseTables, methodology:RESPONSE_METHODOLOGY };
 }
 export const TABLE_HEADERS = ['Group', 'Count', '% of total', 'Upheld / partial %', 'Within deadline %'];
 export function summaryComparison(current: RegulatoryReport, previous?: RegulatoryReport) {
   const labels = [...new Set([...current.summary, ...(previous?.summary ?? [])].map(s => s.label))];
   return labels.map(label => {
     const c = current.summary.find(s => s.label === label), p = previous?.summary.find(s => s.label === label);
-    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null), p?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null)) };
+    return { label, unit: c?.unit ?? p?.unit, ...comparison(c?.value ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null), (label==='Acknowledgement overdue now'?null:p?.value) ?? ((label.includes(' paid — ') || label.startsWith('ADR awards — ')) ? 0 : null)) };
   });
 }
 export function regulatoryCsvRows(report: RegulatoryReport, previous?: RegulatoryReport): (string | number)[][] {
   const output: (string | number)[][] = [['Regulatory reporting pack'], ['Period', report.range.from, report.range.to], ...(previous ? [['Previous period', previous.range.from, previous.range.to]] : []), [], ['Summary'], ['Metric', 'Value', 'Unit', ...(previous ? ['Previous', 'Absolute change', '% change'] : [])]];
   for (const s of summaryComparison(report, previous)) output.push([s.label, s.value ?? 'n/a', s.unit ?? '', ...(previous ? [s.previous ?? 'n/a', s.absolute ?? 'n/a', s.percent ?? 'n/a'] : [])]);
   for (const t of report.tables) { output.push([], [t.title], TABLE_HEADERS); if (!t.rows.length) output.push(['No complaints in this period']); for (const r of t.rows) output.push([r.label, r.count, r.share, r.upheld ?? 'n/a', r.within ?? 'n/a']); }
+  for(const t of report.responseTables??[]){output.push([],[t.title],[...t.headers,...(previous?['Previous values (same column order)']:[])]);for(const row of t.rows){const prior=previous?.responseTables?.find(p=>p.title===t.title)?.rows.find(p=>p[0]===row[0]);output.push([...row,...(previous?[prior?.slice(1).join(' / ')??'n/a']:[])]);}}
+  output.push([],['Response methodology'],...(report.methodology??[]).map(text=>[text]));
   return output;
 }
 
 /** Paginated, org-scoped history: no silent report row cap. */
-export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
-  queryKey: ['regulatory-report', orgId, end],
+export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/Dublin') => queryOptions({
+  queryKey: ['regulatory-report', orgId, end, timeZone],
   queryFn: async () => {
     const fetchPages = async <T,>(fetchPage: (offset: number) => PromiseLike<{ data: T[] | null; error: unknown }>) => {
       const rows: T[] = [];
       for (let offset = 0; ; offset += 500) { const { data, error } = await fetchPage(offset); if (error) throw error; rows.push(...(data ?? [])); if ((data?.length ?? 0) < 500) break; }
       return rows;
     };
-    const [rows, causes, events, holidays, adr, reopenings] = await Promise.all([
-      fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).lt('received_at', isoDay(new Date(Date.parse(end) + DAY)) + 'T00:00:00Z').order('id').range(offset, offset + 499)),
+    const [rows, causes, events, holidays, adr, reopenings, letters] = await Promise.all([
+      fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).lte('escalated_on',end).order('id').range(offset,offset+499)),
       fetchPages(offset=>supabase.from('complaint_reopenings').select('complaint_id,reopened_at,reason_category').eq('org_id',orgId).lt('reopened_at',isoDay(new Date(Date.parse(end)+DAY))+'T00:00:00Z').order('id').range(offset,offset+499)),
+      fetchPages(offset=>supabase.from('letters').select('complaint_id,kind,sent_at').eq('org_id',orgId).eq('status','sent').in('kind',['acknowledgement','holding']).order('id').range(offset,offset+499)),
     ]);
     const projected = rows.map(row => {
-      const history = events.filter(e => e.complaint_id === row.id && e.created_at.slice(0, 10) <= end);
+      const history = events.filter(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) <= end);
       const statusOf = (e: typeof events[number], key: string) => e.detail && typeof e.detail === 'object' && !Array.isArray(e.detail) ? String(e.detail[key] ?? '') : '';
       const latest = history.at(-1);
-      const future = events.find(e => e.complaint_id === row.id && e.created_at.slice(0, 10) > end);
+      const future = events.find(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) > end);
       const status = (latest ? statusOf(latest, 'after') : future ? statusOf(future, 'before') : row.status) as ReportRow['status'];
       const resolved = CLOSED.includes(status);
       let lastReopened = -1; history.forEach((e, i) => { if (statusOf(e, 'after') === 'reopened') lastReopened = i; });
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
-      return { ...row, status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
+      return { ...row, acknowledged_at:acknowledgedAt(row.id,letters as ResponseLetter[],events as ResponseEvent[]), holding_letters:letters.filter(l=>l.complaint_id===row.id && l.kind==='holding' && l.sent_at).map(l=>String(l.sent_at)), status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
     });
     return { rows: projected as ReportRow[], holidays, adr, reopenings };
   },
@@ -388,6 +399,10 @@ const nextDay = (d: string) => new Date(Date.parse(d) + DAY).toISOString().slice
 export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte' | 'in'; col: string; v?: string | boolean };
 export function reportFilterOps(s: QueueSearch): FilterOp[] {
   const ops: FilterOp[] = [];
+  if(s.holding)ops.push({op:s.holding==='yes'?'not_null':'is_null',col:'holding_sent_at'});
+  if(s.holding_by)ops.push({op:'lt',col:'holding_sent_at',v:s.holding_by});
+  if(s.receipt_start)ops.push({op:'gte',col:'received_at',v:s.receipt_start});
+  if(s.receipt_end)ops.push({op:'lt',col:'received_at',v:s.receipt_end});
   if(s.reopened)ops.push({op:'eq',col:'has_reopened',v:s.reopened==='yes'});
   if(s.reopen_from)ops.push({op:'gte',col:'complaint_reopenings.reopened_at',v:s.reopen_from});
   if(s.reopen_to)ops.push({op:'lt',col:'complaint_reopenings.reopened_at',v:nextDay(s.reopen_to)});

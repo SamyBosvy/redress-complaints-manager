@@ -27,6 +27,13 @@ describe('audit rules', () => {
     expect(decodeAuditCursor('%invalid')).toBeUndefined();
     expect(decodeAuditCursor(encodeURIComponent(JSON.stringify({ ...c, id: '1),org_id.neq.x' })))).toBeUndefined();
   });
+  it('preserves embedded references, dates, times, amounts and plain numbers', () => {
+    for (const text of ['ref RDR-2026-000123 was charged on 2026-10-14', '2026-10-14T00:30:00+02:00', 'EUR 1234.56, 1234567890, 42']) expect(maskAuditValue(text,'reason',false)).toBe(text);
+  });
+  it.each(['+33 1 23 45 67 89', '+48 600 700 800', '087 123 4567'])('masks embedded phone %s', phone => {
+    expect(maskAuditValue(`Call ${phone} today`,'reason',false)).toBe('Call •••• today');
+    expect(maskAuditValue(`Call ${phone} today`,'reason',true)).toBe(`Call ${phone} today`);
+  });
   it('keyset tie-breaker has no duplicates or gaps', () => {
     const fixture = Array.from({ length: 153 }, (_, n) => ({ created_at: `2026-11-${String(16 - Math.floor(n / 60)).padStart(2, '0')}T00:00:00Z`, id: String(9007199254741200n - BigInt(n)) }));
     let cursor: typeof fixture[number] | undefined; const collected: string[] = [];

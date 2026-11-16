@@ -33,6 +33,7 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  holding?: string | undefined; holding_by?: string | undefined; receipt_start?: string | undefined; receipt_end?: string | undefined;
   reopened?: string | undefined; reopen_from?: string | undefined; reopen_to?: string | undefined; reopen_reason?: string | undefined;
   adr_from?: string | undefined; adr_to?: string | undefined;
   adr_metric?: 'escalated' | 'decided' | 'overturned' | undefined;
@@ -64,8 +65,10 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const page = Number(s["page"]);
   const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v ? v : undefined;
+  const instant=(v:unknown)=>typeof v==='string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(v)&&Number.isFinite(Date.parse(v))?v:undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    holding:yesNo(s['holding']), holding_by:instant(s['holding_by']),receipt_start:instant(s['receipt_start']),receipt_end:instant(s['receipt_end']),
     reopened:yesNo(s['reopened']),reopen_from:date(s['reopen_from']),reopen_to:date(s['reopen_to']),reopen_reason:['new_evidence','customer_disagreed','handling_error','regulator_adr_request','other'].includes(String(s['reopen_reason']))?String(s['reopen_reason']):undefined,
     adr_from:date(s['adr_from']),adr_to:date(s['adr_to']),
     adr_metric: ['escalated','decided','overturned'].includes(String(s['adr_metric'])) ? s['adr_metric'] as QueueSearch['adr_metric'] : undefined,

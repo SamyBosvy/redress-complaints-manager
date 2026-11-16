@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CLOCK_RUNNING, STATUSES, type QueueRow, type Status } from "./complaints";
+import { matchesReportFilters, type ReportRow } from "./reports";
 import type { AppRole } from './org';
 
 export function queueEmptyState(orgTotal: number, matchingTotal: number, role: AppRole | null) {
@@ -32,6 +33,14 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  received_from?: string | undefined;
+  received_to?: string | undefined;
+  outcome?: string | undefined;
+  root_cause?: string | undefined;
+  resolved?: string | undefined;
+  within_deadline?: string | undefined;
+  channel?: string | undefined;
+  report_ids?: string | undefined;
   tab?: QueueTab | undefined;
   q?: string | undefined;
   status?: string | undefined;
@@ -49,7 +58,13 @@ export interface QueueSearch {
 export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const page = Number(s["page"]);
+  const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v ? v : undefined;
+  const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    received_from: date(s.received_from), received_to: date(s.received_to),
+    outcome: ['upheld','partially_upheld','not_upheld','withdrawn'].includes(String(s.outcome)) ? String(s.outcome) : undefined,
+    root_cause: str(s.root_cause), resolved: yesNo(s.resolved), within_deadline: yesNo(s.within_deadline), channel: str(s.channel),
+    report_ids: typeof s.report_ids === 'string' && /^(none|[a-zA-Z0-9-]+(,[a-zA-Z0-9-]+)*)$/.test(s.report_ids) ? s.report_ids : undefined,
     tab: (QUEUE_TABS as readonly string[]).includes(s["tab"] as string) ? (s["tab"] as QueueTab) : undefined,
     q: typeof s["q"] === "string" ? (s["q"] as string) : "",
     status: str(s["status"]),
@@ -171,6 +186,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (tab === "risk") q = q.in("status", CLOCK_RUNNING).gte("days_left", 0).lte("days_left", 3);
   if (tab === "overdue") q = q.in("status", CLOCK_RUNNING).lt("days_left", 0);
   if (tab === "ack") q = q.eq("status", "received").lt("ack_due", todayISO());
+  if (p.report_ids) q = q.in('id', p.report_ids === 'none' ? ['00000000-0000-0000-0000-000000000000'] : p.report_ids.split(','));
   if (p.status) q = q.eq("status", p.status);
   if (p.category) q = q.eq("category", p.category);
   if (p.product) q = q.eq("product", p.product);
@@ -196,6 +212,18 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 }
 
 export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
+  if (!p.report_ids && [p.received_from,p.received_to,p.outcome,p.root_cause,p.resolved,p.within_deadline,p.channel].some(Boolean)) {
+    const [{data: causes,error: causeError}] = await Promise.all([supabase.from('root_causes').select('id,name').eq('org_id',orgId)]);
+    if(causeError) throw causeError;
+    const ids: string[] = [];
+    for(let offset=0;;offset+=500) {
+      const {data,error} = await supabase.from('complaints').select('*').eq('org_id',orgId).order('id').range(offset,offset+499);
+      if(error) throw error;
+      for(const row of data ?? []) if(matchesReportFilters({...row,root_cause_category: causes?.find(c=>c.id===row.root_cause_id)?.name ?? row.root_cause_category} as ReportRow,p)) ids.push(row.id);
+      if((data?.length ?? 0)<500) break;
+    }
+    p = {...p,report_ids:ids.join(',') || 'none'};
+  }
   const size = PAGE_SIZE;
   const sort = p.sort ?? "time_left";
   const dir = p.dir ?? "asc";

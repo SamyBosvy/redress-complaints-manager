@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
 });
 
 const ALL = "__all";
-const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable"] as const;
+const FILTER_KEYS = ["status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids"] as const;
 
 function Queue() {
   const m = useMembership()!;
@@ -63,7 +63,7 @@ function Queue() {
   const today = new Date().toISOString().slice(0, 10);
   const nameOf = (id: string | null) => (id ? members.find((x) => x.user_id === id)?.name ?? "—" : "Unassigned");
   const update = (patch: Partial<QueueSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch, page: patch.page ?? 1 }), replace: true });
+    navigate({ search: (prev) => ({ ...prev, ...patch, report_ids: Object.keys(patch).some(k => FILTER_KEYS.includes(k as typeof FILTER_KEYS[number])) ? undefined : prev.report_ids, page: patch.page ?? 1 }), replace: true });
   const setTab = (v: string) => update({ tab: v as QueueTab });
   const openCase = (id: string) => navigate({ to: "/app/c/$id", params: { id } });
 
@@ -72,7 +72,7 @@ function Queue() {
   const [busy, setBusy] = useState(false);
   const [handlers, setHandlers] = useState<{user_id: string; name: string}[]>([]);
   const anchor = useRef(-1);
-  const scope = JSON.stringify({orgId, userId: m.user.id, tab, q:search.q, status:search.status, category:search.category, product:search.product, country:search.country, agent:search.agent, vulnerable:search.vulnerable});
+  const scope = JSON.stringify({orgId, userId: m.user.id, tab, q:search.q, status:search.status, category:search.category, product:search.product, country:search.country, agent:search.agent, vulnerable:search.vulnerable, drill: FILTER_KEYS.map(k=>search[k])});
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
   const clearSelection = () => {setSelected([]); anchor.current = -1;};
@@ -138,9 +138,11 @@ function Queue() {
   if (search.country) chips.push({ key: "country", label: `Country: ${COUNTRIES[search.country] ?? search.country}` });
   if (search.agent) chips.push({ key: "agent", label: `Agent: ${search.agent === "none" ? "Unassigned" : nameOf(search.agent)}` });
   if (search.vulnerable) chips.push({ key: "vulnerable", label: search.vulnerable === "true" ? "Vulnerable" : "Not flagged" });
+  for (const key of ['received_from','received_to','outcome','root_cause','resolved','within_deadline','channel'] as const) if(search[key]) chips.push({key,label:`${key.replaceAll('_',' ')}: ${search[key]}`});
+  if(search.report_ids) chips.push({key:'report_ids',label:'Report snapshot'});
   const clearAll = () =>
     navigate({
-      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, page: 1 }),
+      search: (prev) => ({ ...prev, q: "", status: undefined, category: undefined, product: undefined, country: undefined, agent: undefined, vulnerable: undefined, received_from:undefined,received_to:undefined,outcome:undefined,root_cause:undefined,resolved:undefined,within_deadline:undefined,channel:undefined,report_ids:undefined,page: 1 }),
       replace: true,
     });
 

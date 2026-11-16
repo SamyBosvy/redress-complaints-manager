@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PRODUCTS, CATEGORIES, CHANNELS } from "./complaints";
 import { COUNTRIES } from "./countries";
+import type { QueueSearch } from "./queue";
 import type { Database } from "@/integrations/supabase/types";
 
 export type ReportRow = Pick<
@@ -309,3 +310,55 @@ export const regulatoryQuery = (orgId: string, end: string) => queryOptions({
     return { rows: projected as ReportRow[], holidays };
   },
 });
+
+/** Drill-downs use receipt cohorts; snapshot IDs preserve historical status membership. */
+export function buildDrillDownSearch(metric: string, group: string | undefined, range: PeriodRange): QueueSearch {
+  const s: QueueSearch = { tab: 'all', received_from: range.from, received_to: range.to };
+  if (metric === 'Open at period end' || metric === 'open') { s.received_from = undefined; s.resolved = 'no'; }
+  if (['Resolved', 'Median days to resolve', 'Average days to resolve', 'resolved'].includes(metric) || metric.includes(' paid — ')) s.resolved = 'yes';
+  if (metric === 'Resolved within deadline' || metric === 'within') { s.resolved = 'yes'; s.within_deadline = 'yes'; }
+  const outcome = ({ Upheld: 'upheld', 'Partially upheld': 'partially_upheld', 'Not upheld': 'not_upheld', Withdrawn: 'withdrawn' } as Record<string, string>)[metric];
+  if (outcome) { s.outcome = outcome; s.resolved = 'yes'; }
+  if (metric === 'Escalated to ADR') s.status = 'escalated_to_adr';
+  const dimensions: Record<string, keyof QueueSearch> = { 'By product': 'product', 'By category': 'category', 'By country': 'country', 'By channel': 'channel', 'By root cause': 'root_cause', 'By agent': 'agent' };
+  const dimension = dimensions[metric];
+  if (dimension && group !== undefined) {
+    const labels: Record<string, Record<string, string>> = { 'By product': PRODUCTS, 'By category': CATEGORIES, 'By country': COUNTRIES, 'By channel': CHANNELS };
+    const value = Object.entries(labels[metric] ?? {}).find(([, label]) => label === group)?.[0] ?? group;
+    Object.assign(s, { [dimension]: value });
+  }
+  return s;
+}
+export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
+  const date = r.received_at.slice(0, 10);
+  const resolved = !!r.closed_at && (!s.received_to || r.closed_at.slice(0, 10) <= s.received_to);
+  return (!s.received_from || date >= s.received_from) && (!s.received_to || date <= s.received_to)
+    && (!s.resolved || resolved === (s.resolved === 'yes'))
+    && (!s.within_deadline || (resolved && resolvedWithinDeadline(r) === (s.within_deadline === 'yes')))
+    && (!s.outcome || r.outcome === s.outcome) && (!s.status || r.status === s.status)
+    && (!s.root_cause || (r.root_cause_category ?? 'Not recorded') === s.root_cause)
+    && (!s.product || r.product === s.product) && (!s.category || r.category === s.category)
+    && (!s.country || r.country_code === s.country) && (!s.channel || r.channel === s.channel)
+    && (!s.agent || (r.assigned_to ?? 'none') === s.agent);
+}
+export function drillDownRows(rows: ReportRow[], metric: string, group: string | undefined, range: PeriodRange) {
+  const s = buildDrillDownSearch(metric, group, range);
+  return rows.filter(r => matchesReportFilters(r, s)).filter(r => {
+    if (!metric.includes(' paid — ')) return true;
+    const [kind, currency] = metric.split(' paid — ');
+    const amount = kind === 'Redress' ? r.redress_amount : r.goodwill_amount;
+    const recorded = kind === 'Redress' ? r.redress_currency : r.goodwill_currency;
+    return !!amount && (recorded?.trim().toUpperCase() || 'Unspecified currency') === currency;
+  });
+}
+export function reportBuckets(range: PeriodRange) {
+  const weekly = (Date.parse(range.to) - Date.parse(range.from)) / DAY < 100;
+  const buckets: { from: string; to: string; label: string }[] = [];
+  for (let from = range.from; from <= range.to;) {
+    const d = new Date(from + 'T00:00:00Z');
+    const next = weekly ? isoDay(new Date(d.getTime() + 7 * DAY)) : isoDay(utcDate(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+    const to = [isoDay(new Date(Date.parse(next) - DAY)), range.to].sort()[0] ?? range.to;
+    buckets.push({ from, to, label: weekly ? from : from.slice(0, 7) }); from = next;
+  }
+  return { unit: weekly ? 'week' : 'month', buckets };
+}

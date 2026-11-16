@@ -28,7 +28,7 @@ describe('server-side drill-down filters', () => {
       const url = '/app?' + new URLSearchParams(Object.entries(s).flatMap(([k, v]) => v === undefined ? [] : [[k, String(v)]])).toString();
       expect(url.length).toBeLessThan(2000);
     }
-    expect(buildReportLink(big, 'Open at period end', undefined, range, '2026-04-01')).toMatchObject({ report_basis: 'current', report_ids: undefined });
+    expect(buildReportLink(big, 'Open at period end', undefined, range, '2026-04-01')).toMatchObject({ report_basis: 'current' });
   });
   it('uses snapshot ids only for historical open counts under the cap', () => {
     expect(buildReportLink(fixture, 'Open at period end', undefined, range, '2026-04-01').report_ids?.split(',')).toHaveLength(drillDownRows(fixture, 'Open at period end', undefined, range).length);

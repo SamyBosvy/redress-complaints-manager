@@ -51,6 +51,6 @@ describe('audit rules', () => {
     expect(auditDateBoundary('2026-03-29', 'Europe/Paris')).toBe('2026-03-28T23:00:00.000Z');
   });
   it('checksums exact known CSV bytes', async () => {
-    expect(await auditChecksum(new TextEncoder().encode('a,b\r\n1,2'))).toBe('PLACEHOLDER');
+    expect(await auditChecksum(new TextEncoder().encode('a,b\r\n1,2'))).toBe('a64a34aacbdacd17c0c52c867be14c6b9dab76b5e7348392eb829431fbba3a33');
   });
 });

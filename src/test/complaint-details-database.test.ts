@@ -28,6 +28,7 @@ beforeAll(async()=>{
  for(const name of ['is_business_day','add_business_days']){const sql=source.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$\\$;`));if(!sql)throw new Error(name);await db.exec(sql[0]);}
  await db.exec(readFileSync('drizzle/migrations/0016_complaint_details_and_root_causes.sql','utf8'));
  await db.exec(readFileSync('drizzle/migrations/0017_root_cause_order_and_shared_deadlines.sql','utf8'));
+ await db.exec(readFileSync('drizzle/migrations/0018_detail_assignment_null_guard.sql','utf8'));
 },30000);
 beforeEach(async()=>{await db.exec('RESET ROLE; TRUNCATE complaints,root_causes,organisations,org_members,rule_sets,holidays,org_countries,letters,complaint_events,audit_log CASCADE;');await db.query('INSERT INTO organisations VALUES($1),($2)',[org,other]);await db.query("INSERT INTO org_members VALUES($1,$2,'org_admin',true)",[org,user]);await db.query("SELECT set_config('test.user',$1,false)",[user]);await db.query('INSERT INTO rule_sets VALUES($1,$2,2,15,35)',[rule,org]);await db.query("INSERT INTO org_countries VALUES($1,'FR')",[org]);await db.query("INSERT INTO complaints(id,org_id,assigned_to,status,complainant_name,complainant_email,complainant_phone,country_code,language,channel,product,category,summary,vulnerable,received_at) VALUES($1,$2,$3,'received','Old','old@example.test','12345','FR','en','email','card','other','Summary',false,'2026-10-02T10:00:00Z')",[id,org,user]);});
 afterAll(()=>db.close());

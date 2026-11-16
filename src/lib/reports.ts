@@ -336,7 +336,7 @@ export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
     && (!s.resolved || resolved === (s.resolved === 'yes'))
     && (!s.within_deadline || (resolved && resolvedWithinDeadline(r) === (s.within_deadline === 'yes')))
     && (!s.outcome || r.outcome === s.outcome) && (!s.status || r.status === s.status)
-    && (!s.root_cause || (UUID.test(s.root_cause) ? r.root_cause_id === s.root_cause : !r.root_cause_id && (r.root_cause_category ?? 'Not recorded') === s.root_cause))
+    && (!s.root_cause || (UUID.test(s.root_cause) ? r.root_cause_id === s.root_cause : (r.root_cause_category ?? 'Not recorded') === s.root_cause))
     && (!s.product || r.product === s.product) && (!s.category || r.category === s.category)
     && (!s.country || r.country_code === s.country) && (!s.channel || r.channel === s.channel)
     && (!s.agent || (r.assigned_to ?? 'none') === s.agent);

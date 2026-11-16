@@ -13,7 +13,8 @@ import { Checkbox } from './ui/checkbox';
 import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogFooter } from './ui/dialog';
 import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from './ui/select';
 import { AccessibleField } from './accessible-field';
-type Case=Database['public']['Tables']['complaints']['Row'];
+type Row=Database['public']['Tables']['complaints']['Row'];
+type Case={ [K in keyof Row]?:Row[K]|null };
 export function EditComplaintDetails({c,countries,onSaved}:{c:Partial<Case>&{id:string;org_id:string};countries:string[];onSaved:()=>Promise<unknown>}) {
  const [open,setOpen]=useState(false);
  return <><Button variant="outline" onClick={()=>setOpen(true)}>Edit details</Button>{open&&<Editor c={c} countries={countries} onClose={()=>setOpen(false)} onSaved={onSaved}/>}</>;

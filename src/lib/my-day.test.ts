@@ -1,0 +1,31 @@
+import { describe, expect, it } from 'vitest';
+import { addDay, canUseMyDay, dayContext, dayFilterOps, dayLink, daySelect, defaultLanding, DAY_SECTIONS, nextBusinessDate, pendingAcknowledgements } from './my-day';
+import { parseQueueSearch } from './queue';
+import { createShortcutHandler } from './shortcuts';
+import { maskAuditValue } from './audit';
+
+const user='11111111-1111-4111-8111-111111111111';
+const today='2026-11-16',zone='Europe/Paris';
+const op=(column:string,kind:string,value:unknown)=>({column,op:kind,value});
+describe('My day personal filters',()=>{
+ it('uses Paris 00:30 local today rather than UTC yesterday',()=>expect(dayContext(zone,new Date('2026-11-15T23:30:00Z')).today).toBe(today));
+ it('uses Sydney next-day boundary independently of machine TZ',()=>expect(dayContext('Australia/Sydney',new Date('2026-11-15T13:30:00Z')).today).toBe(today));
+ it.each(DAY_SECTIONS)('always scopes %s to the current handler',section=>expect(dayFilterOps(section,user,today,zone)[0]).toEqual(op('assigned_to','eq',user)));
+ it('overdue excludes stopped clocks and uses current due date',()=>{expect(dayFilterOps('overdue',user,today,zone)).toContainEqual(op('current_due','lt',today));const statuses=dayFilterOps('overdue',user,today,zone).find(o=>o.column==='status')?.value;expect(statuses).not.toContain('closed');expect(statuses).not.toContain('final_response_sent');expect(statuses).not.toContain('escalated_to_adr');});
+ it('uses authoritative holiday-aware days left for next three business days',()=>{const ops=dayFilterOps('soon',user,today,zone);expect(ops).toContainEqual(op('days_left','gte',0));expect(ops).toContainEqual(op('days_left','lte',3));expect(nextBusinessDate('2026-12-24',3,['2026-12-25','2026-12-28'])).toBe('2026-12-31');});
+ it('due this week ends on local Sunday',()=>expect(dayFilterOps('week',user,today,zone)).toContainEqual(op('current_due','lte','2026-11-22')));
+ it('acknowledgements include tomorrow and reuse sent-letter then status-event evidence',()=>{expect(dayFilterOps('ack',user,today,zone)).toContainEqual(op('ack_due','lte','2026-11-17'));const rows=['sent','event','none'].map(id=>({id,ack_due:today}));expect(pendingAcknowledgements(rows,[{complaint_id:'sent',kind:'acknowledgement',sent_at:'2026-11-16T00:00:00Z'}],[{complaint_id:'event',created_at:'2026-11-16T00:00:00Z',detail:{after:'acknowledged'}}])).toEqual([rows[2]]);});
+ it('waiting QA requires pending_qa',()=>expect(dayFilterOps('qa',user,today,zone)).toContainEqual(op('status','eq','pending_qa')));
+ it('returned QA uses actual returned enum and 14 local dates including today',()=>{const ops=dayFilterOps('returned',user,today,zone);expect(ops).toContainEqual(op('qa_reviews.status','eq','returned'));expect(ops).toContainEqual(op('qa_reviews.decided_at','gte','2026-11-02T23:00:00.000Z'));expect(ops).toContainEqual(op('qa_reviews.decided_at','lt','2026-11-16T23:00:00.000Z'));});
+ it('ADR uses unsent response and inclusive today through seven days',()=>{const ops=dayFilterOps('adr',user,today,zone);expect(ops).toContainEqual(op('adr_cases.firm_response_sent_on','is',null));expect(ops).toContainEqual(op('adr_cases.firm_response_due','gte',today));expect(ops).toContainEqual(op('adr_cases.firm_response_due','lte','2026-11-23'));});
+ it('recent assignment uses stored reassigned after value and seven local dates',()=>{const ops=dayFilterOps('assigned',user,today,zone);expect(ops).toContainEqual(op('complaint_events.kind','eq','reassigned'));expect(ops).toContainEqual(op('complaint_events.detail->>after','eq',user));expect(ops).toContainEqual(op('complaint_events.created_at','gte','2026-11-09T23:00:00.000Z'));});
+ it('vulnerable uses open caseload flag',()=>expect(dayFilterOps('vulnerable',user,today,zone)).toContainEqual(op('vulnerable','eq',true)));
+ it.each(['agent','complaints_manager','org_admin'] as const)('allows %s personal panel without team scope',role=>{expect(canUseMyDay(role)).toBe(true);expect(dayLink('open',user,today,zone).agent).toBe(user);});
+ it('keeps default landing queue except for Agents',()=>{expect(defaultLanding('agent')).toBe('/app/my-day');for(const role of ['org_admin','complaints_manager','qa_reviewer','read_only'] as const)expect(defaultLanding(role)).toBe('/app');expect(canUseMyDay('read_only')).toBe(false);expect(canUseMyDay('qa_reviewer')).toBe(false);});
+ it.each(DAY_SECTIONS)('round-trips filter-only %s link without ids',section=>{const s=parseQueueSearch(dayLink(section,user,today,zone));expect(s.day_section).toBe(section);expect(s.day_date).toBe(today);expect(s.day_zone).toBe(zone);expect(s.report_ids).toBeUndefined();});
+ it('rejects invalid personal section dates and time zone',()=>{const s=parseQueueSearch({day_section:'other',day_date:'2026-02-31',day_zone:'invalid'});expect(s.day_section).toBeUndefined();expect(s.day_date).toBeUndefined();expect(s.day_zone).toBeUndefined();});
+ it('uses child inner joins rather than complaint ID lists',()=>{expect(daySelect('id','adr')).toContain('adr_cases!inner');expect(daySelect('id','returned')).toContain('qa_reviews!inner');expect(daySelect('id','assigned')).toContain('complaint_events!inner');});
+ it('masks returned QA notes for non-admins',()=>expect(maskAuditValue('Email x@example.com or +33 6 12 34 56 78','comments',false)).toBe('Email •••• or ••••'));
+ it('g d is role-aware and blocked during typing',()=>{const key=(key:string)=>({key,ctrlKey:false,metaKey:false,altKey:false,repeat:false});for(const role of ['agent','complaints_manager','org_admin'] as const){const h=createShortcutHandler(role);h(key('g'),false,0);expect(h(key('d'),false,1)).toBe('day');}const h=createShortcutHandler('read_only');h(key('g'),false,0);expect(h(key('d'),false,1)).toBeNull();const a=createShortcutHandler('agent');a(key('g'),false,0);expect(a(key('d'),true,1)).toBeNull();});
+ it('date arithmetic survives year and DST boundaries',()=>expect(addDay('2026-12-31',1)).toBe('2027-01-01'));
+});

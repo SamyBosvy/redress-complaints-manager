@@ -7,7 +7,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouter } from 
 import {useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
-import { BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck, Settings, UserRound, Menu, ChevronsUpDown } from "lucide-react";
+import { CalendarDays, BarChart3, CheckCheck, FilePlus, FileText, History, Inbox, LogOut, Globe, ShieldCheck, Settings, UserRound, Menu, ChevronsUpDown } from "lucide-react";
 import { membershipQuery, useMembership, ROLE_LABELS, selectOrganisation } from "@/lib/org";
 import {clearAndSignOut} from '@/lib/sign-out';
 import {securityDestination} from '@/lib/workspace-access';
@@ -70,7 +70,7 @@ function AppLayout() {
     finally {setBusy(false);}
   }
 
-  const icons = { queue: Inbox, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
+  const icons = { day: CalendarDays, queue: Inbox, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
   const fullName = m?.user.user_metadata?.['full_name'];
   const displayName = typeof fullName === 'string' && fullName.trim()
     ? fullName.trim() : m?.user.email ?? 'Account';

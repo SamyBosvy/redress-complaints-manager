@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { membershipQuery } from '@/lib/org';
+import { defaultLanding } from '@/lib/my-day';
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): { mode?: "signup" } => (s["mode"] === "signup" ? { mode: "signup" } : {}),
@@ -38,6 +41,10 @@ function AuthPage() {
   const [resetEmail,setResetEmail] = useState('');
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const navigate = useNavigate();
+  const qc=useQueryClient();
+  const membership=useQuery(membershipQuery);
+  useEffect(()=>{if(membership.data?.org)void navigate({to:defaultLanding(membership.data.role),replace:true});},[membership.data?.org?.id,membership.data?.role,navigate]);
+  async function goHome(){await qc.invalidateQueries({queryKey:['membership']});const m=await qc.ensureQueryData(membershipQuery);await navigate({to:defaultLanding(m?.role)});}
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +67,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
         if (error) throw error;
       }
-      navigate({ to: "/app" });
+      await goHome();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed");
     } finally {
@@ -72,7 +79,7 @@ function AuthPage() {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
     if (result.error) { toast.error("Google sign-in failed"); return; }
     if (result.redirected) return;
-    navigate({ to: "/app" });
+    await goHome();
   }
 
   async function requestReset(e:React.FormEvent) {

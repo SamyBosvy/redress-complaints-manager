@@ -4,10 +4,10 @@ import type { AppRole } from './org';
 
 describe('app shell navigation visibility', () => {
   const cases: [AppRole, string[][]][] = [
-    ['org_admin', [['Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Public form', 'Privacy & data', 'Settings']]],
-    ['complaints_manager', [['Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Settings']]],
-    ['agent', [['Queue', 'New complaint', 'QA review'], ['Templates']]],
-    ['qa_reviewer', [['Queue', 'New complaint', 'QA review'], ['Templates']]],
+    ['org_admin', [['My day', 'Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Public form', 'Privacy & data', 'Settings']]],
+    ['complaints_manager', [['My day', 'Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Settings']]],
+    ['agent', [['My day', 'Queue', 'New complaint', 'QA review'], ['Templates']]],
+    ['qa_reviewer', [[ 'Queue', 'New complaint', 'QA review'], ['Templates']]],
     ['read_only', [['Queue', 'QA review'], ['Reports', 'Audit log']]],
   ];
   it.each(cases)('keeps existing links and exposes role-scoped QA analytics for %s', (role, expected) => {

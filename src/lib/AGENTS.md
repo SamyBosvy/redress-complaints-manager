@@ -37,3 +37,6 @@
 
 ## QA analytics
 - QA analytics shares pure attribution/local-date metrics and URL predicates; org-scoped review reads paginate with stable ordering, available-column filters run in PostgREST and derived handler filters run after paging. Why: exact scalable drill-downs without schema or four-eyes changes.
+
+## Personal caseload
+- My day uses caller-scoped queue predicates shared with filter-only queue links; only acknowledgement evidence is derived across up to 200 candidates with paged letters/events. Why: bounded personal reads without migrations or hidden caps.

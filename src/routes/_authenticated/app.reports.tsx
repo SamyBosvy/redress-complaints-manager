@@ -69,6 +69,8 @@ function Reports() {
         out.push([PRODUCTS[p as keyof typeof PRODUCTS], CATEGORIES[c as keyof typeof CATEGORIES], rs.length, count("upheld"), count("partially_upheld"), count("not_upheld"), count("withdrawn"), b.withinPct ?? "", formatCurrencyTotals(b.redress)]);
       }
     }
+    out.push([], ["By root cause"], ["Root cause", "Total", "Resolved", "Within deadline %", "Upheld / partial %", "Redress + goodwill"]);
+    for(const r of breakdown(rows,row=>row.root_cause_category)) out.push([r.key,r.total,r.resolved,r.withinPct??"",r.upheldPct??"",formatCurrencyTotals(r.redress)]);
     return out;
   }
 

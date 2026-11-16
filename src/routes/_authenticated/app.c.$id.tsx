@@ -1,3 +1,7 @@
+import { EditComplaintDetails } from '@/components/edit-complaint-details';
+import { canEditDetails } from '@/lib/complaint-details';
+import { rootCausesQuery,type RootCause } from '@/lib/root-causes';
+import { RootCauseSelect } from '@/components/root-cause-select';
 import { CloseChecklistDialog } from '@/components/close-checklist';
 import { nextStatuses, transitionRequirement, workflowError } from '@/lib/workflow';
 import { AccessibleField } from '@/components/accessible-field';
@@ -40,7 +44,7 @@ const caseQuery = (id: string) =>
       ]);
       if (c.error) throw c.error;
       if (ev.error) throw ev.error;
-      const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing,withdrawal_reason,redress_none,goodwill_none,adr_rights_given').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
+      const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing,withdrawal_reason,redress_none,goodwill_none,adr_rights_given,root_cause_id').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
       if(privacyError)throw privacyError;
       return { c: {...c.data,...privacy}, events: ev.data };
     },
@@ -63,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/app/c/$id")({
 });
 
 type Patch = Database["public"]["Tables"]["complaints"]["Update"];
-type Detail = { channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; path?: string; name?: string };
+type Detail = { changes?: Record<string,{old:unknown;new:unknown}>; channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; path?: string; name?: string };
 
 const OUTCOMES = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" } as const;
 
@@ -74,6 +78,8 @@ function CaseView() {
   const qc = useQueryClient();
   const { data: { c, events } } = useSuspenseQuery(caseQuery(id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
+  const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
+  const {data:configuredCountries=[]}=useQuery(countriesQuery(orgId));
   const nameOf = (u: string | null | undefined) => (u ? members.find((x) => x.user_id === u)?.name ?? "Unknown user" : "Unassigned");
   const canEdit = !c.anonymised_at && !c.privacy_processing && m.role !== "read_only" && (m.role !== "agent" || !c.assigned_to || c.assigned_to === m.user.id);
   const [closeOpen,setCloseOpen] = useState(false);
@@ -146,7 +152,7 @@ function CaseView() {
           {c.legal_hold && <p className="mt-1 text-sm text-warning">Legal hold · Excluded from retention anonymisation</p>}
           <p className="mt-1 text-sm text-muted-foreground">{CATEGORIES[c.category!]} · {PRODUCTS[c.product!]} · {COUNTRIES[c.country_code!] ?? c.country_code}</p>
         </div>
-        {canEdit && <Button onClick={() => setLetterOpen(true)}>Generate letter</Button>}
+        <div className="flex flex-wrap gap-2">{c.id && c.org_id && canEditDetails(m.role,m.user.id,c) && <EditComplaintDetails c={{...c,id:c.id,org_id:c.org_id}} countries={configuredCountries.map(x=>x.country_code)} onSaved={refresh}/>} {canEdit && <Button onClick={() => setLetterOpen(true)}>Generate letter</Button>}</div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -190,7 +196,7 @@ function CaseView() {
             </>}
           </Card>
 
-          <OutcomeCard c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
+          <OutcomeCard causes={causes} c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
           <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
           <Card title="Internal notes and attachments">
@@ -242,7 +248,7 @@ function CaseView() {
       </div>
 
       {nextOpen && <Dialog open onOpenChange={setNextOpen}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>Next step</DialogTitle></DialogHeader>{nextStatuses(status,m.role,m.org?.qa_required ?? false,canEdit).map(next=>{const requirement=transitionRequirement(next,status,letters,c.holding_reason);return <div key={next} className="space-y-1"><Button className="w-full whitespace-normal" variant="outline" disabled={transitionBusy || (next!=='closed' && (!!requirement || lettersResult.isPending || lettersResult.isError))} onClick={async()=>{if(next==='closed'){setNextOpen(false);setCloseOpen(true);return;}setTransitionBusy(true);try{if(await update({status:next}))setNextOpen(false);}finally{setTransitionBusy(false);}}}>{STATUSES[next]}</Button>{requirement && <p className="text-sm text-muted-foreground">{requirement}</p>}</div>;})}</DialogContent></Dialog>}
-      {closeOpen && <CloseChecklistDialog c={c} finalSent={status==='final_response_sent' && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
+      {closeOpen && <CloseChecklistDialog causes={causes} c={c} finalSent={status==='final_response_sent' && letters.some(l=>l.kind.startsWith('final_') && l.status==='sent')} baseCurrency={m.org?.base_currency ?? 'EUR'} onClose={()=>setCloseOpen(false)} onSave={update}/>}
       {letterOpen && <LetterDialog c={c} onClose={() => setLetterOpen(false)} onSent={refresh} />}
     </div>
   );
@@ -252,6 +258,7 @@ type Ev = { kind: string; detail: unknown };
 function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
+    case "details_edited": return <div><p>Details updated: {d.reason}</p><ul className="mt-1 space-y-1">{Object.entries(d.changes??{}).map(([key,value])=><li key={key} className="break-words">{key.replace(/_/g," ")}: {String(value.old??"—")} → {String(value.new??"—")}</li>)}</ul></div>;
     case "created": return <p>Complaint logged via {CHANNELS[d.channel as keyof typeof CHANNELS] ?? d.channel}</p>;
     case "status": return <p>Status: {STATUSES[d.before as Status]} → <strong>{STATUSES[d.after as Status]}</strong></p>;
     case "reassigned": return <p>Reassigned: {nameOf(d.before)} → <strong>{nameOf(d.after)}</strong></p>;
@@ -266,11 +273,11 @@ function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (
   }
 }
 
-function OutcomeCard({ c, baseCurrency, canEdit, onSave }: { c: any; baseCurrency: string; canEdit: boolean; onSave: (p: Patch) => Promise<boolean> }) {
+function OutcomeCard({ c, causes, baseCurrency, canEdit, onSave }: { causes:RootCause[]; c: any; baseCurrency: string; canEdit: boolean; onSave: (p: Patch) => Promise<boolean> }) {
   const [v, setV] = useState({
     outcome: c.outcome ?? "", redress_amount: c.redress_amount ?? "", redress_currency: c.redress_currency ?? baseCurrency,
     goodwill_amount: c.goodwill_amount ?? "", goodwill_currency: c.goodwill_currency ?? baseCurrency,
-    root_cause_category: c.root_cause_category ?? "", root_cause_note: c.root_cause_note ?? "",
+    root_cause_id: c.root_cause_id ?? "", root_cause_note: c.root_cause_note ?? "",
   });
   const num = (x: string | number) => (x === "" ? null : Math.max(0, Number(x)));
   return (
@@ -282,7 +289,7 @@ function OutcomeCard({ c, baseCurrency, canEdit, onSave }: { c: any; baseCurrenc
             <SelectContent>{Object.entries(OUTCOMES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
-        <Field label="Root cause category"><Input disabled={!canEdit} value={v.root_cause_category} maxLength={100} onChange={(e) => setV({ ...v, root_cause_category: e.target.value })} /></Field>
+        <Field label="Root cause"><RootCauseSelect disabled={!canEdit} value={v.root_cause_id} legacy={c.root_cause_category} causes={causes} onChange={value=>setV({...v,root_cause_id:value})}/></Field>
         <Field label="Redress paid">
           <div className="flex gap-2">
             <Input type="number" min={0} step="0.01" className="tabular" disabled={!canEdit} value={v.redress_amount} onChange={(e) => setV({ ...v, redress_amount: e.target.value })} />
@@ -309,7 +316,7 @@ function OutcomeCard({ c, baseCurrency, canEdit, onSave }: { c: any; baseCurrenc
             if (await onSave({
               outcome: (v.outcome || null) as keyof typeof OUTCOMES | null, redress_amount: num(v.redress_amount), redress_currency: v.redress_amount === "" ? null : v.redress_currency || null,
               goodwill_amount: num(v.goodwill_amount), goodwill_currency: v.goodwill_amount === "" ? null : v.goodwill_currency || null,
-              redress_none: false, goodwill_none: false, root_cause_category: v.root_cause_category || null, root_cause_note: v.root_cause_note || null,
+              redress_none: false, goodwill_none: false, root_cause_id: v.root_cause_id || null, root_cause_note: v.root_cause_note || null,
             })) toast.success("Outcome saved.");
           }}>Save outcome</Button>
         </div>

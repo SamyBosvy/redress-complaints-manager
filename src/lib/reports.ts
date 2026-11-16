@@ -11,12 +11,14 @@ export type ReportRow = Pick<
 >;
 
 const COLS =
-  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, received_at, closed_at, final_due, extended_due, holding_sent_at";
+  "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at";
 
 export const reportQuery = (orgId: string, from: string, to: string) =>
   queryOptions({
     queryKey: ["report", orgId, from, to],
     queryFn: async () => {
+      const {data:causes,error:causeError}=await supabase.from('root_causes').select('id,name').eq('org_id',orgId);
+      if(causeError)throw causeError;
       const { data, error } = await supabase
         .from("complaints")
         .select(COLS)
@@ -26,7 +28,7 @@ export const reportQuery = (orgId: string, from: string, to: string) =>
         .order("received_at", { ascending: false })
         .limit(5000);
       if (error) throw error;
-      return data as ReportRow[];
+      return data.map(row=>({...row,root_cause_category:causes.find(c=>c.id===row.root_cause_id)?.name??row.root_cause_category})) as ReportRow[];
     },
   });
 

@@ -23,7 +23,7 @@ export function fourEyes(user: string, author: string | null | undefined, handle
 export type CloseChecklist = { outcome: string; rootCause: string; withdrawalReason: string; finalSent: boolean; adr: boolean; redressNone: boolean; goodwillNone: boolean; redress: string; goodwill: string; redressCurrency: string; goodwillCurrency: string };
 const paymentComplete = (none: boolean, amount: string, currency: string) => none ? amount === '' : amount.trim() !== '' && Number.isFinite(Number(amount)) && Number(amount) >= 0 && CURRENCIES.some(code => code === currency);
 export function closeComplete(c: CloseChecklist) {
-  return ['upheld','partially_upheld','not_upheld','withdrawn'].includes(c.outcome) && !!c.rootCause.trim() && c.adr && (c.outcome === 'withdrawn' ? !!c.withdrawalReason.trim() : c.finalSent) && paymentComplete(c.redressNone,c.redress,c.redressCurrency) && paymentComplete(c.goodwillNone,c.goodwill,c.goodwillCurrency);
+  return ['upheld','partially_upheld','not_upheld','withdrawn'].includes(c.outcome) && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.rootCause) && c.adr && (c.outcome === 'withdrawn' ? !!c.withdrawalReason.trim() : c.finalSent) && paymentComplete(c.redressNone,c.redress,c.redressCurrency) && paymentComplete(c.goodwillNone,c.goodwill,c.goodwillCurrency);
 }
 export function transitionRequirement(next: Status, current: Status, letters: readonly { kind: string; status: string }[], reason: string | null | undefined) {
   const sent = (kind: string) => letters.some(l => l.kind === kind && l.status === 'sent');

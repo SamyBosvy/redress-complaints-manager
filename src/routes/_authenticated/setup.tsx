@@ -133,7 +133,7 @@ function Setup() {
   async function finish() {
     setBusy(true);
     try {
-      let orgId = m?.org?.id;
+      let orgId = m?.org?.id ?? (draftOrg.current==='new'?undefined:draftOrg.current);
       if (!orgId) {
         const { data, error } = await supabase.rpc("create_organisation", { _legal_name: entity.name.trim() });
         if (error) throw error;

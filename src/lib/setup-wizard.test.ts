@@ -10,7 +10,7 @@ describe('setup country choices',()=>{
  it('selects exactly EU plus Iceland Liechtenstein Norway, not UK/Switzerland',()=>{expect([...EEA_COUNTRIES].sort()).toEqual([...EU_COUNTRIES,'IS','LI','NO'].sort());expect(new Set(EEA_COUNTRIES).size).toBe(30);expect(EEA_COUNTRIES).not.toContain('GB');expect(EEA_COUNTRIES).not.toContain('CH');});
 });
 describe('ADR copy and deferral',()=>{
- it('copies only supplied ADR fields without mutating the source or inventing values',()=>{const copied=copyAdr(draft.adr,'FR','PL');expect(copied.PL).toEqual(draft.adr.FR);expect(copied.PL).not.toBe(draft.adr.FR);expect(draft.adr.PL).toBeUndefined();expect(copyAdr(draft.adr,'XX','PL')).toBe(draft.adr);});
+ it('copies only supplied ADR fields without mutating the source or inventing values',()=>{const copied=copyAdr(draft.adr,'FR','PL');expect(copied['PL']).toEqual(draft.adr['FR']);expect(copied['PL']).not.toBe(draft.adr['FR']);expect(draft.adr['PL']).toBeUndefined();expect(copyAdr(draft.adr,'XX','PL')).toBe(draft.adr);});
  it('requires name plus contact or website unless the UI explicitly defers',()=>{expect(validAdr(undefined)).toBe(false);expect(validAdr({name:'Mediator',contact:' ',website:''})).toBe(false);expect(validAdr({name:' ',contact:'contact',website:''})).toBe(false);expect(validAdr({name:'Mediator',contact:'contact',website:''})).toBe(true);expect(validAdr({name:'Mediator',contact:'',website:'https://example.org'})).toBe(true);});
 });
 describe('wizard drafts',()=>{

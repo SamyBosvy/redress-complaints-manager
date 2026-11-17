@@ -2,7 +2,7 @@ import type { AppRole } from './org';
 import { inviteState } from './settings';
 
 export const SETUP_STEPS = [
-  {id:'firm',label:'Firm details complete',why:'Use the correct firm identity in customer responses.',to:'/app/settings/'},
+  {id:'firm',label:'Firm details complete',why:'Use the correct firm identity in customer responses.',to:'/app/settings'},
   {id:'countries',label:'Countries & ADR bodies checked',why:'Give customers the right independent dispute-resolution contact.',to:'/app/settings/countries'},
   {id:'calendar',label:'Business calendar loaded',why:'Calculate deadlines using each country’s public holidays.',to:'/app/settings/calendars'},
   {id:'team',label:'Team invited',why:'Share complaint handling with another member of your firm.',to:'/app/settings/users'},
@@ -35,7 +35,7 @@ export function detectSetup(e:SetupEvidence,year:number,now=Date.now()){
  const saves=kinds.map(kind=>e.templates?.filter(t=>t.kind===kind&&t.language===language).flatMap(t=>t.template_versions.filter(v=>v.saved_by!==null).map(v=>v.saved_at)).sort()[0]);
  const root=e.rootAudit?.find(a=>a.actor!==null);
  const qa=e.qaAudit?.find(qaReviewed);
- const results:Record<SetupId,{done:boolean;date?:string;unknown?:boolean;optional?:boolean}>={
+ const results:Record<SetupId,{done:boolean;date?:string|undefined;unknown?:boolean;optional?:boolean}>={
   firm:{done:[e.org.legal_name,e.org.firm_address,e.org.complaints_email,e.org.time_zone].every(text)},
   countries:{done:Boolean(e.countries?.length)&&Boolean(e.countries?.every(c=>text(c.adr_name)&&(text(c.adr_contact)||text(c.adr_website)))),unknown:e.countries===null},
   calendar:{done:Boolean(e.countries?.length)&&Boolean(e.countries?.every(c=>e.holidays?.some(h=>h.country_code===c.country_code&&h.holiday_date.startsWith(`${year}-`)))),unknown:e.holidays===null||e.countries===null},

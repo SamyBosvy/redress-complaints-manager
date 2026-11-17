@@ -40,3 +40,6 @@
 
 ## Personal caseload
 - My day uses caller-scoped queue predicates shared with filter-only queue links; only acknowledgement evidence is derived across up to 200 candidates with paged letters/events. Why: bounded personal reads without migrations or hidden caps.
+
+## Setup progress
+- Setup progress uses read-only org-scoped existing evidence, treats inaccessible evidence as unknown, and stores dismissal per user/org locally; unchanged QA values cannot prove review, so QA is optional. Why: no manual completion or new permissions/schema, and no false setup claims.

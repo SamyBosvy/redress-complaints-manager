@@ -1,4 +1,5 @@
 import { DAY_LABELS } from '@/lib/my-day';
+import { SetupProgress } from '@/components/setup-progress';
 import { EmptyState } from '@/components/empty-state';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -158,6 +159,7 @@ function Queue() {
 
   return (
     <div className="mx-auto max-w-7xl">
+      <SetupProgress />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Queue</h1>

@@ -12,7 +12,7 @@ export const onboardingQuery=(org:Organisation,qc:QueryClient,year:number)=>quer
   const [settings,team,templates,rootAudit,qaAudit,form,complaint]=await Promise.all([
    qc.fetchQuery(settingsQuery(org.id)).catch(()=>null),
    (async()=>{const [members,invites]=await Promise.all([supabase.from('org_members').select('active').eq('org_id',org.id),supabase.from('org_invites').select('accepted_at,revoked_at,expires_at').eq('org_id',org.id).is('accepted_at',null).is('revoked_at',null).gt('expires_at',new Date().toISOString()).limit(1)]);return members.error||invites.error?null:{members:members.data??[],invites:invites.data??[]};})(),
-   Promise.all(['acknowledgement','holding','final_upheld','final_partially_upheld','final_not_upheld'].map(async kind=>{
+   Promise.all((['acknowledgement','holding','final_upheld','final_partially_upheld','final_not_upheld'] as const).map(async kind=>{
     const r=await supabase.from('template_versions').select('saved_at,saved_by,templates!inner(kind,language)').eq('org_id',org.id).eq('templates.kind',kind).eq('templates.language',language).not('saved_by','is',null).order('saved_at').limit(1);
     if(r.error)throw r.error;return {kind,language,template_versions:(r.data??[]).map(v=>({saved_at:v.saved_at,saved_by:v.saved_by}))};
    })).catch(()=>null),

@@ -28,7 +28,7 @@ export function setupRole(role:AppRole|null|undefined){return role==='org_admin'
 export function firmMainLanguage(country:string|null){return ({FR:'fr',PL:'pl',PT:'pt',ES:'es',NL:'nl'} as Record<string,string>)[country??'']??'en';}
 const text=(v:string|null|undefined)=>Boolean(v?.trim());
 const record=(v:unknown):Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
-export function qaReviewed(a:Audit){const before=record(a.before),after=record(a.after);return a.actor!==null&&a.action==='UPDATE'&&['qa_required','qa_sample_pct'].some(k=>Object.hasOwn(before,k)&&Object.hasOwn(after,k)&&before[k]!==after[k]);}
+export function qaReviewed(a:Audit){const before=record(a.before),after=record(a.after);return a.actor!==null&&a.action==='update'&&['qa_required','qa_sample_pct'].some(k=>Object.hasOwn(before,k)&&Object.hasOwn(after,k)&&before[k]!==after[k]);}
 export function detectSetup(e:SetupEvidence,year:number,now=Date.now()){
  const language=firmMainLanguage(e.org.home_country);
  const kinds=['acknowledgement','holding','final_upheld','final_partially_upheld','final_not_upheld'];

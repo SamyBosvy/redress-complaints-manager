@@ -1,5 +1,7 @@
 # Redress roadmap
 
+- [ ] Item #50: setup wizard search/ADR helpers, scoped draft resume, progress/leave warnings and time-zone choice; lowercase QA audit detection. No migrations, billing or safeguard changes.
+
 - [x] Item #48: auto-detected onboarding checklist on queue/My day, admin actions/manager read-only progress, user/org hide and menu restore, completion message and TEST intake prefill; 586/586 tests passed in UTC and Sydney, automatic typecheck/build passed. QA review optional without changed-field evidence; template main language inferred from home country. No migrations, billing, RLS, triggers or guards changed.
 - [ ] Item #48 signed-in detection, links, hide/restore and phone/dark-mode verification — no auth users; session minting confirmed unavailable. Signed-out My day redirects to sign-in without runtime errors. Restricted evidence is shown as unavailable rather than completed.
 

@@ -17,7 +17,7 @@ export const onboardingQuery=(org:Organisation,qc:QueryClient,year:number)=>quer
     if(r.error)throw r.error;return {kind,language,template_versions:(r.data??[]).map(v=>({saved_at:v.saved_at,saved_by:v.saved_by}))};
    })).catch(()=>null),
    (async()=>{const r=await supabase.from('audit_log').select('actor,table_name,created_at,before,after,action').eq('org_id',org.id).eq('table_name','root_causes').not('actor','is',null).order('created_at').limit(1);return r.error?null:r.data;})(),
-   (async()=>{for(let from=0;;from+=200){const r=await supabase.from('audit_log').select('actor,table_name,created_at,before,after,action').eq('org_id',org.id).eq('table_name','organisations').eq('action','UPDATE').not('actor','is',null).order('created_at').order('id').range(from,from+199);if(r.error)return null;const match=r.data.find(qaReviewed);if(match)return [match];if(r.data.length<200)return [];}})(),
+   (async()=>{for(let from=0;;from+=200){const r=await supabase.from('audit_log').select('actor,table_name,created_at,before,after,action').eq('org_id',org.id).eq('table_name','organisations').eq('action','update').not('actor','is',null).order('created_at').order('id').range(from,from+199);if(r.error)return null;const match=r.data.find(qaReviewed);if(match)return [match];if(r.data.length<200)return [];}})(),
    (async()=>{const r=await supabase.from('public_complaint_forms').select('enabled,privacy_notice,updated_at').eq('org_id',org.id).maybeSingle();return r.error?undefined:r.data;})(),
    (async()=>{const r=await supabase.from('complaints').select('created_at').eq('org_id',org.id).order('created_at').limit(1).maybeSingle();return r.error?undefined:r.data;})(),
   ]);

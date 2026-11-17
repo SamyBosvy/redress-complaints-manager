@@ -1,5 +1,7 @@
 # Redress roadmap
 
+- [ ] Item #48: auto-detected onboarding checklist, queue/My day placement, persistent hide/restore, completion message and fixture tests; no migrations or billing/safeguard changes.
+
 - [x] Item #27: My day personal sections, Agent sign-in landing, g d, firm-local dates, filter-only queue links and two-minute visible-tab refresh; 569/569 tests passed in UTC and Sydney, automatic typecheck/build passed. No schema, billing, RLS, trigger or guard changes. Acknowledgement evidence is bounded to 200 candidate cases and labelled when incomplete.
 - [ ] Item #27 signed-in caseload, child-table drill-downs, keyboard and mobile verification — no auth users; session minting confirmed unavailable. Signed-out /app/my-day redirects to /auth with no runtime errors.
 

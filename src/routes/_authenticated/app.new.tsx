@@ -1,4 +1,5 @@
 import { AccessibleField } from '@/components/accessible-field';
+import { TEST_COMPLAINT } from '@/lib/onboarding';
 import { DuplicateWarning, useDuplicateWarning } from '@/components/customer-history';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, countriesQuery, membersQuery } from "@/lib/complaints";
 
 export const Route = createFileRoute("/_authenticated/app/new")({
+  validateSearch: (search:Record<string,unknown>):{test?:boolean} => search['test']===true||search['test']==='true'?{test:true}:{},
   loader: async ({ context }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     await Promise.all([
@@ -60,11 +62,12 @@ function NewComplaint() {
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const test = Route.useSearch().test === true;
   const [busy, setBusy] = useState(false);
   const [v, setV] = useState({
     received_at: nowLocal(), channel: "", country_code: countries.length === 1 ? countries[0]!.country_code : "",
-    language: "en", complainant_name: "", complainant_email: "", complainant_phone: "", customer_ref: "",
-    vulnerable: false, vulnerable_note: "", product: "", category: "", summary: "", desired_outcome: "",
+    language: "en", complainant_name: test?TEST_COMPLAINT.complainant_name:"", complainant_email: "", complainant_phone: "", customer_ref: test?TEST_COMPLAINT.customer_ref:"",
+    vulnerable: false, vulnerable_note: "", product: "", category: "", summary: test?TEST_COMPLAINT.summary:"", desired_outcome: "",
     assigned_to: m.role === "agent" ? m.user.id : "none", priority: "standard",
   });
   const set = (k: keyof typeof v) => (val: string | boolean) => setV((p) => ({ ...p, [k]: val }));
@@ -91,6 +94,7 @@ function NewComplaint() {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["queue"] });
+    await qc.invalidateQueries({ queryKey: ["setup-progress",orgId] });
     toast.success(`Complaint ${data.reference} logged.`);
     navigate({ to: "/app" });
   }

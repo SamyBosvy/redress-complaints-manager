@@ -1,4 +1,7 @@
 import { Suspense } from 'react';
+import { SetupProgress } from '@/components/setup-progress';
+import { setupRole } from '@/lib/onboarding';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { TrialBanner } from '@/components/trial-banner';
 import { getDensityPreference, setDensityPreference, type DensityPreference } from '@/lib/density';
@@ -40,6 +43,7 @@ function AppLayout() {
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>('system');
   const [density, setDensity] = useState<DensityPreference>('comfortable');
   useEffect(() => {
@@ -127,6 +131,7 @@ function AppLayout() {
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild className="min-h-11"><Link to="/account" onClick={() => setMenuOpen(false)}><UserRound aria-hidden="true" />Account</Link></DropdownMenuItem>
+          {setupRole(m?.role)&&<DropdownMenuItem className="min-h-11" onSelect={()=>{setMenuOpen(false);setSetupOpen(true);}}><CheckCheck aria-hidden="true"/>Setup progress</DropdownMenuItem>}
           <DropdownMenuItem className="min-h-11" disabled={busy} onSelect={() => { void signOut(); }}><LogOut aria-hidden="true" />Sign out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -163,6 +168,7 @@ function AppLayout() {
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
       <WorkspaceCommand role={m?.role} orgId={m?.org?.id ?? ''} userId={m?.user.id ?? ''} theme={theme} changeTheme={changeTheme} density={density} changeDensity={changeDensity} open={commandOpen} setOpen={setCommandOpen} />
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}><DialogContent aria-describedby={undefined} className="max-h-[90dvh] overflow-y-auto"><DialogTitle>Setup progress</DialogTitle>{setupOpen&&<div onClick={e=>{if((e.target as HTMLElement).closest('a'))setSetupOpen(false);}}><SetupProgress force /></div>}</DialogContent></Dialog>
     </div>
   );
 }

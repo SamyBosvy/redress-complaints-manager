@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { SetupProgress } from '@/components/setup-progress';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { membershipQuery, useMembership } from '@/lib/org';
@@ -27,6 +28,7 @@ function DayContent({org,user,zone,admin,name}:{org:string;user:string;zone:stri
  useEffect(()=>{const update=()=>{if(document.visibilityState==='visible')setToday(dayContext(zone).today);};const timer=window.setInterval(update,120_000);document.addEventListener('visibilitychange',update);return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',update);};},[zone]);
  useEffect(()=>{const handler=(e:KeyboardEvent)=>{if(shortcutsBlocked(e.target)||e.ctrlKey||e.metaKey||e.altKey||e.repeat||!['j','k'].includes(e.key.toLowerCase()))return;const rows=Array.from(container.current?.querySelectorAll<HTMLAnchorElement>('[data-day-row]')??[]);const i=rows.findIndex(r=>r===document.activeElement||r.contains(document.activeElement));const next=i<0?(e.key.toLowerCase()==='j'?0:rows.length-1):Math.max(0,Math.min(rows.length-1,i+(e.key.toLowerCase()==='j'?1:-1)));if(rows[next]){e.preventDefault();rows[next]?.focus();rows[next]?.scrollIntoView({block:'nearest'});}};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);},[]);
  return <div ref={container} className="mx-auto min-w-0 max-w-6xl">
+  <SetupProgress />
   <header><p className="text-sm text-muted-foreground">Hello{name?`, ${name}`:''}</p><h1 className="mt-1 text-2xl font-semibold">My day</h1><p className="mt-1 text-sm text-muted-foreground">{new Date(today+'T12:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></header>
   <dl className="my-6 grid grid-cols-3 gap-3 border-y py-4">{(['open','overdue','week'] as const).map(s=><div key={s}><dt className="text-xs text-muted-foreground">{DAY_LABELS[s]}</dt><dd className="mt-1 text-2xl font-semibold tabular"><Link to="/app" search={dayLink(s,user,today,zone)} className="hover:text-primary">{data[s].total}</Link></dd></div>)}</dl>
   {isRefetchError&&<p role="status" className="mb-4 text-sm text-destructive">Could not refresh reminders. Your last results are still shown.</p>}

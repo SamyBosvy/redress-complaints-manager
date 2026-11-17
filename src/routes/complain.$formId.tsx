@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { getPublicForm, submitPublicComplaint } from '@/lib/public-forms.functions';
 import { publicComplaintSchema } from '@/lib/public-forms';
 import type { ZodIssue } from 'zod';
-import { PUBLIC_FORM_I18N, NATIVE_LANGUAGE_NAMES, resolvePublicFormLanguage, isPublicFormLanguage, interpolate, publicFormIssueMessage, publicFormServerError } from '@/lib/public-form-i18n';
+import { PUBLIC_FORM_I18N, NATIVE_LANGUAGE_NAMES, resolvePublicFormLanguage, isPublicFormLanguage, interpolate, INTAKE_CORRESPONDENCE_LANGUAGES, publicFormIssueMessage, publicFormServerError } from '@/lib/public-form-i18n';
 
 export const Route = createFileRoute('/complain/$formId')({
   validateSearch: (search: Record<string, unknown>) => ({ embed: search['embed'] === '1' || search['embed'] === 1 ? '1' : undefined, lang: typeof search['lang'] === 'string' ? search['lang'] : search['lang'] === undefined ? undefined : '' }),
@@ -27,6 +27,8 @@ export const Route = createFileRoute('/complain/$formId')({
   },
   component: PublicComplaint,
 });
+// The hosted intake routine accepts only the original correspondence languages; others default to English.
+function correspondenceDefault(lang: string) { return (INTAKE_CORRESPONDENCE_LANGUAGES as readonly string[]).includes(lang) ? lang : 'en'; }
 function PublicComplaint() {
   const firm = Route.useLoaderData();
   const { lang } = Route.useSearch();
@@ -39,7 +41,7 @@ function PublicComplaint() {
   const [error, setError] = useState<ZodIssue | 'server' | null>(null);
   const [correspondenceChanged, setCorrespondenceChanged] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
-  const [v, setV] = useState({ complainant_name: '', complainant_email: '', complainant_phone: '', customer_ref: '', country_code: firm?.countries.length === 1 ? firm.countries[0] ?? '' : '', language: uiLanguage, product: '', category: '', summary: '', desired_outcome: '', vulnerable: false, vulnerable_note: '', privacy_acknowledged: false, website: '' });
+  const [v, setV] = useState({ complainant_name: '', complainant_email: '', complainant_phone: '', customer_ref: '', country_code: firm?.countries.length === 1 ? firm.countries[0] ?? '' : '', language: correspondenceDefault(uiLanguage), product: '', category: '', summary: '', desired_outcome: '', vulnerable: false, vulnerable_note: '', privacy_acknowledged: false, website: '' });
   const set = (key: keyof typeof v, value: string | boolean) => setV(p => ({ ...p, [key]: value }));
   useEffect(() => {
     if (lang === undefined) {
@@ -52,7 +54,7 @@ function PublicComplaint() {
     document.documentElement.lang = uiLanguage;
     return () => { document.documentElement.lang = previous; };
   }, [uiLanguage]);
-  useEffect(() => { if (!correspondenceChanged) setV(prev => ({ ...prev, language: uiLanguage })); }, [uiLanguage, correspondenceChanged]);
+  useEffect(() => { if (!correspondenceChanged) setV(prev => ({ ...prev, language: correspondenceDefault(uiLanguage) })); }, [uiLanguage, correspondenceChanged]);
   const switcher = <Choice id="ui-language" label={t.uiLanguage} placeholder={t.select} options={NATIVE_LANGUAGE_NAMES} value={uiLanguage} onChange={value => { if (isPublicFormLanguage(value)) void navigate({ search: prev => ({ ...prev, lang: value }), replace: true }); }} />;
   if (!firm) return <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-5 py-16"><div className="mb-8">{switcher}</div><h1 className="text-2xl font-semibold">{t.unavailable}</h1><p className="mt-3 text-muted-foreground">{t.contactFirm}</p></main>;
   async function submit(e: React.FormEvent) {
@@ -81,7 +83,7 @@ function PublicComplaint() {
           <Field id="email" label={t.email}><Input id="email" type="email" autoComplete="email" maxLength={255} value={v.complainant_email} onChange={e => set('complainant_email', e.target.value)} /></Field>
           <Field id="phone" label={t.phone}><Input id="phone" type="tel" autoComplete="tel" maxLength={50} value={v.complainant_phone} onChange={e => set('complainant_phone', e.target.value)} /></Field>
           <Choice placeholder={t.select} id="country" label={t.country} required options={countries} value={v.country_code} onChange={x => set('country_code', x)} />
-          <Choice placeholder={t.select} id="language" label={t.language} options={t.languages} value={v.language} onChange={x => { setCorrespondenceChanged(true); set('language', x); }} />
+          <Choice placeholder={t.select} id="language" label={t.language} options={Object.fromEntries(INTAKE_CORRESPONDENCE_LANGUAGES.map(code => [code, t.languages[code]]))} value={v.language} onChange={x => { setCorrespondenceChanged(true); set('language', x); }} />
         </div></fieldset>
         <fieldset className="mt-8 border-t pt-6"><legend className="pr-3 text-lg font-semibold">{t.complaint}</legend><div className="grid gap-5 sm:grid-cols-2">
           <Choice placeholder={t.select} id="product" label={t.product} required options={t.products} value={v.product} onChange={x => set('product', x)} />

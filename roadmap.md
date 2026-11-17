@@ -116,3 +116,5 @@
 
 - [x] Item #37: shared paginated audit history, URL/local-date filters, readable masked diffs and CSV/JSON export receipts; no database or billing changes.
 - [ ] Item #37 signed-in audit paging/export/mobile verification — requires a usable account and audit records.
+- [x] Item24: 8 more languages (form UI, case languages, import matching, template Start from English, English-fallback warning, PDF glyph test)
+- [ ] Item24 follow-up: one-line migration so public intake accepts de/it/lt/sv/da/cs/ro/ga as correspondence language (blocked: no-migration instruction)

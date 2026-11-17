@@ -30,6 +30,7 @@ import {DeadlineRecalculation} from '@/components/deadline-recalculation';
 import {canRecalculate} from '@/lib/workspace-access';
 import { membershipQuery, useMembership } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
+import { letterTemplateFor } from "@/lib/template-language";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
 import { TEMPLATE_KINDS, caseMergeValues, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
 import { templatesQuery } from "./app.templates";
@@ -402,7 +403,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
               <SelectContent>{Object.entries(LANGUAGES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          {!tpl && <p className="text-sm text-warning">No {LANGUAGES[lang as keyof typeof LANGUAGES]} version of this template yet. Showing English.</p>}
+          {letterTemplateFor(templates, kind, lang).warning && <p role="status" className="text-sm text-warning">{letterTemplateFor(templates, kind, lang).warning}</p>}
           {draft && <p className="text-sm text-warning">Draft — pending QA</p>}
           {finalBlocked && <p className="text-sm text-warning">A final response cannot be re-sent while awaiting QA or after it has been sent.</p>}
           {adrMissing && <p className="text-sm text-warning">This final response template has no ADR referral block.</p>}

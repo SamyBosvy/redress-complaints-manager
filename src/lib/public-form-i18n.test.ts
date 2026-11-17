@@ -29,10 +29,10 @@ describe('Public form languages', () => {
       expect(publicFormServerError(lang)).toBe(PUBLIC_FORM_I18N[lang].saveError);
     });
   }
-  it.each([['fr-BE', 'fr'], ['pt-BR', 'pt'], ['de', 'en'], ['PL-pl', 'pl']])('detects %s as %s', (locale, expected) => {
+  it.each([['fr-BE', 'fr'], ['pt-BR', 'pt'], ['de', 'de'], ['xx-YY', 'en'], ['PL-pl', 'pl']])('detects %s as %s', (locale, expected) => {
     expect(resolvePublicFormLanguage(undefined, [locale])).toBe(expected);
   });
-  it('uses the first supported browser language', () => expect(resolvePublicFormLanguage(undefined, ['de', 'nl-NL', 'fr'])).toBe('nl'));
+  it('uses the first supported browser language', () => expect(resolvePublicFormLanguage(undefined, ['xx', 'nl-NL', 'fr'])).toBe('nl'));
   it('gives the URL precedence over the browser', () => expect(resolvePublicFormLanguage('es', ['fr-BE'])).toBe('es'));
   it('falls back to English for an invalid URL language', () => expect(resolvePublicFormLanguage('xx', ['fr-BE'])).toBe('en'));
   it('falls back to English without browser languages', () => expect(resolvePublicFormLanguage()).toBe('en'));

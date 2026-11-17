@@ -23,7 +23,7 @@ export const STATUSES: Record<Status, string> = {
   holding_response_sent: "Holding response sent", pending_qa: "Pending QA", final_response_sent: "Final response sent", closed: "Closed",
   escalated_to_adr: "Escalated to ADR", reopened: "Reopened",
 };
-export const LANGUAGES = { en: "English", fr: "French", es: "Spanish", pt: "Portuguese", pl: "Polish", nl: "Dutch" } as const;
+export const LANGUAGES = { en: "English", fr: "French", es: "Spanish", pt: "Portuguese", pl: "Polish", nl: "Dutch", de: "German", it: "Italian", lt: "Lithuanian", sv: "Swedish", da: "Danish", cs: "Czech", ro: "Romanian", ga: "Irish" } as const;
 
 /** Statuses where the final-response clock is still running. */
 export const CLOCK_RUNNING: Status[] = ["received", "acknowledged", "under_investigation", "holding_response_sent", "pending_qa", "reopened"];

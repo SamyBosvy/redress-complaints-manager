@@ -50,3 +50,15 @@ describe('Unicode PDF embedding', () => {
     });
   }
 });
+describe('New-language letter glyphs', () => {
+  it('maps Lithuanian, Czech, Romanian comma-below, Nordic and Irish letters in a letter PDF', () => {
+    const sample = 'Ąčęėįšųūž ěščřžýáíé șțăîâ æøå áéíóú';
+    const pdf = letterPdf({ firm: 'Firm', address: null, date: '17/11/2026', subject: sample, body: sample }, font).output();
+    for (const ch of new Set(sample.replace(/\s/g, ''))) {
+      const hex = ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0');
+      expect(pdf, `${ch} U+${hex}`).toMatch(new RegExp(`<${hex}>`, 'i'));
+    }
+    // Romanian must use comma-below ș ț (U+0219/U+021B), not cedilla ş ţ.
+    expect(pdf).not.toMatch(/<015F>|<0163>/i);
+  });
+});

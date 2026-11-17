@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { membershipQuery, useMembership } from "@/lib/org";
+import { englishStarter, languageLabel } from "@/lib/template-language";
 import { LANGUAGES, countriesQuery, membersQuery } from "@/lib/complaints";
 import { MERGE_GROUPS, MERGE_LABELS, SAMPLE_VALUES, caseMergeValues, mergeTemplate, unknownPlaceholders, insertAtCursor, type MergeValues, TEMPLATE_KINDS, hasAdrBlock, isFinal, type TemplateKind } from "@/lib/letters";
 import { rootCausesQuery, rootCauseLabel } from '@/lib/root-causes';
@@ -59,9 +60,11 @@ function Templates() {
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const target = useRef<'subject'|'body'>('body');
+  const [fromEnglish, setFromEnglish] = useState(false);
+  const starter = !current && lang !== 'en' ? englishStarter(data, kind) : null;
   const dirty = restoredFrom !== null || subject !== baseline.subject || body !== baseline.body;
   useBlocker({ shouldBlockFn: () => dirty && !window.confirm('Discard unsaved template changes?'), enableBeforeUnload: dirty });
-  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId(''); }, [current?.id, kind, lang]);
+  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId('');setFromEnglish(false); }, [current?.id, kind, lang]);
   useEffect(() => {const timer=setTimeout(()=>setDebounced(caseSearch.trim()),250);return()=>clearTimeout(timer);},[caseSearch]);
   const {data:countries=[]}=useQuery(countriesQuery(orgId));
   const {data:members=[]}=useQuery(membersQuery(orgId));
@@ -125,7 +128,9 @@ function Templates() {
               );
             })}
           </div>
-          {!current && <EmptyState icon={FileText} title="No template for this kind and language" description={`${TEMPLATE_KINDS[kind]} · ${LANGUAGES[lang as keyof typeof LANGUAGES] ?? lang}`} />}
+          {!current && !fromEnglish && <EmptyState icon={FileText} title={`No template in ${languageLabel(lang)} yet`} description={`${TEMPLATE_KINDS[kind]} · ${languageLabel(lang)}`} />}
+          {!current && !fromEnglish && starter && canEdit && <Button className="mt-3" variant="outline" onClick={() => { setSubject(starter.subject); setBody(starter.body); setFromEnglish(true); }}>Start from English</Button>}
+          {fromEnglish && <div role="status" className="mt-4 flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"><AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-warning" />This is the English text — translate before saving.</div>}
           {missingAdr && (
             <div className="mt-4 flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
               <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-warning" />

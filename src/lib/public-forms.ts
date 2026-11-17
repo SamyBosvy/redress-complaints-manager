@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CATEGORIES, PRODUCTS } from './complaints';
-import { LANGUAGES } from './complaints';
+import { INTAKE_CORRESPONDENCE_LANGUAGES } from './public-form-i18n';
 
 export const DEFAULT_PRIVACY_NOTICE = 'We use the information you provide to investigate and respond to your complaint. Please do not include passwords, PINs or full card numbers. Contact the firm for its full privacy notice and information about your data protection rights.';
 export const publicComplaintSchema = z.object({
@@ -9,7 +9,7 @@ export const publicComplaintSchema = z.object({
   complainant_email: z.string().trim().email('Enter a valid email address').max(255).or(z.literal('')),
   complainant_phone: z.string().trim().max(50), customer_ref: z.string().trim().max(100),
   country_code: z.string().regex(/^[A-Z]{2}$/, 'Select your country'),
-  language: z.enum(Object.keys(LANGUAGES) as [keyof typeof LANGUAGES, ...Array<keyof typeof LANGUAGES>]),
+  language: z.enum(INTAKE_CORRESPONDENCE_LANGUAGES),
   product: z.enum(Object.keys(PRODUCTS) as [keyof typeof PRODUCTS, ...Array<keyof typeof PRODUCTS>]),
   category: z.enum(Object.keys(CATEGORIES) as [keyof typeof CATEGORIES, ...Array<keyof typeof CATEGORIES>]),
   summary: z.string().trim().min(1, 'Tell us about your complaint').max(10000),

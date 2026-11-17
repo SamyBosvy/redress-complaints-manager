@@ -1,10 +1,10 @@
 import { AccessibleField } from '@/components/accessible-field';
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate, useBlocker } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { holidayNote } from "@/lib/public-holidays";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { membershipQuery, useMembership } from "@/lib/org";
 import { securityDestination } from '@/lib/workspace-access';
@@ -12,7 +12,8 @@ import { COUNTRIES, LICENCE_LABELS } from "@/lib/countries";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { WIZARD_STEPS, EU_COUNTRIES, EEA_COUNTRIES, searchCountries, searchText, defaultTimeZone, timeZones, ADR_MEMBERS_URL, copyAdr, validAdr, saveWizardDraft, readWizardDraft, clearWizardDraft, wizardProgress, type WizardDraft } from '@/lib/setup-wizard';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -31,7 +32,7 @@ type Licence = keyof typeof LICENCE_LABELS;
 type Adr = { name: string; website: string; contact: string };
 type Holiday = { country: string; date: string; name: string };
 
-const STEPS = ["Legal entity", "Countries", "ADR bodies", "Calendars", "Deadline rules"];
+const STEPS = WIZARD_STEPS;
 
 function Setup() {
   const m = useMembership();
@@ -44,6 +45,7 @@ function Setup() {
     licence: (m?.org?.licence_type ?? "payment_institution") as Licence,
     home: m?.org?.home_country ?? "",
     regulator: m?.org?.regulator ?? "",
+    timeZone: m?.org?.time_zone ?? defaultTimeZone(m?.org?.home_country ?? ''),
   });
   const [countries, setCountries] = useState<string[]>([]);
   const [adr, setAdr] = useState<Record<string, Adr>>({});
@@ -51,6 +53,48 @@ function Setup() {
   const loadedHolidayCountries = useRef(new Set<string>());
   const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [rules, setRules] = useState({ name: "PSD2 payment services", ack: 1, final: 15, extended: 35 });
+  const [addLater, setAddLater] = useState<string[]>([]);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [zoneSearch, setZoneSearch] = useState('');
+  const [zones, setZones] = useState<string[]>([]);
+  const [resumeDraft, setResumeDraft] = useState<WizardDraft|null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+  const completed = useRef(false);
+  const draftOrg = useRef(m?.org?.id ?? 'new');
+  const userId = m?.user.id ?? '';
+  const [savedValues, setSavedValues] = useState('');
+  const values = JSON.stringify({entity,countries,adr,addLater,holidays,rules});
+  const dirty = draftReady && !completed.current && values !== savedValues;
+  const progress = wizardProgress(step);
+  useBlocker({shouldBlockFn:()=>dirty&&!window.confirm('Leave setup with unsaved changes?'),enableBeforeUnload:dirty});
+
+  useEffect(()=>{
+    setZones(timeZones());
+    if (!userId || (m?.org && m.role !== 'org_admin')) return;
+    try { setResumeDraft(readWizardDraft(window.localStorage,userId,draftOrg.current)); } catch { /* Storage may be blocked. */ }
+    setSavedValues(values);
+    setDraftReady(true);
+  },[userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function snapshot(nextStep:number):WizardDraft {
+    return {version:1,step:nextStep,entity,countries,adr,addLater,holidays,loadedHolidayCountries:[...loadedHolidayCountries.current],rules};
+  }
+  function persist(nextStep:number) {
+    try { saveWizardDraft(window.localStorage,userId,draftOrg.current,snapshot(nextStep)); } catch { /* Continue without resume. */ }
+    setSavedValues(values);
+  }
+  function resume() {
+    if (!resumeDraft) return;
+    const d=resumeDraft;
+    setStep(d.step);setEntity(d.entity);setCountries(d.countries);setAdr(d.adr);setAddLater(d.addLater);setHolidays(d.holidays);setRules(d.rules);
+    loadedHolidayCountries.current=new Set(d.loadedHolidayCountries);
+    setSavedValues(JSON.stringify({entity:d.entity,countries:d.countries,adr:d.adr,addLater:d.addLater,holidays:d.holidays,rules:d.rules}));
+    setResumeDraft(null);
+  }
+  function startAgain() {
+    try { clearWizardDraft(window.localStorage,userId,draftOrg.current); } catch { /* Continue without storage. */ }
+    setResumeDraft(null);
+  }
 
   const countryKey = countries.join(",");
   useEffect(() => {
@@ -79,7 +123,9 @@ function Setup() {
   function next() {
     if (step === 0 && (!entity.name.trim() || !entity.home)) { toast.error("Legal entity name and home country are required."); return; }
     if (step === 1 && countries.length === 0) { toast.error("Select at least one country."); return; }
+    if (step === 2 && countries.some(c=>!addLater.includes(c)&&!validAdr(adr[c]))) { toast.error('Enter an ADR body name and contact details or website for each country, or choose Add later.'); return; }
     if (step === 4 && !(rules.final > 0 && rules.extended >= rules.final)) { toast.error("Extended deadline must be at least the final response deadline."); return; }
+    persist(Math.min(step+1,STEPS.length-1));
     if (step < STEPS.length - 1) setStep(step + 1);
     else void finish();
   }
@@ -87,23 +133,29 @@ function Setup() {
   async function finish() {
     setBusy(true);
     try {
-      let orgId = m?.org?.id;
+      let orgId = m?.org?.id ?? (draftOrg.current==='new'?undefined:draftOrg.current);
       if (!orgId) {
         const { data, error } = await supabase.rpc("create_organisation", { _legal_name: entity.name.trim() });
         if (error) throw error;
         orgId = data as string;
+        // Migrate the anonymous-organisation draft scope as soon as the firm exists.
+        try { saveWizardDraft(window.localStorage,userId,orgId,snapshot(step)); clearWizardDraft(window.localStorage,userId,draftOrg.current); } catch { /* Storage is optional. */ }
+        draftOrg.current=orgId;
       }
+      if (!orgId) throw new Error('Could not identify your organisation.');
+      const savedOrgId=orgId;
       const { error: e1 } = await supabase.from("organisations").update({
         legal_name: entity.name.trim(),
         licence_type: entity.licence,
         home_country: entity.home,
         regulator: entity.regulator.trim() || null,
+        time_zone: entity.timeZone,
       }).eq("id", orgId);
       if (e1) throw e1;
       const { error: e2 } = await supabase.from("org_countries").upsert(
         countries.map((c) => ({
-          org_id: orgId!, country_code: c,
-          adr_name: adr[c]?.name || null, adr_website: adr[c]?.website || null, adr_contact: adr[c]?.contact || null,
+          org_id: savedOrgId, country_code: c,
+          adr_name: addLater.includes(c) ? null : adr[c]?.name.trim() || null, adr_website: addLater.includes(c) ? null : adr[c]?.website.trim() || null, adr_contact: addLater.includes(c) ? null : adr[c]?.contact.trim() || null,
         })),
         { onConflict: "org_id,country_code" },
       );
@@ -111,7 +163,7 @@ function Setup() {
       const valid = holidays.filter((h) => h.date && h.name.trim() && countries.includes(h.country));
       if (valid.length) {
         const { error: e3 } = await supabase.from("holidays").upsert(
-          valid.map((h) => ({ org_id: orgId!, country_code: h.country, holiday_date: h.date, name: h.name.trim() })),
+          valid.map((h) => ({ org_id: savedOrgId, country_code: h.country, holiday_date: h.date, name: h.name.trim() })),
           { onConflict: "org_id,country_code,holiday_date" },
         );
         if (e3) throw e3;
@@ -122,6 +174,8 @@ function Setup() {
       if (e4) throw e4;
       const { error: e5 } = await supabase.from("organisations").update({ setup_complete: true }).eq("id", orgId);
       if (e5) throw e5;
+      completed.current=true;
+      try { clearWizardDraft(window.localStorage,userId,draftOrg.current); } catch { /* Setup must not be blocked by storage. */ }
       await qc.invalidateQueries({ queryKey: ["membership"] });
       toast.success("Organisation set up.");
       navigate({ to: "/app" });
@@ -135,17 +189,28 @@ function Setup() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b px-6 py-4"><Logo /></header>
+      <Dialog open={resumeDraft!==null} onOpenChange={open=>{if(!open)startAgain();}}>
+        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto">
+          <DialogTitle>Resume setup where you left off?</DialogTitle>
+          <DialogDescription>Your saved firm details and setup progress are available on this device.</DialogDescription>
+          <div className="flex flex-col gap-2">
+            <Button className="min-h-12 w-full" onClick={resume}>Resume</Button>
+            <Button variant="outline" className="min-h-12 w-full" onClick={startAgain}>Start again</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="mx-auto max-w-2xl px-4 py-10">
+        <p role="status" className="mb-3 text-sm text-muted-foreground">Step {progress.number} of {progress.total}</p>
         <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
           {STEPS.map((s, i) => (
-            <li key={s} className={i === step ? "font-semibold text-primary" : i < step ? "text-foreground" : "text-muted-foreground"}>
+            <li key={s} aria-current={i===step?'step':undefined} className={i === step ? "font-semibold text-primary" : i < step ? "text-foreground" : "text-muted-foreground"}>
               <span className="tabular">{i + 1}.</span> {s}
             </li>
           ))}
         </ol>
         <h1 className="mt-6 text-2xl font-semibold">{STEPS[step]}</h1>
 
-        <div className="mt-6 space-y-5 rounded-lg border bg-card p-6">
+        <div className="mt-6 min-w-0 space-y-5 border-t pt-6">
           {step === 0 && (
             <>
               <Field label="Legal entity name *">
@@ -160,7 +225,16 @@ function Setup() {
                 </Select>
               </Field>
               <Field label="Home country *">
-                <CountrySelect value={entity.home} onChange={(v) => setEntity({ ...entity, home: v })} />
+                <CountrySelect value={entity.home} onChange={(v) => setEntity({ ...entity, home: v, timeZone: defaultTimeZone(v) })} />
+              </Field>
+              <Field label="Search time zones">
+                <Input type="search" value={zoneSearch} onChange={e=>setZoneSearch(e.target.value)} placeholder="Europe/Paris" />
+              </Field>
+              <Field label="Firm time zone">
+                <Select value={entity.timeZone} onValueChange={v=>setEntity({...entity,timeZone:v})}>
+                  <SelectTrigger className="w-full min-w-0"><SelectValue /></SelectTrigger>
+                  <SelectContent>{[...new Set([entity.timeZone,...zones.filter(z=>searchText(z.replaceAll('_',' ')).includes(searchText(zoneSearch)))])].map(z=><SelectItem key={z} value={z}>{z.replaceAll('_',' ')}</SelectItem>)}</SelectContent>
+                </Select>
               </Field>
               <Field label="Regulator">
                 <Input value={entity.regulator} maxLength={200} placeholder="e.g. Banque de France / ACPR" onChange={(e) => setEntity({ ...entity, regulator: e.target.value })} />
@@ -171,9 +245,16 @@ function Setup() {
           {step === 1 && (
             <>
               <p className="text-sm text-muted-foreground">Countries where you serve customers.</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {Object.entries(COUNTRIES).map(([code, name]) => (
-                  <label key={code} className="flex items-center gap-2 text-sm">
+              <Field label="Search countries"><Input type="search" value={countrySearch} onChange={e=>setCountrySearch(e.target.value)} placeholder="Country name" /></Field>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={()=>setCountries([...EU_COUNTRIES])}>Select all EU</Button>
+                <Button variant="outline" size="sm" onClick={()=>setCountries([...EEA_COUNTRIES])}>Select all EU/EEA</Button>
+                <Button variant="ghost" size="sm" onClick={()=>setCountries([])}>Clear</Button>
+              </div>
+              <ul aria-label="Selected countries" className="flex flex-wrap gap-2">{countries.map(c=><li key={c}><Button variant="secondary" size="sm" aria-label={`Remove ${COUNTRIES[c]}`} onClick={()=>setCountries(countries.filter(x=>x!==c))}>{COUNTRIES[c]}<X aria-hidden="true" className="h-3 w-3 shrink-0" /></Button></li>)}</ul>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {searchCountries(countrySearch).map(([code, name]) => (
+                  <label key={code} className="flex min-w-0 items-center gap-2 text-sm">
                     <Checkbox
                       checked={countries.includes(code)}
                       onCheckedChange={(c) => setCountries(c ? [...countries, code] : countries.filter((x) => x !== code))}
@@ -182,16 +263,26 @@ function Setup() {
                   </label>
                 ))}
               </div>
+              {searchCountries(countrySearch).length===0&&<p role="status" className="text-sm text-muted-foreground">No countries found.</p>}
             </>
           )}
 
           {step === 2 && countries.map((c) => (
             <div key={c} className="space-y-3 border-b pb-5 last:border-0 last:pb-0">
               <p className="font-medium">{COUNTRIES[c]}</p>
+              <a className="inline-flex items-center gap-2 text-sm text-primary underline" href={ADR_MEMBERS_URL} target="_blank" rel="noopener noreferrer">Find the ADR body for this country<ExternalLink aria-hidden="true" className="h-3 w-3 shrink-0" /><span className="sr-only"> (opens in a new tab)</span></a>
+              <Field label={`Copy ADR details for ${COUNTRIES[c]} from another country`}>
+                <Select value="" onValueChange={from=>{setAdr(copyAdr(adr,from,c));setAddLater(addLater.filter(x=>x!==c));}}>
+                  <SelectTrigger><SelectValue placeholder="Copy from another country" /></SelectTrigger>
+                  <SelectContent>{countries.filter(x=>x!==c&&validAdr(adr[x])).map(x=><SelectItem key={x} value={x}>{COUNTRIES[x]}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <label className="flex items-center gap-2 text-sm"><Checkbox checked={addLater.includes(c)} onCheckedChange={checked=>setAddLater(checked?[...addLater,c]:addLater.filter(x=>x!==c))} />Add later for {COUNTRIES[c]}</label>
               {(["name", "website", "contact"] as const).map((f) => (
                 <Field key={f} label={f === "name" ? "ADR / ombudsman body" : f === "website" ? "Website" : "Contact details"}>
                   <Input
                     value={adr[c]?.[f] ?? ""}
+                    disabled={addLater.includes(c)}
                     maxLength={300}
                     onChange={(e) => setAdr({ ...adr, [c]: { name: "", website: "", contact: "", ...adr[c], [f]: e.target.value } })}
                   />
@@ -235,8 +326,8 @@ function Setup() {
         </div>
 
         <div className="mt-6 flex justify-between">
-          <Button variant="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</Button>
-          <Button onClick={next} disabled={busy || loadingHolidays}>{loadingHolidays ? "Loading holidays…" : step === STEPS.length - 1 ? "Finish setup" : "Continue"}</Button>
+          <Button variant="ghost" disabled={step === 0 || busy} onClick={() => {persist(step-1);setStep(step - 1);}}>Back</Button>
+          <Button onClick={next} disabled={busy || loadingHolidays}>{loadingHolidays ? "Loading holidays…" : step === STEPS.length - 1 ? "Finish setup" : "Next"}</Button>
         </div>
       </div>
     </div>

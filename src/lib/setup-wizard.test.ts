@@ -1,0 +1,25 @@
+import { describe,expect,it } from 'vitest';
+import { searchCountries,EU_COUNTRIES,EEA_COUNTRIES,copyAdr,validAdr,defaultTimeZone,saveWizardDraft,readWizardDraft,clearWizardDraft,wizardProgress,type WizardDraft } from './setup-wizard';
+import type { SetupStorage } from './onboarding';
+const draft:WizardDraft={version:1,step:2,entity:{name:'Firm',licence:'payment_institution',home:'FR',regulator:'',timeZone:'Europe/Paris'},countries:['FR','PL'],adr:{FR:{name:'Chosen mediator',contact:'Contact',website:''}},addLater:['PL'],holidays:[],loadedHolidayCountries:[],rules:{name:'PSD2',ack:1,final:15,extended:35}};
+function storage():SetupStorage{const values=new Map<string,string>();return {getItem:k=>values.get(k)??null,setItem:(k,v)=>{values.set(k,v);},removeItem:k=>{values.delete(k);}};}
+describe('setup country choices',()=>{
+ it.each([['Polska','PL'],['España','ES'],['espana','ES'],['ÖSTERREICH','AT'],['romania','RO'],['France','FR'],['Éire','IE'],['Česko','CZ']])('matches English/native names and accents %s',(query,code)=>{expect(searchCountries(query).map(([c])=>c)).toContain(code);});
+ it('returns all 32 for empty search and none for unknown text',()=>{expect(searchCountries('')).toHaveLength(32);expect(searchCountries('Atlantis')).toEqual([]);});
+ it('selects exactly the 27 EU members, excluding non-members',()=>{expect([...EU_COUNTRIES].sort()).toEqual('AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE'.split(' ').sort());expect(new Set(EU_COUNTRIES).size).toBe(27);});
+ it('selects exactly EU plus Iceland Liechtenstein Norway, not UK/Switzerland',()=>{expect([...EEA_COUNTRIES].sort()).toEqual([...EU_COUNTRIES,'IS','LI','NO'].sort());expect(new Set(EEA_COUNTRIES).size).toBe(30);expect(EEA_COUNTRIES).not.toContain('GB');expect(EEA_COUNTRIES).not.toContain('CH');});
+});
+describe('ADR copy and deferral',()=>{
+ it('copies only supplied ADR fields without mutating the source or inventing values',()=>{const copied=copyAdr(draft.adr,'FR','PL');expect(copied['PL']).toEqual(draft.adr['FR']);expect(copied['PL']).not.toBe(draft.adr['FR']);expect(draft.adr['PL']).toBeUndefined();expect(copyAdr(draft.adr,'XX','PL')).toBe(draft.adr);});
+ it('requires name plus contact or website unless the UI explicitly defers',()=>{expect(validAdr(undefined)).toBe(false);expect(validAdr({name:'Mediator',contact:' ',website:''})).toBe(false);expect(validAdr({name:' ',contact:'contact',website:''})).toBe(false);expect(validAdr({name:'Mediator',contact:'contact',website:''})).toBe(true);expect(validAdr({name:'Mediator',contact:'',website:'https://example.org'})).toBe(true);});
+});
+describe('wizard drafts',()=>{
+ it('saves and resumes values and current step only for the same user and org, then clears',()=>{const s=storage();expect(saveWizardDraft(s,'u','o',draft)).toBe(true);expect(readWizardDraft(s,'u','o')).toEqual(draft);expect(readWizardDraft(s,'v','o')).toBeNull();expect(readWizardDraft(s,'u','p')).toBeNull();expect(clearWizardDraft(s,'u','o')).toBe(true);expect(readWizardDraft(s,'u','o')).toBeNull();});
+ it('never stores passwords or unknown extra fields',()=>{const s=storage();saveWizardDraft(s,'u','o',{...draft,password:'secret',entity:{...draft.entity,password:'secret'}} as WizardDraft);expect(JSON.stringify(readWizardDraft(s,'u','o'))).not.toContain('secret');});
+ it('continues safely when all storage operations throw',()=>{const s:SetupStorage={getItem:()=>{throw Error();},setItem:()=>{throw Error();},removeItem:()=>{throw Error();}};expect(saveWizardDraft(s,'u','o',draft)).toBe(false);expect(readWizardDraft(s,'u','o')).toBeNull();expect(clearWizardDraft(s,'u','o')).toBe(false);});
+ it('rejects malformed/obsolete drafts and invalid time zones',()=>{const s=storage();expect(saveWizardDraft(s,'u','o',{...draft,step:5})).toBe(false);expect(saveWizardDraft(s,'u','o',{...draft,entity:{...draft.entity,timeZone:'not/a-zone'}})).toBe(false);s.getItem=()=>'{broken';expect(readWizardDraft(s,'u','o')).toBeNull();s.getItem=()=>JSON.stringify({...draft,version:0});expect(readWizardDraft(s,'u','o')).toBeNull();});
+});
+describe('step and time zone rules',()=>{
+ it('has five named steps with Back/last boundaries',()=>{expect(wizardProgress(0)).toEqual({index:0,label:'Legal entity',number:1,total:5,canBack:false,isLast:false});expect(wizardProgress(1)).toMatchObject({number:2,label:'Countries',canBack:true,isLast:false});expect(wizardProgress(4)).toMatchObject({number:5,label:'Deadline rules',isLast:true});expect(wizardProgress(-1).index).toBe(0);expect(wizardProgress(9).index).toBe(4);});
+ it.each([['IE','Europe/Dublin'],['FR','Europe/Paris'],['PL','Europe/Warsaw'],['PT','Europe/Lisbon'],['ES','Europe/Madrid'],['NL','Europe/Amsterdam'],['DE','Europe/Brussels'],['','Europe/Brussels']])('matches migration 0022 home default for %s',(country,zone)=>{expect(defaultTimeZone(country)).toBe(zone);});
+});

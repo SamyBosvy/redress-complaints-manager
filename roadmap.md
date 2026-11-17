@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Item #50: setup wizard country/native-name search, exact EU/EEA selections, official FIN-NET link/copy/explicit ADR deferral, scoped password-free draft resume/clear, five-step progress/leave warnings and home-default searchable time zones; lowercase QA audit detection. Full suites: 612/612 tests in UTC and Australia/Sydney; automatic typecheck/build passed. No migrations, billing, RLS, triggers or guards changed.
+- [ ] Item #50 signed-in setup save/readback, resume and phone/dark-mode verification — no auth users; session minting confirmed unavailable. Signed-out /setup redirects to /auth without runtime errors.
+
 - [x] Item #48: auto-detected onboarding checklist on queue/My day, admin actions/manager read-only progress, user/org hide and menu restore, completion message and TEST intake prefill; 586/586 tests passed in UTC and Sydney, automatic typecheck/build passed. QA review optional without changed-field evidence; template main language inferred from home country. No migrations, billing, RLS, triggers or guards changed.
 - [ ] Item #48 signed-in detection, links, hide/restore and phone/dark-mode verification — no auth users; session minting confirmed unavailable. Signed-out My day redirects to sign-in without runtime errors. Restricted evidence is shown as unavailable rather than completed.
 

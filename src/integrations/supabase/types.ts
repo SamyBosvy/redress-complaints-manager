@@ -283,6 +283,70 @@ export type Database = {
           },
         ]
       }
+      complaint_vulnerability: {
+        Row: {
+          adjustments: string[]
+          adjustments_note: string | null
+          assessed_at: string
+          assessed_by: string | null
+          complaint_id: string
+          customer_consented: boolean
+          drivers: string[]
+          id: string
+          org_id: string
+          review_by: string | null
+          source: string
+        }
+        Insert: {
+          adjustments?: string[]
+          adjustments_note?: string | null
+          assessed_at?: string
+          assessed_by?: string | null
+          complaint_id: string
+          customer_consented?: boolean
+          drivers?: string[]
+          id?: string
+          org_id: string
+          review_by?: string | null
+          source?: string
+        }
+        Update: {
+          adjustments?: string[]
+          adjustments_note?: string | null
+          assessed_at?: string
+          assessed_by?: string | null
+          complaint_id?: string
+          customer_consented?: boolean
+          drivers?: string[]
+          id?: string
+          org_id?: string
+          review_by?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_vulnerability_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: true
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_vulnerability_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: true
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_vulnerability_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           ack_due: string | null

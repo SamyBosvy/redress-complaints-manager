@@ -40,7 +40,6 @@ const schema = z.object({
   complainant_phone: z.string().trim().max(50),
   customer_ref: z.string().trim().max(100),
   vulnerable: z.boolean(),
-  vulnerable_note: z.string().trim().max(1000),
   product: z.enum(Object.keys(PRODUCTS) as [keyof typeof PRODUCTS]),
   category: z.enum(Object.keys(CATEGORIES) as [keyof typeof CATEGORIES]),
   summary: z.string().trim().min(1, "Summary is required").max(10000),
@@ -67,7 +66,7 @@ function NewComplaint() {
   const [v, setV] = useState({
     received_at: nowLocal(), channel: "", country_code: countries.length === 1 ? countries[0]!.country_code : "",
     language: "en", complainant_name: test?TEST_COMPLAINT.complainant_name:"", complainant_email: "", complainant_phone: "", customer_ref: test?TEST_COMPLAINT.customer_ref:"",
-    vulnerable: false, vulnerable_note: "", product: "", category: "", summary: test?TEST_COMPLAINT.summary:"", desired_outcome: "",
+    vulnerable: false, product: "", category: "", summary: test?TEST_COMPLAINT.summary:"", desired_outcome: "",
     assigned_to: m.role === "agent" ? m.user.id : "none", priority: "standard",
   });
   const set = (k: keyof typeof v) => (val: string | boolean) => setV((p) => ({ ...p, [k]: val }));
@@ -87,7 +86,7 @@ function NewComplaint() {
       channel: d.channel, country_code: d.country_code, language: d.language,
       complainant_name: d.complainant_name, complainant_email: d.complainant_email || null,
       complainant_phone: d.complainant_phone || null, customer_ref: d.customer_ref || null,
-      vulnerable: d.vulnerable, vulnerable_note: d.vulnerable ? d.vulnerable_note || null : null,
+      vulnerable: d.vulnerable,
       product: d.product, category: d.category, summary: d.summary, desired_outcome: d.desired_outcome || null,
       assigned_to: d.assigned_to === "none" ? null : d.assigned_to, priority: d.priority,
     }).select("reference").single();
@@ -122,7 +121,7 @@ function NewComplaint() {
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={v.vulnerable} onCheckedChange={(c) => set("vulnerable")(!!c)} /> Vulnerable customer
           </label>
-          {v.vulnerable && <Input aria-label="Additional support note (optional)" placeholder="Note (optional)" value={v.vulnerable_note} onChange={(e) => set("vulnerable_note")(e.target.value)} />}
+          {v.vulnerable && <p className="text-xs text-muted-foreground">Support details can be assessed on the case after logging it.</p>}
         </div>
       </Section>
 

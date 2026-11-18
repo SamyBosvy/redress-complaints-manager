@@ -3,7 +3,7 @@ import { toCsv } from './csv';
 export const AUDIT_PAGE_SIZE = 50;
 export const AUDIT_EXPORT_LIMIT = 50_000;
 export const AUDIT_AREAS: Record<string, string> = {
-  complaints: 'Complaint', letters: 'Letter', qa_reviews: 'QA review', adr_cases: 'ADR case', complaint_reopenings: 'Reopening',
+  complaint_vulnerability: 'Support needs', complaints: 'Complaint', letters: 'Letter', qa_reviews: 'QA review', adr_cases: 'ADR case', complaint_reopenings: 'Reopening',
   template_versions: 'Template version', templates: 'Template', organisations: 'Organisation settings', org_members: 'Member',
   complaint_events: 'Case activity', org_countries: 'Countries and ADR bodies', holidays: 'Calendar', rule_sets: 'Rule set',
   rule_set_assignments: 'Rule assignment', root_causes: 'Root cause', org_root_causes: 'Root cause', org_invitations: 'Invitation',
@@ -44,6 +44,7 @@ export function auditLabel(key: string): string { return FIELD_LABELS[key] ?? (k
 const ENUMS: Record<string, string> = { under_investigation: 'Under investigation', pending_qa: 'Pending QA', final_response_sent: 'Final response sent', holding_response_sent: 'Holding response sent', escalated_to_adr: 'Escalated to ADR', partially_upheld: 'Partially upheld', not_upheld: 'Not upheld', org_admin: 'Org Admin', complaints_manager: 'Complaints Manager', qa_reviewer: 'QA Reviewer', read_only: 'Read-only', web_form: 'Web form', upheld_firm: 'Firm upheld', partially_overturned: 'Partially overturned', new_evidence: 'New evidence', customer_disagreed: 'Customer disagreed within time limit', handling_error: 'Error in handling', regulator_adr_request: 'Regulator / ADR request' };
 export function maskAuditValue(value: unknown, field: string, admin: boolean): unknown {
   if (admin || value == null) return value;
+  if (/^(drivers|adjustments_note|vulnerable_note)$/.test(field)) return '••••';
   if (typeof value === 'object') return Array.isArray(value) ? value.map(v => maskAuditValue(v, field, false)) : Object.fromEntries(Object.entries(value).map(([k, v]) => [k, maskAuditValue(v, k, false)]));
   if (/email|phone|iban|account_number|telephone/i.test(field)) return '••••';
   if (typeof value !== 'string') return value;

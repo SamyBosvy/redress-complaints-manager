@@ -47,8 +47,9 @@ describe('Extra public form languages', () => {
     expect(matchImportValue('language', 'Gaeilge')).toBe('ga');
     expect(matchImportValue('language', 'Czech')).toBe('cs');
   });
-  it('public intake still accepts only languages the hosted routine accepts', () => {
-    expect(publicComplaintSchema.shape.language.safeParse('de').success).toBe(false);
+  it('public intake accepts all 14 supported languages and rejects xx', () => {
+    for(const language of PUBLIC_FORM_LANGUAGES)expect(publicComplaintSchema.shape.language.safeParse(language).success).toBe(true);
+    expect(publicComplaintSchema.shape.language.safeParse('xx').success).toBe(false);
     expect(publicComplaintSchema.shape.language.safeParse('pl').success).toBe(true);
   });
 });

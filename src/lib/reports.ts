@@ -1,3 +1,4 @@
+import { adjustmentShares } from './vulnerability';
 import { acknowledgedAt, responseDate, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
 import {REOPEN_REASONS,reopeningMetrics,type ReopeningRow} from './reopening';
 import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
@@ -14,7 +15,7 @@ export type ReportRow = Pick<
   | "assigned_to" | "vulnerable" | "outcome" | "redress_amount" | "redress_currency"
   | "goodwill_amount" | "goodwill_currency" | "root_cause_category" | "received_at" | "closed_at"
   | "final_due" | "extended_due" | "holding_sent_at"
-> & { root_cause_id?: string | null | undefined; ack_due?: string | null; acknowledged_at?: string | null; holding_letters?: string[] };
+> & { root_cause_id?: string | null | undefined; ack_due?: string | null; acknowledged_at?: string | null; holding_letters?: string[]; support_adjustments?: string[]|null };
 
 const COLS =
   "id, reference, status, category, product, country_code, channel, assigned_to, vulnerable, outcome, redress_amount, redress_currency, goodwill_amount, goodwill_currency, root_cause_category, root_cause_id, received_at, closed_at, final_due, extended_due, holding_sent_at, ack_due";
@@ -258,9 +259,10 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
     { label: 'ADR decisions', value: adrMetrics(adr, range).decided.length },
     { label: 'ADR overturn rate', value: adrMetrics(adr, range).overturnRate, unit: '%' },
   ];
+  summary.push({label:'Complaints with support needs',value:rows.filter(r=>r.vulnerable).length});
   const payment = (kind: 'redress' | 'goodwill') => paidByCurrency(resolved.map(r => ({ ...r, ...(kind === 'redress' ? { goodwill_amount: null } : { redress_amount: null }) })));
   for (const kind of ['redress', 'goodwill'] as const) for (const [currency, value] of Object.entries(payment(kind))) summary.push({ label: `${kind === 'redress' ? 'Redress' : 'Goodwill'} paid — ${currency}`, value, unit: currency });
-  const grouping: [string, (r: ReportRow) => string][] = [ ['By product', r => PRODUCTS[r.product] ?? r.product], ['By category', r => CATEGORIES[r.category] ?? r.category], ['By country', r => COUNTRIES[r.country_code] ?? r.country_code], ['By root cause', r => r.root_cause_category ?? 'Not recorded'], ['By channel', r => CHANNELS[r.channel] ?? r.channel] ];
+  const grouping: [string, (r: ReportRow) => string][] = [ ['By product', r => PRODUCTS[r.product] ?? r.product], ['By category', r => CATEGORIES[r.category] ?? r.category], ['By country', r => COUNTRIES[r.country_code] ?? r.country_code], ['By root cause', r => r.root_cause_category ?? 'Not recorded'], ['By channel', r => CHANNELS[r.channel] ?? r.channel], ['By support needs', r=>r.vulnerable?'With support needs':'Without support needs'] ];
   const tables = grouping.map(([title, key]) => {
     const groups = new Map<string, ReportRow[]>();
     for (const row of rows) { const k = key(row); groups.set(k, [...(groups.get(k) ?? []), row]); }
@@ -269,6 +271,7 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
       return { label, count: group.length, share: pct(group.length, rows.length) ?? 0, upheld: pct(rs.filter(r => r.outcome === 'upheld' || r.outcome === 'partially_upheld').length, rs.length), within: pct(wd.filter(r => resolvedWithinDeadline(r)).length, wd.length) };
     }).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) };
   });
+  if(rows.some(r=>r.support_adjustments!==undefined))tables.push({title:'By support adjustment',rows:adjustmentShares(rows)});
   const rm=reopeningMetrics(reopenings,range,all.filter(r=>r.closed_at&&r.closed_at.slice(0,10)>=range.from&&r.closed_at.slice(0,10)<=range.to).length);
   summary.push({label:'Reopened',value:rm.count},{label:'Reopen rate',value:rm.rate,unit:'%'});
   tables.push({title:'By reopen reason',rows:Object.entries(REOPEN_REASONS).map(([key,label])=>{const count=new Set(rm.rows.filter(r=>r.reason_category===key).map(r=>r.complaint_id)).size;return {label,count,share:pct(count,rm.count)??0,upheld:null,within:null};}).filter(r=>r.count>0)});
@@ -282,7 +285,7 @@ export function regulatoryReport(all: ReportRow[], range: PeriodRange, holidays:
     for(const row of all){const key=dimension==='agent'?row.assigned_to??'Unassigned':row.country_code;groups.set(key,[...(groups.get(key)??[]),row]);}
     return {title:`Acknowledgement and holding metrics by ${dimension}`,headers:['Group','Ack eligible','Ack on time %','Median ack days','Holding letters','Holding cases %','Extended on time %'],rows:[...groups].map(([key,group])=>{const m=responseMetrics(group,range,holidays,timeZone,now);return [key,m.ackCohort.length,m.onTimePct??'n/a',m.median??'n/a',m.holdingLetters.length,m.holdingPct??'n/a',m.extendedPct??'n/a'];})};
   });
-  return { range, summary, tables, responseTables, methodology:RESPONSE_METHODOLOGY };
+  return { range, summary, tables, responseTables, methodology:[...RESPONSE_METHODOLOGY, 'Support adjustment shares use complaints with support needs as the denominator; a case may have several adjustments. Adjustment data is limited to records visible to the reporting user. Drivers and support notes are never included in reports.'] };
 }
 export const TABLE_HEADERS = ['Group', 'Count', '% of total', 'Upheld / partial %', 'Within deadline %'];
 export function summaryComparison(current: RegulatoryReport, previous?: RegulatoryReport) {
@@ -311,7 +314,7 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       for (let offset = 0; ; offset += 500) { const { data, error } = await fetchPage(offset); if (error) throw error; rows.push(...(data ?? [])); if ((data?.length ?? 0) < 500) break; }
       return rows;
     };
-    const [rows, causes, events, holidays, adr, reopenings, letters] = await Promise.all([
+    const [rows, causes, events, holidays, adr, reopenings, letters, support] = await Promise.all([
       fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
       fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
@@ -319,6 +322,7 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       fetchPages(offset => supabase.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).lte('escalated_on',end).order('id').range(offset,offset+499)),
       fetchPages(offset=>supabase.from('complaint_reopenings').select('complaint_id,reopened_at,reason_category').eq('org_id',orgId).lt('reopened_at',isoDay(new Date(Date.parse(end)+DAY))+'T00:00:00Z').order('id').range(offset,offset+499)),
       fetchPages(offset=>supabase.from('letters').select('complaint_id,kind,sent_at').eq('org_id',orgId).eq('status','sent').in('kind',['acknowledgement','holding']).order('id').range(offset,offset+499)),
+      fetchPages(offset=>supabase.from('complaint_vulnerability').select('complaint_id,adjustments').eq('org_id',orgId).order('id').range(offset,offset+499)),
     ]);
     const projected = rows.map(row => {
       const history = events.filter(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) <= end);
@@ -329,7 +333,7 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       const resolved = CLOSED.includes(status);
       let lastReopened = -1; history.forEach((e, i) => { if (statusOf(e, 'after') === 'reopened') lastReopened = i; });
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
-      return { ...row, acknowledged_at:acknowledgedAt(row.id,letters as ResponseLetter[],events as ResponseEvent[]), holding_letters:letters.filter(l=>l.complaint_id===row.id && l.kind==='holding' && l.sent_at).map(l=>String(l.sent_at)), status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
+      return { ...row, support_adjustments:support.find(s=>s.complaint_id===row.id)?.adjustments, acknowledged_at:acknowledgedAt(row.id,letters as ResponseLetter[],events as ResponseEvent[]), holding_letters:letters.filter(l=>l.complaint_id===row.id && l.kind==='holding' && l.sent_at).map(l=>String(l.sent_at)), status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
     });
     return { rows: projected as ReportRow[], holidays, adr, reopenings };
   },
@@ -341,6 +345,8 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
   if (metric === 'Open at period end' || metric === 'open') { s.received_from = undefined; s.resolved = 'no'; }
   if (['Resolved', 'Median days to resolve', 'Average days to resolve', 'resolved'].includes(metric) || metric.includes(' paid — ')) s.resolved = 'yes';
   if (metric === 'Resolved within deadline' || metric === 'within') { s.resolved = 'yes'; s.within_deadline = 'yes'; }
+  if(metric==='Complaints with support needs')s.vulnerable='true';
+  if(metric==='By support needs')s.vulnerable=group==='With support needs'?'true':'false';
   const outcome = ({ Upheld: 'upheld', 'Partially upheld': 'partially_upheld', 'Not upheld': 'not_upheld', Withdrawn: 'withdrawn' } as Record<string, string>)[metric];
   if (outcome) { s.outcome = outcome; s.resolved = 'yes'; }
   if (metric === 'Escalated to ADR' || metric.startsWith('ADR ') || metric === 'By ADR outcome') {
@@ -370,6 +376,7 @@ export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
     && (!s.root_cause || (UUID.test(s.root_cause) ? r.root_cause_id === s.root_cause : (r.root_cause_category ?? 'Not recorded') === s.root_cause))
     && (!s.product || r.product === s.product) && (!s.category || r.category === s.category)
     && (!s.country || r.country_code === s.country) && (!s.channel || r.channel === s.channel)
+    && (!s.vulnerable || r.vulnerable===(s.vulnerable==='true'))
     && (!s.agent || (r.assigned_to ?? 'none') === s.agent);
 }
 export function drillDownRows(rows: ReportRow[], metric: string, group: string | undefined, range: PeriodRange) {

@@ -1,3 +1,4 @@
+import { SupportNeeds } from '@/components/support-needs';
 import { AuditHistory } from '@/components/audit-history';
 import { CaseReopen } from '@/components/case-reopen';
 import { CaseAdr } from '@/components/case-adr';
@@ -150,7 +151,7 @@ function CaseView() {
           <p className="font-mono text-sm text-muted-foreground">{c.reference}</p>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{c.complainant_name}</h1>
-            <StatusPill status={status} /><CaseReopen orgId={orgId} id={id} role={m.role} mode={m.org?.reopen_deadline_mode??'restart'} c={c} onSaved={refresh}/>
+            <StatusPill status={status} />{c.vulnerable&&<span className="rounded border px-2 py-1 text-xs text-muted-foreground">Support needs</span>}<CaseReopen orgId={orgId} id={id} role={m.role} mode={m.org?.reopen_deadline_mode??'restart'} c={c} onSaved={refresh}/>
           </div>
           {c.anonymised_at && <p className="mt-1 text-sm text-muted-foreground">Working records anonymised · Historical audit retained</p>}
           {c.legal_hold && <p className="mt-1 text-sm text-warning">Legal hold · Excluded from retention anonymisation</p>}
@@ -190,7 +191,7 @@ function CaseView() {
               <Item k="Phone" v={c.complainant_phone} />
               <Item k="Customer ID" v={c.customer_ref} />
               <Item k="Language" v={LANGUAGES[c.language as keyof typeof LANGUAGES] ?? c.language} />
-              {c.vulnerable && <Item k="Vulnerable customer" v={c.vulnerable_note || "Yes"} />}
+              <Item k="Vulnerable" v={c.vulnerable ? "Yes" : "No"} />
             </dl>
             <h3 className="mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</h3>
             <p className="mt-1 whitespace-pre-wrap text-sm">{c.summary}</p>
@@ -200,6 +201,7 @@ function CaseView() {
             </>}
           </Card>
 
+          <SupportNeeds org={orgId} id={id} role={m.role} user={m.user.id} assigned={c.assigned_to} locked={Boolean(c.anonymised_at||c.privacy_processing||c.legal_hold||status==='closed')} zone={m.org?.time_zone??'Europe/Dublin'} onSaved={refresh}/>
           <OutcomeCard causes={causes} c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
           <CaseAdr timeZone={m.org?.time_zone??'Europe/Dublin'} orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
           <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />

@@ -1,3 +1,4 @@
+import { ADJUSTMENTS } from '@/lib/vulnerability';
 import { useEffect, useRef, useState } from 'react';
 import { SetupProgress } from '@/components/setup-progress';
 import { createFileRoute, Link } from '@tanstack/react-router';
@@ -38,6 +39,7 @@ function DayContent({org,user,zone,admin,name}:{org:string;user:string;zone:stri
    {!data[section].rows.length?<EmptyState title="Nothing due here" description="No matching cases in your caseload."/>:<ul className="mt-2 divide-y">{data[section].rows.map(row=>row.id&&<li key={row.id}><Link data-day-row to="/app/c/$id" params={{id:row.id}} className="block min-w-0 rounded-md py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-muted/50">
     <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-mono text-xs">{row.reference}</span><span className="text-xs capitalize text-muted-foreground">{row.priority??'normal'} priority</span></div>
     <p className="my-1 break-words text-sm font-medium">{row.complainant_name}</p><div className="flex flex-wrap items-center justify-between gap-2"><StatusPill status={row.status as Status}/><DeadlineClock status={row.status as Status} daysLeft={row.days_left} due={row.current_due} receivedAt={row.received_at}/></div>
+    {section==='vulnerable'&&row.complaint_vulnerability?.map((needs,i)=><p key={i} className="mt-2 text-xs">Review due {needs.review_by} · {needs.adjustments.map(key=>ADJUSTMENTS[key as keyof typeof ADJUSTMENTS]??key).join(', ')||'Support assessment'}</p>)}
     {section==='adr'&&row.adr_cases?.firm_response_due&&<p className="mt-2 text-xs">ADR response due {row.adr_cases.firm_response_due}</p>}
     {section==='returned'&&row.qa_reviews?.slice().sort((a,b)=>String(b.decided_at).localeCompare(String(a.decided_at)))[0]?.comments&&<p className="mt-2 break-words text-xs text-muted-foreground">{String(maskAuditValue(row.qa_reviews.slice().sort((a,b)=>String(b.decided_at).localeCompare(String(a.decided_at)))[0]?.comments,'comments',admin))}</p>}
    </Link></li>)}</ul>}

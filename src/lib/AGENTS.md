@@ -46,4 +46,7 @@
 - Setup progress uses read-only org-scoped existing evidence, treats inaccessible evidence as unknown, and stores dismissal per user/org locally; unchanged QA values cannot prove review, so QA is optional. Why: no manual completion or new permissions/schema, and no false setup claims.
 
 ## Languages
-- Owner-supplied extra-language form text lives verbatim in public-form-i18n-extra.ts; country/language names for those come from Intl.DisplayNames with English fallback. Public correspondence choices stay limited to INTAKE_CORRESPONDENCE_LANGUAGES until the hosted intake check accepts more. Why: never alter supplied translations or send values the database rejects.
+- Owner-supplied translations remain verbatim; public country/language labels use checked-in static names, and correspondence accepts all supported languages. Why: avoid SSR/client ICU differences and intake rejection.
+
+## Support needs
+- Structured support data is a restricted tenant child record; flag sync uses existing reasoned edit guards, privacy erasure removes it, and audit capture omits sensitive drivers/notes. Why: minimise special-category exposure without weakening workflow locks.

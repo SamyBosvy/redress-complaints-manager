@@ -1,12 +1,14 @@
 import type { ZodIssue } from 'zod';
 import type { PRODUCTS, CATEGORIES } from './complaints';
+import { SUPPORT_TEXT } from './vulnerability';
+import STATIC_NAMES from './public-form-names.json';
 import { EXTRA_FORM_TRANSLATIONS } from './public-form-i18n-extra';
 
 const BASE_LANGUAGES = ['en', 'fr', 'es', 'pt', 'pl', 'nl'] as const;
 export const EXTRA_LANGUAGES = ['de', 'it', 'lt', 'sv', 'da', 'cs', 'ro', 'ga'] as const;
 export const PUBLIC_FORM_LANGUAGES = [...BASE_LANGUAGES, ...EXTRA_LANGUAGES] as const;
-/** Correspondence languages the hosted public intake routine currently accepts (database check, migration 0004). */
-export const INTAKE_CORRESPONDENCE_LANGUAGES = BASE_LANGUAGES;
+/** Correspondence languages accepted by migration 0023. */
+export const INTAKE_CORRESPONDENCE_LANGUAGES = PUBLIC_FORM_LANGUAGES;
 export type PublicFormLanguage = typeof PUBLIC_FORM_LANGUAGES[number];
 export const NATIVE_LANGUAGE_NAMES: Record<PublicFormLanguage, string> = { en: 'English', fr: 'Français', es: 'Español', pt: 'Português', pl: 'Polski', nl: 'Nederlands', de: 'Deutsch', it: 'Italiano', lt: 'Lietuvių', sv: 'Svenska', da: 'Dansk', cs: 'Čeština', ro: 'Română', ga: 'Gaeilge' };
 const keys = ['heading', 'description', 'intro', 'uiLanguage', 'details', 'name', 'customerRef', 'email', 'phone', 'country', 'language', 'complaint', 'product', 'category', 'summary', 'outcome', 'support', 'supportNote', 'privacy', 'acknowledgement', 'select', 'submit', 'submitting', 'received', 'submittedTo', 'reference', 'keepReference', 'unavailable', 'contactFirm', 'unavailableDescription', 'footer', 'logo', 'website', 'checkDetails', 'nameRequired', 'emailInvalid', 'countryRequired', 'languageRequired', 'productRequired', 'categoryRequired', 'summaryRequired', 'privacyRequired', 'tooLong', 'saveError', 'loadError'] as const;
@@ -28,7 +30,7 @@ export function displayNames<K extends string>(locale: string, type: 'region' | 
   try { names = ctor ? new ctor([locale], { type }) : null; } catch { names = null; }
   return Object.fromEntries(codes.map(code => { let label: string | undefined; try { label = names?.of(code); } catch { label = undefined; } return [code, label && label !== code ? label : english[code]]; })) as Record<K, string>;
 }
-function baseLanguages(locale: string, labels: string) { return { ...options(BASE_LANGUAGES, labels), ...displayNames(locale, 'language', EXTRA_LANGUAGES, ENGLISH_LANGUAGE_NAMES) }; }
+function baseLanguages(locale: string, labels: string): Record<PublicFormLanguage,string> { return { ...options(BASE_LANGUAGES, labels), ...STATIC_NAMES[locale as keyof typeof STATIC_NAMES].languages }; }
 // Translations need native-speaker review before launch; French still needs owner review; de/it/lt/sv/da/cs/ro/ga are DeepL + reviewer-edited, not native-reviewed.
 const BASE_I18N = {
   en: {
@@ -59,9 +61,10 @@ const BASE_I18N = {
 const ENGLISH_COUNTRIES = BASE_I18N.en.countries;
 function extraDictionary(lang: typeof EXTRA_LANGUAGES[number]): Dictionary {
   const source = EXTRA_FORM_TRANSLATIONS[lang];
-  return { ...source.strings, products: options(productKeys, source.products), categories: options(categoryKeys, source.categories), countries: displayNames(lang, 'region', countryKeys, ENGLISH_COUNTRIES), languages: displayNames(lang, 'language', PUBLIC_FORM_LANGUAGES, ENGLISH_LANGUAGE_NAMES) };
+  return { ...source.strings, products: options(productKeys, source.products), categories: options(categoryKeys, source.categories), countries: STATIC_NAMES[lang].countries, languages: STATIC_NAMES[lang].languages };
 }
-export const PUBLIC_FORM_I18N: Record<PublicFormLanguage, Dictionary> = { ...BASE_I18N, ...Object.fromEntries(EXTRA_LANGUAGES.map(lang => [lang, extraDictionary(lang)])) as Record<typeof EXTRA_LANGUAGES[number], Dictionary> };
+const ALL_I18N = { ...BASE_I18N, ...Object.fromEntries(EXTRA_LANGUAGES.map(lang => [lang, extraDictionary(lang)])) as Record<typeof EXTRA_LANGUAGES[number], Dictionary> };
+export const PUBLIC_FORM_I18N = Object.fromEntries(PUBLIC_FORM_LANGUAGES.map(lang=>[lang,{...ALL_I18N[lang],...SUPPORT_TEXT}])) as Record<PublicFormLanguage,Dictionary & typeof SUPPORT_TEXT>;
 export const PUBLIC_FORM_KEYS = keys;
 export function isPublicFormLanguage(value: unknown): value is PublicFormLanguage { return typeof value === 'string' && PUBLIC_FORM_LANGUAGES.some(lang => lang === value); }
 export function resolvePublicFormLanguage(urlLanguage?: unknown, browserLanguages: readonly string[] = []): PublicFormLanguage {

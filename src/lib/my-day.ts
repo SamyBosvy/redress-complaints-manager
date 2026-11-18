@@ -24,11 +24,11 @@ export function dayFilterOps(section:DaySection,user:string,today:string,zone:st
   if(section==='week'){const dow=new Date(today+'T12:00:00Z').getUTCDay();add('current_due','gte',today);add('current_due','lte',addDay(today,(7-dow)%7));}
   if(section==='ack')add('ack_due','lte',addDay(today,1));
   if(section==='qa')add('status','eq','pending_qa');
-  if(section==='vulnerable')add('vulnerable','eq',true);
+  if(section==='vulnerable'){add('vulnerable','eq',true);add('complaint_vulnerability.review_by','lte',today);}
   if(section==='adr'){add('adr_cases.firm_response_sent_on','is',null);add('adr_cases.firm_response_due','gte',today);add('adr_cases.firm_response_due','lte',addDay(today,7));}
   if(section==='returned'){add('qa_reviews.status','eq','returned');add('qa_reviews.decided_at','gte',c.qaFrom);add('qa_reviews.decided_at','lt',c.until);}
   if(section==='assigned'){add('complaint_events.kind','eq','reassigned');add('complaint_events.detail->>after','eq',user);add('complaint_events.created_at','gte',c.assignmentFrom);add('complaint_events.created_at','lt',c.until);}
   return ops;
 }
-export function daySelect(base:string,section:DaySection) {return base+(section==='adr'?',adr_cases!inner(firm_response_due,firm_response_sent_on)':section==='returned'?',qa_reviews!inner(status,decided_at,comments)':section==='assigned'?',complaint_events!inner(kind,detail,created_at)':'');}
+export function daySelect(base:string,section:DaySection) {return base+(section==='vulnerable'?',complaint_vulnerability!inner(adjustments,review_by)':section==='adr'?',adr_cases!inner(firm_response_due,firm_response_sent_on)':section==='returned'?',qa_reviews!inner(status,decided_at,comments)':section==='assigned'?',complaint_events!inner(kind,detail,created_at)':'');}
 export function pendingAcknowledgements<T extends {id:string|null;ack_due:string|null}>(rows:T[],letters:ResponseLetter[],events:ResponseEvent[]) {return rows.filter(r=>r.id&&!acknowledgedAt(r.id,letters,events));}

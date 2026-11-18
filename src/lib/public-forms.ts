@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { vulnerabilitySchema } from './vulnerability';
 import { CATEGORIES, PRODUCTS } from './complaints';
 import { INTAKE_CORRESPONDENCE_LANGUAGES } from './public-form-i18n';
 
@@ -13,7 +14,7 @@ export const publicComplaintSchema = z.object({
   product: z.enum(Object.keys(PRODUCTS) as [keyof typeof PRODUCTS, ...Array<keyof typeof PRODUCTS>]),
   category: z.enum(Object.keys(CATEGORIES) as [keyof typeof CATEGORIES, ...Array<keyof typeof CATEGORIES>]),
   summary: z.string().trim().min(1, 'Tell us about your complaint').max(10000),
-  desired_outcome: z.string().trim().max(5000), vulnerable: z.boolean(), vulnerable_note: z.string().trim().max(1000),
+  desired_outcome: z.string().trim().max(5000), vulnerable: z.boolean(), vulnerable_note: z.string().max(0).default(''), adjustments: vulnerabilitySchema.shape.adjustments.default([]), adjustments_note: vulnerabilitySchema.shape.adjustments_note.default(''), customer_consented: z.boolean().default(false),
   privacy_acknowledged: z.literal(true, { errorMap: () => ({ message: 'Please acknowledge the privacy notice' }) }),
   privacy_notice: z.string().min(1).max(10000), website: z.string().max(0),
 });

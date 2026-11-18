@@ -117,4 +117,10 @@
 - [x] Item #37: shared paginated audit history, URL/local-date filters, readable masked diffs and CSV/JSON export receipts; no database or billing changes.
 - [ ] Item #37 signed-in audit paging/export/mobile verification — requires a usable account and audit records.
 - [x] Item24: 8 more languages (form UI, case languages, import matching, template Start from English, English-fallback warning, PDF glyph test)
-- [ ] Item24 follow-up: one-line migration so public intake accepts de/it/lt/sv/da/cs/ro/ga as correspondence language (blocked: no-migration instruction)
+- [x] Item24 public correspondence languages expanded in migration 0023.
+
+- [x] Item #32: managed migration 0023 with journal/snapshot/types; restricted structured support needs, privacy wipe, summary sync/backfill, case/intake/report/My day UI; 14 public correspondence languages and static names. Final complete suites: 686/686 tests in UTC and Sydney; automatic typecheck/build clean; hosted RLS/policies/triggers/function checks passed. Sensitive drivers/notes omitted from new audit records for all readers (stronger minimisation); legacy audit values masked for non-admins.
+- [ ] Item #32 signed-in case support save/readback, real public submission, report exports and My day phone/dark verification — no auth users or cases; session minting confirmed unavailable. Irish unavailable-form desktop/phone check has no hydration errors or horizontal overflow; populated country lists checked in simulated different Intl environments, not on a live firm form.
+- [ ] Item #32 adjustment reporting completeness for Read-only — restricted support records are not readable; UI reports that adjustment details are restricted, not a fabricated zero. Existing legacy vulnerable_note retained as deprecated, not erased from historical records.
+- [ ] Needs translation (all non-English public forms): supportNeeds, supportHint, supportConsent, adjustment.extra_time, adjustment.alternative_format, adjustment.preferred_channel, adjustment.language_support, adjustment.trusted_third_party, adjustment.simplified_language, adjustment.other.
+- [x] complaints.vulnerable_note deprecated; new writes use complaint_vulnerability.adjustments_note.

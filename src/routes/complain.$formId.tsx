@@ -1,3 +1,4 @@
+import { ADJUSTMENTS } from '@/lib/vulnerability';
 import { createFileRoute } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -27,7 +28,7 @@ export const Route = createFileRoute('/complain/$formId')({
   },
   component: PublicComplaint,
 });
-// The hosted intake routine accepts only the original correspondence languages; others default to English.
+// Keep correspondence aligned with supported public languages.
 function correspondenceDefault(lang: string) { return (INTAKE_CORRESPONDENCE_LANGUAGES as readonly string[]).includes(lang) ? lang : 'en'; }
 function PublicComplaint() {
   const firm = Route.useLoaderData();
@@ -41,8 +42,8 @@ function PublicComplaint() {
   const [error, setError] = useState<ZodIssue | 'server' | null>(null);
   const [correspondenceChanged, setCorrespondenceChanged] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
-  const [v, setV] = useState({ complainant_name: '', complainant_email: '', complainant_phone: '', customer_ref: '', country_code: firm?.countries.length === 1 ? firm.countries[0] ?? '' : '', language: correspondenceDefault(uiLanguage), product: '', category: '', summary: '', desired_outcome: '', vulnerable: false, vulnerable_note: '', privacy_acknowledged: false, website: '' });
-  const set = (key: keyof typeof v, value: string | boolean) => setV(p => ({ ...p, [key]: value }));
+  const [v, setV] = useState({ complainant_name: '', complainant_email: '', complainant_phone: '', customer_ref: '', country_code: firm?.countries.length === 1 ? firm.countries[0] ?? '' : '', language: correspondenceDefault(uiLanguage), product: '', category: '', summary: '', desired_outcome: '', vulnerable: false, adjustments: [] as string[], adjustments_note: '', customer_consented: false, privacy_acknowledged: false, website: '' });
+  const set = (key: keyof typeof v, value: string | boolean | string[]) => setV(p => ({ ...p, [key]: value }));
   useEffect(() => {
     if (lang === undefined) {
       const detected = resolvePublicFormLanguage(undefined, navigator.languages);
@@ -90,7 +91,7 @@ function PublicComplaint() {
           <Choice placeholder={t.select} id="category" label={t.category} required options={t.categories} value={v.category} onChange={x => set('category', x)} />
           <div className="sm:col-span-2"><Field id="summary" label={t.summary}><Textarea id="summary" required rows={5} maxLength={10000} value={v.summary} onChange={e => set('summary', e.target.value)} /></Field></div>
           <div className="sm:col-span-2"><Field id="outcome" label={t.outcome}><Textarea id="outcome" rows={3} maxLength={5000} value={v.desired_outcome} onChange={e => set('desired_outcome', e.target.value)} /></Field></div>
-          <div className="sm:col-span-2"><label className="flex items-start gap-3 text-sm"><Checkbox checked={v.vulnerable} onCheckedChange={x => set('vulnerable', x === true)} className="mt-0.5" />{t.support}</label>{v.vulnerable && <div className="mt-4"><Field id="support" label={t.supportNote}><Textarea id="support" maxLength={1000} value={v.vulnerable_note} onChange={e => set('vulnerable_note', e.target.value)} /></Field></div>}</div>
+          <div className="sm:col-span-2"><label className="flex items-start gap-3 text-sm"><Checkbox checked={v.vulnerable} onCheckedChange={x => set('vulnerable', x === true)} className="mt-0.5" />{t.support}</label>{v.vulnerable && <div className="mt-4 space-y-4"><fieldset><legend className="mb-2 text-sm font-medium">{t.supportNeeds}</legend><div className="grid gap-3 sm:grid-cols-2">{Object.entries(ADJUSTMENTS).map(([key,label])=><label key={key} className="flex items-start gap-3 text-sm"><Checkbox checked={v.adjustments.includes(key)} onCheckedChange={checked=>set('adjustments',checked?[...v.adjustments,key]:v.adjustments.filter(x=>x!==key))}/>{label}</label>)}</div></fieldset><Field id="support" label={t.supportNote}><Textarea id="support" maxLength={500} value={v.adjustments_note} onChange={e=>set('adjustments_note',e.target.value)} aria-describedby="support-hint"/></Field><p id="support-hint" className="text-xs text-muted-foreground">{t.supportHint}</p><label className="flex items-start gap-3 text-sm"><Checkbox checked={v.customer_consented} onCheckedChange={x=>set('customer_consented',x===true)}/>{t.supportConsent}</label></div>}</div>
         </div></fieldset>
         <section className="mt-8 border-t pt-6"><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" /> {t.privacy}</h2><p className="mt-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">{firm.privacy_notice}</p><label className="mt-5 flex items-start gap-3 text-sm"><Checkbox checked={v.privacy_acknowledged} onCheckedChange={x => set('privacy_acknowledged', x === true)} className="mt-0.5" />{t.acknowledgement}</label></section>
         <div className="hidden" aria-hidden="true"><label htmlFor="website">{t.website}</label><input id="website" tabIndex={-1} autoComplete="off" value={v.website} onChange={e => set('website', e.target.value)} /></div>

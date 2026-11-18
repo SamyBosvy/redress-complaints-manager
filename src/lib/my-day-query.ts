@@ -5,7 +5,7 @@ import type { QueueItem, QueuePage } from './queue';
 import { fetchQaPages } from './qa-analytics';
 import type { ResponseLetter, ResponseEvent } from './response-metrics';
 
-export type DayRow = QueueItem & { qa_reviews?: {comments:string|null;decided_at:string|null}[]; adr_cases?: {firm_response_due:string|null}|null };
+export type DayRow = QueueItem & { complaint_vulnerability?:{adjustments:string[];review_by:string|null}[]; qa_reviews?: {comments:string|null;decided_at:string|null}[]; adr_cases?: {firm_response_due:string|null}|null };
 const columns='id,reference,complainant_name,customer_ref,category,product,country_code,status,assigned_to,vulnerable,priority,days_left,current_due,ack_due,received_at';
 export async function fetchDaySection(org:string,user:string,section:DaySection,today:string,zone:string,page=1,size=10):Promise<Omit<QueuePage,'rows'> & {rows:DayRow[];limited:boolean}> {
   let query=supabase.from('complaint_queue').select(daySelect(columns,section),{count:'exact'}).eq('org_id',org);

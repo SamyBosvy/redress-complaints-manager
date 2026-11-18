@@ -1,3 +1,6 @@
+import { CaseTimeline } from '@/components/case-timeline';
+import { NoteComposer } from '@/components/note-composer';
+import { parseTimelineSearch } from '@/lib/timeline';
 import { CaseAttachments } from '@/components/case-attachments';
 import { SupportNeeds } from '@/components/support-needs';
 import { AuditHistory } from '@/components/audit-history';
@@ -44,19 +47,16 @@ const caseQuery = (id: string) =>
   queryOptions({
     queryKey: ["case", id],
     queryFn: async () => {
-      const [c, ev] = await Promise.all([
-        supabase.from("complaint_queue").select("*").eq("id", id).single(),
-        supabase.from("complaint_events").select("*").eq("complaint_id", id).order("created_at", { ascending: false }),
-      ]);
+      const c = await supabase.from("complaint_queue").select("*").eq("id", id).single();
       if (c.error) throw c.error;
-      if (ev.error) throw ev.error;
       const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing,withdrawal_reason,redress_none,goodwill_none,adr_rights_given,root_cause_id').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
       if(privacyError)throw privacyError;
-      return { c: {...c.data,...privacy}, events: ev.data };
+      return { c: {...c.data,...privacy} };
     },
   });
 
 export const Route = createFileRoute("/_authenticated/app/c/$id")({
+  validateSearch: parseTimelineSearch,
   loader: async ({ context, params }) => {
     const m = await context.queryClient.ensureQueryData(membershipQuery);
     if(!m?.org)return;
@@ -79,10 +79,11 @@ const OUTCOMES = { upheld: "Upheld", partially_upheld: "Partially upheld", not_u
 
 function CaseView() {
   const { id } = Route.useParams();
+  const navigate = Route.useNavigate();
   const m = useMembership()!;
   const orgId = m.org!.id;
   const qc = useQueryClient();
-  const { data: { c, events } } = useSuspenseQuery(caseQuery(id));
+  const { data: { c } } = useSuspenseQuery(caseQuery(id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
   const {data:configuredCountries=[]}=useQuery(countriesQuery(orgId));
@@ -91,7 +92,6 @@ function CaseView() {
   const [closeOpen,setCloseOpen] = useState(false);
   const [nextOpen,setNextOpen] = useState(false);
   const [transitionBusy,setTransitionBusy] = useState(false);
-  const [note, setNote] = useState("");
   const [letterOpen, setLetterOpen] = useState(false);
   const [expandedLetters, setExpandedLetters] = useState<Set<string>>(new Set());
   const [revealLetter, setRevealLetter] = useState<string | null>(null);
@@ -109,21 +109,13 @@ function CaseView() {
     document.getElementById(`letter-${letterId}`)?.focus({ preventScroll: true });
   };
 
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["case", id] }), qc.invalidateQueries({ queryKey: ["queue"] }), qc.invalidateQueries({ queryKey: ['case-letters', orgId, id] })]);
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["case", id] }), qc.invalidateQueries({ queryKey: ["queue"] }), qc.invalidateQueries({ queryKey: ['case-letters', orgId, id] }), qc.invalidateQueries({ queryKey: ['timeline', orgId, id] })]);
 
   async function update(patch: Patch) {
     const { error } = await supabase.from("complaints").update(patch).eq("id", id);
     if (error) { toast.error(workflowError(error.message)); return false; }
     await refresh();
     return true;
-  }
-
-  async function addNote() {
-    if (!note.trim()) return;
-    const { error } = await supabase.from("complaint_events").insert({ org_id: orgId, complaint_id: id, actor: m.user.id, kind: "note", detail: { text: note.trim().slice(0, 5000) } });
-    if (error) { toast.error(error.message); return; }
-    setNote("");
-    await refresh();
   }
 
   const status = c.status as Status;
@@ -194,14 +186,7 @@ function CaseView() {
           <CaseAttachments org={orgId} id={id} user={m.user.id} role={m.role} assigned={c.assigned_to} anonymised={Boolean(c.anonymised_at)} processing={Boolean(c.privacy_processing)} legalHold={Boolean(c.legal_hold)} members={members} onSaved={refresh}/>
           <Card title="Internal notes">
             <p className="mb-2 text-xs text-muted-foreground">Never shown to the customer.</p>
-            {canEdit && (
-              <div className="space-y-2">
-                <Textarea aria-label="Internal note" rows={3} placeholder="Add an internal note" value={note} onChange={(e) => setNote(e.target.value)} />
-                <div className="flex justify-between">
-                  <Button size="sm" onClick={addNote} disabled={!note.trim()}>Add note</Button>
-                </div>
-              </div>
-            )}
+            {canEdit && (m.role !== 'agent' || c.assigned_to === m.user.id) && <NoteComposer org={orgId} id={id} onSaved={refresh}/>}
           </Card>
         </div>
 
@@ -223,16 +208,8 @@ function CaseView() {
 
           <CustomerHistory orgId={orgId} currentId={id} identity={c.anonymised_at ? {} : { customerRef: c.customer_ref, email: c.complainant_email }} />
 
-          <Card title="Timeline">
-            <ol className="space-y-4">
-              {events.map((e) => (
-                <li key={e.id} className="border-l-2 pl-3 text-sm">
-                  <EventLine e={e} nameOf={nameOf} letterId={matchLetterEvent(e, letters)} onLetter={showLetter} />
-                  <p className="mt-0.5 text-xs text-muted-foreground tabular">{nameOf(e.actor)} · {new Date(e.created_at).toLocaleString("en-GB")}</p>
-                </li>
-              ))}
-            </ol>
-          </Card>
+          <CaseTimeline org={orgId} id={id} user={m.user.id} search={Route.useSearch()} onSearch={search => { void navigate({ search, replace: true }); }} nameOf={nameOf} renderEvent={e => <EventLine e={e} nameOf={nameOf} letterId={matchLetterEvent(e, letters)} onLetter={showLetter}/>}/>
+
         </div>
       </div>
 

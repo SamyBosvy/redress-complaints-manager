@@ -183,6 +183,20 @@
       "when": 1794988262277,
       "tag": "0025_attachment_uploader_removal_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794993720874,
+      "tag": "0026_timeline_filters_note_mentions",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794993880057,
+      "tag": "0027_note_mentions_atomic_insert_fix",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,8 @@
 # Redress roadmap
 
-- [ ] Item #30: one managed 0026 for private note mentions, atomic note writing, privacy cleanup and scalable case timeline filtering; UI picker, shared URL filters, 50-event pages and My day mentions/badge; both-zone tests and hosted checks. Billing/public intake unchanged.
+- [x] Item #30: private atomic note mentions, shared URL timeline filters/search/order, 50-event keyset pages, keyboard picker, My day unread list/mark-read and sidebar badge; 741/741 tests passed in UTC and Sydney, automatic typecheck/build clean. Hosted recipient RLS, audit/no-delete guards and privacy note-delete cascade verified. QA/Read-only get a mentions-only My day view; caseload/default landing unchanged. Billing/public intake unchanged.
+- [ ] Item #30 signed-in note save/readback, picker/filter/paging, unread badge/mark-read and phone/dark verification — no auth users; minting unavailable, filtered case safely redirects to sign-in without runtime errors. Applied 0026 plus corrective 0027 for an ambiguous SQL recipient variable found by PGlite tests; historical migration files preserved.
+
 
 - [x] Item #31: controlled attachment metadata/backfill, assigned-case storage access, reasoned removal, case evidence UI and privacy metadata/ZIP exports; 723/723 tests passed in both UTC and Sydney with two workers; automatic build/typecheck clean. Hosted policies, triggers, minimised audit, removal RPC and private 20 MB limit verified. Billing and public upload form unchanged.
 - [ ] Item #31 bucket MIME allow-list — native bucket tool exposes no allowed_mime_types setting; client and metadata insert checks enforce requested types, but direct storage upload MIME restriction remains unavailable.

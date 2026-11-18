@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { unreadMentionsQuery } from '@/lib/mentions-query';
 import { Suspense } from 'react';
 import { SetupProgress } from '@/components/setup-progress';
 import { setupRole } from '@/lib/onboarding';
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function AppLayout() {
   const m = useMembership();
+  const mentions = useQuery(unreadMentionsQuery(m?.org?.id ?? '', m?.user.id ?? ''));
   const navigate = useNavigate();
   const router = useRouter();
   const qc = useQueryClient();
@@ -90,7 +93,7 @@ function AppLayout() {
             return <Link key={link.to} to={link.to} activeOptions={{ exact: link.to === '/app' }}
               onClick={() => setMenuOpen(false)}
               className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground">
-              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{link.label}
+              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{link.label}{link.to === '/app/my-day' && Boolean(mentions.data) && <span aria-label={`${mentions.data} unread mentions`} className="ml-auto rounded bg-sidebar-accent px-1.5 text-xs tabular">{mentions.data}</span>}
             </Link>;
           })}
         </div>

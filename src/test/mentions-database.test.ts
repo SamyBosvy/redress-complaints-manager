@@ -1,0 +1,44 @@
+// @vitest-environment node
+import { readFileSync } from 'node:fs';
+import { PGlite } from '@electric-sql/pglite';
+import { beforeAll, beforeEach, afterAll, it, expect } from 'vitest';
+import { EVENT_GROUPS } from '@/lib/timeline';
+const db=new PGlite();
+const org='10000000-0000-4000-8000-000000000001', other='10000000-0000-4000-8000-000000000002', id='20000000-0000-4000-8000-000000000001', author='30000000-0000-4000-8000-000000000001', agent='30000000-0000-4000-8000-000000000002';
+beforeAll(async()=>{
+  await db.exec(`SET TIME ZONE 'UTC';CREATE ROLE authenticated;CREATE ROLE anon;CREATE ROLE service_role;CREATE SCHEMA auth;
+  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('test.user',true),'')::uuid$$;
+  CREATE TYPE app_role AS ENUM('org_admin','complaints_manager','qa_reviewer','agent','read_only');
+  CREATE TABLE organisations(id uuid PRIMARY KEY);CREATE TABLE complaints(id uuid PRIMARY KEY,org_id uuid,assigned_to uuid,anonymised_at timestamptz,privacy_processing boolean DEFAULT false);
+  CREATE TABLE org_members(org_id uuid,user_id uuid,role app_role,active boolean DEFAULT true);CREATE TABLE profiles(id uuid,full_name text,email text);
+  CREATE TABLE complaint_events(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),org_id uuid,complaint_id uuid,actor uuid,kind text,detail jsonb,created_at timestamptz DEFAULT now());
+  CREATE TABLE complaint_attachments(id uuid,org_id uuid,complaint_id uuid,storage_path text,file_name text,removed_at timestamptz);
+  CREATE TABLE audit_log(id bigint GENERATED ALWAYS AS IDENTITY,org_id uuid,table_name text,action text,before jsonb,after jsonb);
+  CREATE FUNCTION has_org_role(uuid,app_role[]) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$SELECT EXISTS(SELECT 1 FROM org_members WHERE org_id=$1 AND user_id=auth.uid() AND active AND role=ANY($2))$$;
+  CREATE FUNCTION audit_capture() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$BEGIN INSERT INTO audit_log(org_id,table_name,action,before,after) VALUES(coalesce(NEW.org_id,OLD.org_id),TG_TABLE_NAME,lower(TG_OP),to_jsonb(OLD),to_jsonb(NEW));RETURN coalesce(NEW,OLD);END$$;
+  GRANT USAGE ON SCHEMA auth,public TO authenticated;GRANT SELECT ON complaints,complaint_events,complaint_attachments TO authenticated;ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;CREATE POLICY case_read ON complaints USING(has_org_role(org_id,ARRAY['org_admin','complaints_manager','qa_reviewer','read_only','agent']::app_role[]));
+  ALTER TABLE complaint_events ENABLE ROW LEVEL SECURITY;CREATE POLICY event_read ON complaint_events USING(has_org_role(org_id,ARRAY['org_admin','complaints_manager','qa_reviewer','read_only','agent']::app_role[]));
+  `);
+  await db.exec(readFileSync('drizzle/migrations/0026_timeline_filters_note_mentions.sql','utf8'));
+  await db.exec(readFileSync('drizzle/migrations/0027_note_mentions_atomic_insert_fix.sql','utf8'));
+},30000);
+beforeEach(async()=>{await db.exec('RESET ROLE;TRUNCATE note_mentions,complaint_events,complaints,organisations,org_members,audit_log CASCADE;');await db.query('INSERT INTO organisations VALUES($1),($2)',[org,other]);await db.query('INSERT INTO complaints(id,org_id,assigned_to) VALUES($1,$2,$3)',[id,org,agent]);await db.query("INSERT INTO org_members VALUES($1,$2,'org_admin',true),($1,$3,'agent',true)",[org,author,agent]);await db.query("SELECT set_config('test.user',$1,false)",[author]);});
+afterAll(()=>db.close());
+const note=(mentions=[agent])=>db.query<{id:string}>('SELECT add_note_with_mentions($1,$2,$3::uuid[]) id',[id,'Hello @Agent',mentions]);
+const signIn=async(user:string)=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('test.user',$1,false)",[user]);await db.exec('SET ROLE authenticated');};
+it('atomic note writes structured deduplicated mentions and audited metadata without text',async()=>{await signIn(author);await note([agent,agent]);await db.exec('RESET ROLE');expect((await db.query('SELECT mentioned_user,mentioned_by FROM note_mentions')).rows).toEqual([{mentioned_user:agent,mentioned_by:author}]);expect((await db.query('SELECT detail FROM complaint_events')).rows[0]).toEqual({detail:{text:'Hello @Agent',mentions:[agent]}});const audit=(await db.query('SELECT after FROM audit_log')).rows;expect(audit).toHaveLength(1);expect(JSON.stringify(audit)).not.toContain('Hello');});
+for(const mode of ['unassigned','other-firm','inactive'])it(`rejects ${mode} recipient without partial writes`,async()=>{if(mode==='unassigned')await db.exec('UPDATE complaints SET assigned_to=NULL');if(mode==='other-firm')await db.query('UPDATE org_members SET org_id=$1 WHERE user_id=$2',[other,agent]);if(mode==='inactive')await db.query('UPDATE org_members SET active=false WHERE user_id=$1',[agent]);await signIn(author);await expect(note()).rejects.toThrow('cannot read');expect((await db.query('SELECT * FROM complaint_events')).rows).toHaveLength(0);});
+it('recipient only reads and marks their own rows; metadata cannot change',async()=>{await signIn(author);await note();expect((await db.query('SELECT * FROM note_mentions')).rows).toHaveLength(0);expect((await db.query('UPDATE note_mentions SET read_at=now() RETURNING id')).rows).toHaveLength(0);await signIn(agent);expect((await db.query('SELECT * FROM note_mentions')).rows).toHaveLength(1);await expect(db.query('UPDATE note_mentions SET mentioned_user=$1',[author])).rejects.toThrow('Only read_at');await db.exec('UPDATE note_mentions SET read_at=now()');expect((await db.query('SELECT read_at IS NOT NULL read FROM note_mentions')).rows[0]).toEqual({read:true});});
+it('no client inserts or deletes or truncation, even for org admin',async()=>{await signIn(author);await note([author]);await expect(db.exec('DELETE FROM note_mentions')).rejects.toThrow();await expect(db.exec('TRUNCATE note_mentions')).rejects.toThrow();await expect(db.exec('INSERT INTO note_mentions DEFAULT VALUES')).rejects.toThrow();});
+for(const lock of ['anonymised_at','privacy_processing'])it(`blocks ${lock}`,async()=>{await db.exec(`UPDATE complaints SET ${lock}=${lock==='anonymised_at'?'now()':'true'}`);await signIn(author);await expect(note()).rejects.toThrow('read-only');});
+it('unassignment retains records but hides them from former recipient',async()=>{await signIn(author);await note();await db.exec('RESET ROLE;UPDATE complaints SET assigned_to=NULL');await signIn(agent);expect((await db.query('SELECT * FROM note_mentions')).rows).toHaveLength(0);await db.exec('RESET ROLE');expect((await db.query('SELECT * FROM note_mentions')).rows).toHaveLength(1);});
+it('privacy note deletion cascades to mentions',async()=>{await signIn(author);await note();await db.exec('RESET ROLE;DELETE FROM complaint_events');expect((await db.query('SELECT * FROM note_mentions')).rows).toHaveLength(0);});
+it('picker contains only active case readers',async()=>{await db.query('UPDATE complaints SET assigned_to=$1',[author]);await signIn(author);const rows=(await db.query('SELECT * FROM case_mention_members($1)',[id])).rows as {user_id:string}[];expect(rows.map(row=>row.user_id)).toEqual([author]);});
+it('SQL and frontend event groups agree for every supported kind',async()=>{for(const[kind,group]of Object.entries(EVENT_GROUPS))expect((await db.query('SELECT timeline_group($1) AS event_group',[kind])).rows[0]).toEqual({event_group:group});});
+it('timeline pages 50 with stable ties, text/mine/groups and reverse order',async()=>{
+ for(let i=0;i<121;i++)await db.query("INSERT INTO complaint_events(org_id,complaint_id,actor,kind,detail,created_at) VALUES($1,$2,$3,'note',$4::jsonb,'2026-11-18T08:00:00Z')",[org,id,author,JSON.stringify({text:`note ${i}`,mentions:[agent]})]);
+ await signIn(agent);
+ type Page={total:number;matching:number;events:{id:string;created_at:string}[]};
+ const page=async(time:string|null=null,cursor:string|null=null,oldest=false)=> (await db.query<{p:Page}>('SELECT case_timeline_page($1,ARRAY[\'notes\'],\'note\',true,$2,$3,$4) p',[id,oldest,time,cursor])).rows[0]?.p;
+ const first=await page();expect(first?.events).toHaveLength(50);expect(first?.total).toBe(121);const last=first?.events.at(-1);if(!last)throw new Error('Missing cursor');const second=await page(last.created_at,last.id);expect(second?.events).toHaveLength(50);expect(new Set([...(first?.events??[]),...(second?.events??[])].map(e=>e.id)).size).toBe(100);expect((await page(null,null,true))?.events[0]?.id).not.toBe(first?.events[0]?.id);
+ });

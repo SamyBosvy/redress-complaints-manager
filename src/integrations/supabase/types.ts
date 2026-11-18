@@ -688,6 +688,68 @@ export type Database = {
           },
         ]
       }
+      note_mentions: {
+        Row: {
+          complaint_id: string
+          created_at: string
+          event_id: string
+          id: string
+          mentioned_by: string
+          mentioned_user: string
+          org_id: string
+          read_at: string | null
+        }
+        Insert: {
+          complaint_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          mentioned_by: string
+          mentioned_user: string
+          org_id: string
+          read_at?: string | null
+        }
+        Update: {
+          complaint_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          mentioned_by?: string
+          mentioned_user?: string
+          org_id?: string
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_mentions_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_mentions_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_mentions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_mentions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           complaint_id: string | null
@@ -1451,10 +1513,38 @@ export type Database = {
         Args: { _country: string; _n: number; _org: string; _start: string }
         Returns: string
       }
+      add_note_with_mentions: {
+        Args: { _complaint_id: string; _mentions?: string[]; _text: string }
+        Returns: string
+      }
       audit_minimise: { Args: { _row: Json; _table: string }; Returns: Json }
       business_days_between: {
         Args: { _country: string; _from: string; _org: string; _to: string }
         Returns: number
+      }
+      can_read_mention_case: {
+        Args: { _case: string; _org: string; _user: string }
+        Returns: boolean
+      }
+      case_mention_members: {
+        Args: { _complaint_id: string }
+        Returns: {
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
+      case_timeline_page: {
+        Args: {
+          _case: string
+          _cursor_id?: string
+          _cursor_time?: string
+          _groups?: string[]
+          _mine?: boolean
+          _oldest?: boolean
+          _query?: string
+        }
+        Returns: Json
       }
       change_org_member: {
         Args: {
@@ -1618,6 +1708,7 @@ export type Database = {
         Args: { _data: Json; _form_id: string; _submission_id: string }
         Returns: string
       }
+      timeline_group: { Args: { _kind: string }; Returns: string }
       transfer_org_admin: {
         Args: { _member: string; _org: string }
         Returns: undefined

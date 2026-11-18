@@ -40,6 +40,7 @@
 
 ## Personal caseload
 - My day uses caller-scoped queue predicates shared with filter-only queue links; only acknowledgement evidence is derived across up to 200 candidates with paged letters/events. Why: bounded personal reads without migrations or hidden caps.
+- Mention reads/counts use recipient RLS with current case-access checks; My day exposes a mentions-only view for non-handlers. Why: retain history but hide mentions after unassignment.
 
 ## Setup progress
 - Wizard drafts use a validated password-free schema scoped per user/org; country search and time-zone defaults share setup-wizard.ts. Why: safe local resume and consistent country handling without schema changes.

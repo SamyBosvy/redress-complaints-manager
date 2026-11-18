@@ -1,3 +1,4 @@
+import { MyMentions } from '@/components/my-mentions';
 import { ADJUSTMENTS } from '@/lib/vulnerability';
 import { useEffect, useRef, useState } from 'react';
 import { SetupProgress } from '@/components/setup-progress';
@@ -21,7 +22,7 @@ export const Route=createFileRoute('/_authenticated/app/my-day')({
  pendingComponent:()=> <TableSkeleton />,
  component:MyDay,
 });
-function MyDay(){const m=useMembership();if(!m?.org||!canUseMyDay(m.role))return <EmptyState title="My day is for case handlers" description="Your queue remains available." primaryAction={<Button asChild><Link to="/app">Queue</Link></Button>}/>;return <DayContent org={m.org.id} user={m.user.id} zone={m.org.time_zone} admin={m.role==='org_admin'} name={String(m.user.user_metadata['full_name']??'').split(' ')[0]??''}/>;}
+function MyDay(){const m=useMembership();if(!m?.org||!canUseMyDay(m.role))return m?.org ? <div className="mx-auto min-w-0 max-w-6xl"><h1 className="text-2xl font-semibold">My day</h1><MyMentions org={m.org.id} user={m.user.id}/></div> : null;return <DayContent org={m.org.id} user={m.user.id} zone={m.org.time_zone} admin={m.role==='org_admin'} name={String(m.user.user_metadata['full_name']??'').split(' ')[0]??''}/>;}
 function DayContent({org,user,zone,admin,name}:{org:string;user:string;zone:string;admin:boolean;name:string}){
  const [today,setToday]=useState(()=>dayContext(zone).today);
  const {data,isRefetchError}=useSuspenseQuery(myDayQuery(org,user,today,zone));
@@ -31,6 +32,7 @@ function DayContent({org,user,zone,admin,name}:{org:string;user:string;zone:stri
  return <div ref={container} className="mx-auto min-w-0 max-w-6xl">
   <SetupProgress />
   <header><p className="text-sm text-muted-foreground">Hello{name?`, ${name}`:''}</p><h1 className="mt-1 text-2xl font-semibold">My day</h1><p className="mt-1 text-sm text-muted-foreground">{new Date(today+'T12:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></header>
+  <MyMentions org={org} user={user}/>
   <dl className="my-6 grid grid-cols-3 gap-3 border-y py-4">{(['open','overdue','week'] as const).map(s=><div key={s}><dt className="text-xs text-muted-foreground">{DAY_LABELS[s]}</dt><dd className="mt-1 text-2xl font-semibold tabular"><Link to="/app" search={dayLink(s,user,today,zone)} className="hover:text-primary">{data[s].total}</Link></dd></div>)}</dl>
   {isRefetchError&&<p role="status" className="mb-4 text-sm text-destructive">Could not refresh reminders. Your last results are still shown.</p>}
   <div className="grid min-w-0 gap-x-8 gap-y-6 lg:grid-cols-2">{DAY_SECTIONS.filter(s=>s!=='open'&&s!=='week').map(section=><section key={section} className="min-w-0 border-t pt-4" aria-label={DAY_LABELS[section]}>

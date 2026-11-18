@@ -50,20 +50,21 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
   const complaints = all.filter(c => c['id'] === data.caseId || (selected['customer_ref'] && c['customer_ref'] === selected['customer_ref']) || (selected['complainant_email'] && String(c['complainant_email']).toLowerCase() === String(selected['complainant_email']).toLowerCase()));
   const ids = new Set(complaints.map(c => String(c['id'])));
   const tables: Record<string, PrivacyRow[]> = { complaints };
-  for (const table of ['complaint_events','letters','qa_reviews','public_form_submissions','adr_cases','complaint_vulnerability'] as const) tables[table] = (await allRows(context.supabase, table, org.id)).filter(r => ids.has(String(r['complaint_id'])));
+  for (const table of ['complaint_events','letters','qa_reviews','public_form_submissions','adr_cases','complaint_vulnerability','complaint_attachments'] as const) tables[table] = (await allRows(context.supabase, table, org.id)).filter(r => ids.has(String(r['complaint_id'])));
   tables['audit_log'] = (await allRows(context.supabase, 'audit_log', org.id)).filter(r => ids.has(String(r['row_id'])) || ids.has(String((r['after'] as Record<string, unknown> | null)?.['complaint_id'])) || ids.has(String((r['before'] as Record<string, unknown> | null)?.['complaint_id'])));
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const attachments = await exportFiles(supabaseAdmin, 'attachments', [...ids].map(id => `${org.id}/${id}`));
+  const activePaths = new Set((tables['complaint_attachments'] ?? []).filter(row => !row['removed_at'] && row['file_name'] !== 'removed').map(row => String(row['storage_path'])));
+  const attachments = await exportFiles(supabaseAdmin, 'attachments', [...ids].map(id => `${org.id}/${id}`), activePaths);
   const { error } = await supabaseAdmin.from('privacy_operations').insert({ org_id: org.id, actor: context.userId, complaint_id: data.caseId, kind: 'subject_access_export', detail: { case_count: ids.size } });
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, scope: 'Selected complaint plus exact matching customer ID or email; review identity matches and redact third-party/internal information before disclosure.', tables, attachments };
 });
 export const exportOrganisationData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const { privacyAdmin, allRows, exportFiles } = await import('./privacy.server');
+  const { privacyAdmin, allRows } = await import('./privacy.server');
   const org = await privacyAdmin(context.supabase, context.userId);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const tables: Record<string, PrivacyRow[]> = { organisations: [org] };
-  for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','privacy_operations','audit_log','adr_cases','complaint_vulnerability'] as const) tables[table] = await allRows(supabaseAdmin, table, org.id);
+  for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','privacy_operations','audit_log','adr_cases','complaint_vulnerability','complaint_attachments'] as const) tables[table] = await allRows(supabaseAdmin, table, org.id);
   const userIds = (tables['org_members'] ?? []).map(r => String(r['user_id']));
   tables['profiles'] = [];
   for (let i=0;i<userIds.length;i+=100) {
@@ -71,7 +72,8 @@ export const exportOrganisationData = createServerFn({ method: 'POST' }).middlew
     if(error) throw error;
     tables['profiles'].push(...data);
   }
-  const attachments = [...await exportFiles(supabaseAdmin,'attachments',[org.id]), ...await exportFiles(supabaseAdmin,'firm-logos',[org.id])];
+  // Organisation export contains evidence metadata, not evidence file contents.
+  const attachments: { bucket: string; path: string; contentType: string; base64: string }[] = [];
   const { error } = await supabaseAdmin.from('privacy_operations').insert({ org_id: org.id, actor: context.userId, kind: 'organisation_export' });
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, tables, attachments };

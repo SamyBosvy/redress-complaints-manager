@@ -170,6 +170,82 @@ export type Database = {
         }
         Relationships: []
       }
+      complaint_attachments: {
+        Row: {
+          category: Database["public"]["Enums"]["attachment_category"]
+          complaint_id: string
+          description: string | null
+          file_name: string
+          id: string
+          mime_type: string
+          org_id: string
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          sha256: string | null
+          size_bytes: number
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["attachment_category"]
+          complaint_id: string
+          description?: string | null
+          file_name: string
+          id?: string
+          mime_type: string
+          org_id: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          sha256?: string | null
+          size_bytes?: number
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["attachment_category"]
+          complaint_id?: string
+          description?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string
+          org_id?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          sha256?: string | null
+          size_bytes?: number
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_attachments_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_attachments_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_attachments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaint_events: {
         Row: {
           actor: string | null
@@ -1494,6 +1570,10 @@ export type Database = {
         Args: { _hashes: Json; _org: string }
         Returns: undefined
       }
+      remove_complaint_attachment: {
+        Args: { _attachment: string; _org: string; _reason: string }
+        Returns: undefined
+      }
       reopen_complaint: {
         Args: {
           _case: string
@@ -1551,6 +1631,11 @@ export type Database = {
         | "agent"
         | "qa_reviewer"
         | "read_only"
+      attachment_category:
+        | "customer_evidence"
+        | "firm_document"
+        | "correspondence"
+        | "other"
       complaint_category:
         | "unauthorised_transaction"
         | "fraud_or_scam"
@@ -1739,6 +1824,12 @@ export const Constants = {
         "agent",
         "qa_reviewer",
         "read_only",
+      ],
+      attachment_category: [
+        "customer_evidence",
+        "firm_document",
+        "correspondence",
+        "other",
       ],
       complaint_category: [
         "unauthorised_transaction",

@@ -1,5 +1,9 @@
 # Redress roadmap
 
+- [x] Item #31: controlled attachment metadata/backfill, assigned-case storage access, reasoned removal, case evidence UI and privacy metadata/ZIP exports; 723/723 tests passed in both UTC and Sydney with two workers; automatic build/typecheck clean. Hosted policies, triggers, minimised audit, removal RPC and private 20 MB limit verified. Billing and public upload form unchanged.
+- [ ] Item #31 bucket MIME allow-list — native bucket tool exposes no allowed_mime_types setting; client and metadata insert checks enforce requested types, but direct storage upload MIME restriction remains unavailable.
+- [ ] Item #31 signed-in upload/open/remove, SAR ZIP, erasure/retention and phone/dark verification — no auth users or complaint records; signed-out case redirects safely with no runtime errors. Applied 0024 plus corrective 0025 because PostgreSQL SELECT-policy enforcement prevented uploader removal after hiding the removed row; checked RPC preserves the intended permissions.
+
 - [x] Item #50: setup wizard country/native-name search, exact EU/EEA selections, official FIN-NET link/copy/explicit ADR deferral, scoped password-free draft resume/clear, five-step progress/leave warnings and home-default searchable time zones; lowercase QA audit detection. Full suites: 612/612 tests in UTC and Australia/Sydney; automatic typecheck/build passed. No migrations, billing, RLS, triggers or guards changed.
 - [ ] Item #50 signed-in setup save/readback, resume and phone/dark-mode verification — no auth users; session minting confirmed unavailable. Signed-out /setup redirects to /auth without runtime errors.
 

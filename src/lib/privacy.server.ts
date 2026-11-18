@@ -38,9 +38,10 @@ export async function removeFiles(client: Client, bucket: string, prefix: string
     if (error) throw error;
   }
 }
-export async function exportFiles(client: Client, bucket: string, prefixes: string[]) {
+export async function exportFiles(client: Client, bucket: string, prefixes: string[], allowedPaths?: ReadonlySet<string>) {
   const files: { bucket: string; path: string; contentType: string; base64: string }[] = [];
   for (const prefix of prefixes) for (const path of await storagePaths(client, bucket, prefix)) {
+    if (allowedPaths && !allowedPaths.has(path)) continue;
     const { data, error } = await client.storage.from(bucket).download(path);
     if (error) throw error;
     files.push({ bucket, path, contentType: data.type, base64: Buffer.from(await data.arrayBuffer()).toString('base64') });

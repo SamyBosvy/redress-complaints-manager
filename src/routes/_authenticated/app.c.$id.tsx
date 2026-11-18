@@ -1,3 +1,4 @@
+import { CaseAttachments } from '@/components/case-attachments';
 import { SupportNeeds } from '@/components/support-needs';
 import { AuditHistory } from '@/components/audit-history';
 import { CaseReopen } from '@/components/case-reopen';
@@ -13,7 +14,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, FileDown, Paperclip } from "lucide-react";
+import { ArrowLeft, Copy, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,22 +126,6 @@ function CaseView() {
     await refresh();
   }
 
-  async function upload(file: File) {
-    if (file.size > 20 * 1024 * 1024) { toast.error("Files must be 20 MB or smaller."); return; }
-    const path = `${orgId}/${id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
-    const { error } = await supabase.storage.from("attachments").upload(path, file);
-    if (error) { toast.error(error.message); return; }
-    await supabase.from("complaint_events").insert({ org_id: orgId, complaint_id: id, actor: m.user.id, kind: "attachment", detail: { path, name: file.name, size: file.size } });
-    await refresh();
-    toast.success("Attachment added.");
-  }
-
-  async function openAttachment(path: string) {
-    const { data, error } = await supabase.storage.from("attachments").createSignedUrl(path, 60);
-    if (error) { toast.error(error.message); return; }
-    window.open(data.signedUrl, "_blank", "noopener");
-  }
-
   const status = c.status as Status;
 
   return (
@@ -206,16 +191,13 @@ function CaseView() {
           <CaseAdr timeZone={m.org?.time_zone??'Europe/Dublin'} orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
           <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
-          <Card title="Internal notes and attachments">
+          <CaseAttachments org={orgId} id={id} user={m.user.id} role={m.role} assigned={c.assigned_to} anonymised={Boolean(c.anonymised_at)} processing={Boolean(c.privacy_processing)} legalHold={Boolean(c.legal_hold)} members={members} onSaved={refresh}/>
+          <Card title="Internal notes">
             <p className="mb-2 text-xs text-muted-foreground">Never shown to the customer.</p>
             {canEdit && (
               <div className="space-y-2">
                 <Textarea aria-label="Internal note" rows={3} placeholder="Add an internal note" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div className="flex justify-between">
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-primary hover:underline">
-                    <Paperclip aria-hidden="true" className="h-4 w-4" /> Attach file
-                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
-                  </label>
                   <Button size="sm" onClick={addNote} disabled={!note.trim()}>Add note</Button>
                 </div>
               </div>
@@ -245,7 +227,7 @@ function CaseView() {
             <ol className="space-y-4">
               {events.map((e) => (
                 <li key={e.id} className="border-l-2 pl-3 text-sm">
-                  <EventLine e={e} nameOf={nameOf} onOpen={openAttachment} letterId={matchLetterEvent(e, letters)} onLetter={showLetter} />
+                  <EventLine e={e} nameOf={nameOf} letterId={matchLetterEvent(e, letters)} onLetter={showLetter} />
                   <p className="mt-0.5 text-xs text-muted-foreground tabular">{nameOf(e.actor)} · {new Date(e.created_at).toLocaleString("en-GB")}</p>
                 </li>
               ))}
@@ -263,7 +245,7 @@ function CaseView() {
 }
 
 type Ev = { kind: string; detail: unknown };
-function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; onOpen: (p: string) => void; letterId?: string | undefined; onLetter: (id: string) => void }) {
+function EventLine({ e, nameOf, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
     case "adr_escalated": case "adr_decision": return <p>{d.text || "ADR working record removed"}</p>;
@@ -277,7 +259,8 @@ function EventLine({ e, nameOf, onOpen, letterId, onLetter }: { e: Ev; nameOf: (
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
     case "letter_sent": return <p>{letterId ? <a href={`#letter-${letterId}`} className="text-primary hover:underline" onClick={event => { event.preventDefault(); onLetter(letterId); }}>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></a> : <>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></>}</p>;
     case "note": return <p className="whitespace-pre-wrap rounded bg-muted px-2 py-1">{d.text}</p>;
-    case "attachment": return <p>Attachment: <button className="text-primary hover:underline" onClick={() => onOpen(d.path!)}>{d.name}</button></p>;
+    case "attachment": return <p>Attachment added</p>;
+    case "attachment_removed": return <p>Attachment removed</p>;
     default: return <p>{e.kind}</p>;
   }
 }

@@ -1,5 +1,7 @@
 # Redress roadmap
 
+- [ ] Item #30: one managed 0026 for private note mentions, atomic note writing, privacy cleanup and scalable case timeline filtering; UI picker, shared URL filters, 50-event pages and My day mentions/badge; both-zone tests and hosted checks. Billing/public intake unchanged.
+
 - [x] Item #31: controlled attachment metadata/backfill, assigned-case storage access, reasoned removal, case evidence UI and privacy metadata/ZIP exports; 723/723 tests passed in both UTC and Sydney with two workers; automatic build/typecheck clean. Hosted policies, triggers, minimised audit, removal RPC and private 20 MB limit verified. Billing and public upload form unchanged.
 - [ ] Item #31 bucket MIME allow-list — native bucket tool exposes no allowed_mime_types setting; client and metadata insert checks enforce requested types, but direct storage upload MIME restriction remains unavailable.
 - [ ] Item #31 signed-in upload/open/remove, SAR ZIP, erasure/retention and phone/dark verification — no auth users or complaint records; signed-out case redirects safely with no runtime errors. Applied 0024 plus corrective 0025 because PostgreSQL SELECT-policy enforcement prevented uploader removal after hiding the removed row; checked RPC preserves the intended permissions.

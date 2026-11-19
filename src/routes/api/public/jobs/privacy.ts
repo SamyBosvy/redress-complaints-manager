@@ -7,6 +7,7 @@ export const Route=createFileRoute('/api/public/jobs/privacy')({server:{handlers
   const { removeFiles, allRows }=await import('@/lib/privacy.server');
   let processed=0;
   try{
+    const {error:notificationError}=await supabaseAdmin.rpc('notification_retention_job');if(notificationError)throw notificationError;
     const {data:candidates,error}=await supabaseAdmin.rpc('privacy_retention_candidates');if(error)throw error;
     for(const org of candidates){
       const cases = await allRows(supabaseAdmin,'complaints',org.org_id);

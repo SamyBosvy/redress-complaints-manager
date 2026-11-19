@@ -803,32 +803,70 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          in_app: boolean
+          kind: string
+          org_id: string
+          user_id: string
+        }
+        Insert: {
+          in_app?: boolean
+          kind: string
+          org_id: string
+          user_id: string
+        }
+        Update: {
+          in_app?: boolean
+          kind?: string
+          org_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
+          actor: string | null
           complaint_id: string | null
           created_at: string
+          dedupe_key: string | null
           id: string
           kind: string
+          link_path: string | null
           org_id: string
           read_at: string | null
           title: string
           user_id: string
         }
         Insert: {
+          actor?: string | null
           complaint_id?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind: string
+          link_path?: string | null
           org_id: string
           read_at?: string | null
           title: string
           user_id: string
         }
         Update: {
+          actor?: string | null
           complaint_id?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind?: string
+          link_path?: string | null
           org_id?: string
           read_at?: string | null
           title?: string
@@ -1663,6 +1701,8 @@ export type Database = {
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
       my_organisations: { Args: never; Returns: Json }
+      notification_deadline_job: { Args: { _at?: string }; Returns: number }
+      notification_retention_job: { Args: never; Returns: number }
       org_member_directory: {
         Args: { _org: string }
         Returns: {

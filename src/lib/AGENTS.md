@@ -52,3 +52,6 @@
 
 ## Support needs
 - Structured support data is a restricted tenant child record; flag sync uses existing reasoned edit guards, privacy erasure removes it, and audit capture omits sensitive drivers/notes. Why: minimise special-category exposure without weakening workflow locks.
+
+## Notifications
+- Notification writes are trusted triggers only; recipient RLS rechecks current case access, preferences run at insertion, and scheduled deadline/retention RPCs are service-only. Why: prevent spoofing and stale-access leaks without email or realtime.

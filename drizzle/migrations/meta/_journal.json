@@ -218,6 +218,20 @@
       "when": 1795075332930,
       "tag": "0030_exact_acknowledgement_filters",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795076467146,
+      "tag": "0031_secure_in_app_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795076613807,
+      "tag": "0032_notification_job_query_guard",
+      "breakpoints": true
     }
   ]
 }

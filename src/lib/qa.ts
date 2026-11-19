@@ -51,17 +51,3 @@ export const qaReviewsQuery = (orgId: string, filters: QaSearch = {}, zone = 'Eu
       return rows.filter(r=>matchesQaFilters(r,filters,zone));
     },
   });
-
-export const notificationsQuery = queryOptions({
-  queryKey: ["notifications"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) throw error;
-    return data;
-  },
-  refetchInterval: 60_000,
-});

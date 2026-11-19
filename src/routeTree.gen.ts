@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppFormsRouteImport } from './routes/_authenticated/app.forms'
 import { Route as AuthenticatedAppMyDayRouteImport } from './routes/_authenticated/app.my-day'
 import { Route as AuthenticatedAppNewRouteImport } from './routes/_authenticated/app.new'
+import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/app.notifications'
 import { Route as AuthenticatedAppPrivacyRouteImport } from './routes/_authenticated/app.privacy'
 import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/app.qa'
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
@@ -41,6 +42,7 @@ import { Route as AuthenticatedAppSettingsImportRouteImport } from './routes/_au
 import { Route as AuthenticatedAppSettingsRootCausesRouteImport } from './routes/_authenticated/app.settings.root-causes'
 import { Route as AuthenticatedAppSettingsRulesRouteImport } from './routes/_authenticated/app.settings.rules'
 import { Route as AuthenticatedAppSettingsUsersRouteImport } from './routes/_authenticated/app.settings.users'
+import { Route as ApiPublicJobsNotificationsRouteImport } from './routes/api/public/jobs/notifications'
 import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
 
 const IndexRoute = IndexRouteImport.update({
@@ -132,6 +134,12 @@ const AuthenticatedAppNewRoute = AuthenticatedAppNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppNotificationsRoute =
+  AuthenticatedAppNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPrivacyRoute = AuthenticatedAppPrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -212,6 +220,12 @@ const AuthenticatedAppSettingsUsersRoute =
     path: '/users',
     getParentRoute: () => AuthenticatedAppSettingsRoute,
   } as any)
+const ApiPublicJobsNotificationsRoute =
+  ApiPublicJobsNotificationsRouteImport.update({
+    id: '/api/public/jobs/notifications',
+    path: '/api/public/jobs/notifications',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicJobsPrivacyRoute = ApiPublicJobsPrivacyRouteImport.update({
   id: '/api/public/jobs/privacy',
   path: '/api/public/jobs/privacy',
@@ -235,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
@@ -249,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
+  '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
@@ -268,6 +284,7 @@ export interface FileRoutesByTo {
   '/app/forms': typeof AuthenticatedAppFormsRoute
   '/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/app/new': typeof AuthenticatedAppNewRoute
+  '/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
@@ -281,6 +298,7 @@ export interface FileRoutesByTo {
   '/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
+  '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
 }
@@ -303,6 +321,7 @@ export interface FileRoutesById {
   '/_authenticated/app/forms': typeof AuthenticatedAppFormsRoute
   '/_authenticated/app/my-day': typeof AuthenticatedAppMyDayRoute
   '/_authenticated/app/new': typeof AuthenticatedAppNewRoute
+  '/_authenticated/app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/_authenticated/app/privacy': typeof AuthenticatedAppPrivacyRoute
   '/_authenticated/app/qa': typeof AuthenticatedAppQaRoute
   '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
@@ -317,6 +336,7 @@ export interface FileRoutesById {
   '/_authenticated/app/settings/root-causes': typeof AuthenticatedAppSettingsRootCausesRoute
   '/_authenticated/app/settings/rules': typeof AuthenticatedAppSettingsRulesRoute
   '/_authenticated/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
+  '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
@@ -339,6 +359,7 @@ export interface FileRouteTypes {
     | '/app/forms'
     | '/app/my-day'
     | '/app/new'
+    | '/app/notifications'
     | '/app/privacy'
     | '/app/qa'
     | '/app/reports'
@@ -353,6 +374,7 @@ export interface FileRouteTypes {
     | '/app/settings/root-causes'
     | '/app/settings/rules'
     | '/app/settings/users'
+    | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
     | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -372,6 +394,7 @@ export interface FileRouteTypes {
     | '/app/forms'
     | '/app/my-day'
     | '/app/new'
+    | '/app/notifications'
     | '/app/privacy'
     | '/app/qa'
     | '/app/reports'
@@ -385,6 +408,7 @@ export interface FileRouteTypes {
     | '/app/settings/root-causes'
     | '/app/settings/rules'
     | '/app/settings/users'
+    | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
     | '/app/settings'
   id:
@@ -406,6 +430,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/forms'
     | '/_authenticated/app/my-day'
     | '/_authenticated/app/new'
+    | '/_authenticated/app/notifications'
     | '/_authenticated/app/privacy'
     | '/_authenticated/app/qa'
     | '/_authenticated/app/reports'
@@ -420,6 +445,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/settings/root-causes'
     | '/_authenticated/app/settings/rules'
     | '/_authenticated/app/settings/users'
+    | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
     | '/_authenticated/app/settings/'
   fileRoutesById: FileRoutesById
@@ -435,6 +461,7 @@ export interface RootRouteChildren {
   TwoFactorRoute: typeof TwoFactorRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   ComplainFormIdRoute: typeof ComplainFormIdRoute
+  ApiPublicJobsNotificationsRoute: typeof ApiPublicJobsNotificationsRoute
   ApiPublicJobsPrivacyRoute: typeof ApiPublicJobsPrivacyRoute
 }
 
@@ -566,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppNewRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/notifications': {
+      id: '/_authenticated/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AuthenticatedAppNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/privacy': {
       id: '/_authenticated/app/privacy'
       path: '/privacy'
@@ -664,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedAppSettingsRoute
     }
+    '/api/public/jobs/notifications': {
+      id: '/api/public/jobs/notifications'
+      path: '/api/public/jobs/notifications'
+      fullPath: '/api/public/jobs/notifications'
+      preLoaderRoute: typeof ApiPublicJobsNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/privacy': {
       id: '/api/public/jobs/privacy'
       path: '/api/public/jobs/privacy'
@@ -708,6 +749,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppFormsRoute: typeof AuthenticatedAppFormsRoute
   AuthenticatedAppMyDayRoute: typeof AuthenticatedAppMyDayRoute
   AuthenticatedAppNewRoute: typeof AuthenticatedAppNewRoute
+  AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRoute
   AuthenticatedAppPrivacyRoute: typeof AuthenticatedAppPrivacyRoute
   AuthenticatedAppQaRoute: typeof AuthenticatedAppQaRoute
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
@@ -723,6 +765,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppFormsRoute: AuthenticatedAppFormsRoute,
   AuthenticatedAppMyDayRoute: AuthenticatedAppMyDayRoute,
   AuthenticatedAppNewRoute: AuthenticatedAppNewRoute,
+  AuthenticatedAppNotificationsRoute: AuthenticatedAppNotificationsRoute,
   AuthenticatedAppPrivacyRoute: AuthenticatedAppPrivacyRoute,
   AuthenticatedAppQaRoute: AuthenticatedAppQaRoute,
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
@@ -762,6 +805,7 @@ const rootRouteChildren: RootRouteChildren = {
   TwoFactorRoute: TwoFactorRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   ComplainFormIdRoute: ComplainFormIdRoute,
+  ApiPublicJobsNotificationsRoute: ApiPublicJobsNotificationsRoute,
   ApiPublicJobsPrivacyRoute: ApiPublicJobsPrivacyRoute,
 }
 export const routeTree = rootRouteImport

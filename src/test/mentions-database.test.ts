@@ -21,6 +21,11 @@ beforeAll(async()=>{
   `);
   await db.exec(readFileSync('drizzle/migrations/0026_timeline_filters_note_mentions.sql','utf8'));
   await db.exec(readFileSync('drizzle/migrations/0027_note_mentions_atomic_insert_fix.sql','utf8'));
+  await db.exec(`CREATE TABLE letters(id uuid,status text,sent_at timestamptz,approved_by uuid);
+    CREATE TABLE qa_reviews(id uuid,org_id uuid,complaint_id uuid,letter_id uuid,kind text,status text,reviewer uuid,comments text);
+    CREATE TABLE notifications(org_id uuid,user_id uuid,kind text,title text,complaint_id uuid);
+    ALTER TABLE complaints ADD COLUMN status text, ADD COLUMN reference text;`);
+  await db.exec(readFileSync('drizzle/migrations/0028_qa_timeline_events.sql','utf8'));
 },30000);
 beforeEach(async()=>{await db.exec('RESET ROLE;TRUNCATE note_mentions,complaint_events,complaints,organisations,org_members,audit_log CASCADE;');await db.query('INSERT INTO organisations VALUES($1),($2)',[org,other]);await db.query('INSERT INTO complaints(id,org_id,assigned_to) VALUES($1,$2,$3)',[id,org,agent]);await db.query("INSERT INTO org_members VALUES($1,$2,'org_admin',true),($1,$3,'agent',true)",[org,author,agent]);await db.query("SELECT set_config('test.user',$1,false)",[author]);});
 afterAll(()=>db.close());

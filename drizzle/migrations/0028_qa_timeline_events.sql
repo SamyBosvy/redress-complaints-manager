@@ -1,0 +1,30 @@
+CREATE OR REPLACE FUNCTION public.qa_reviews_after_decide() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE c public.complaints%ROWTYPE; BEGIN IF NEW.kind='approval' AND OLD.status='pending' AND NEW.status='approved' THEN UPDATE public.letters SET status='sent',sent_at=now(),approved_by=NEW.reviewer WHERE id=NEW.letter_id; UPDATE public.complaints SET status='final_response_sent' WHERE id=NEW.complaint_id AND status='pending_qa'; INSERT INTO public.complaint_events(org_id,complaint_id,actor,kind,detail) VALUES(NEW.org_id,NEW.complaint_id,NEW.reviewer,'letter_sent',jsonb_build_object('letter_id',NEW.letter_id,'template','final','language','','qa','approved')); ELSIF NEW.kind='approval' AND OLD.status='pending' AND NEW.status='returned' THEN INSERT INTO public.complaint_events(org_id,complaint_id,actor,kind,detail) VALUES(NEW.org_id,NEW.complaint_id,NEW.reviewer,'qa_returned',jsonb_build_object('letter_id',NEW.letter_id) || CASE WHEN nullif(trim(NEW.comments),'') IS NOT NULL THEN jsonb_build_object('comment',left(NEW.comments,1000)) ELSE '{}'::jsonb END); UPDATE public.complaints SET status='under_investigation' WHERE id=NEW.complaint_id AND status='pending_qa' RETURNING * INTO c; IF c.assigned_to IS NOT NULL THEN INSERT INTO public.notifications(org_id,user_id,kind,title,complaint_id) VALUES(NEW.org_id,c.assigned_to,'qa_returned','Final response returned by QA: ' || c.reference,NEW.complaint_id); END IF; END IF; RETURN NEW; END $$;
+CREATE OR REPLACE FUNCTION public.timeline_group(_kind text) RETURNS text LANGUAGE sql IMMUTABLE SET search_path=public AS $$ SELECT CASE WHEN _kind='note' THEN 'notes' WHEN _kind IN ('letter_sent','letter_drafted') THEN 'letters' WHEN _kind IN ('status','deadline','deadline_recalculated','reopened') THEN 'status' WHEN _kind IN ('attachment','attachment_removed') THEN 'attachments' WHEN _kind='qa_returned' THEN 'qa' WHEN _kind IN ('adr_escalated','adr_decision') THEN 'adr' ELSE 'system' END $$;
+CREATE OR REPLACE FUNCTION public.case_timeline_page(_case uuid,_groups text[] DEFAULT '{}',_query text DEFAULT '',_mine boolean DEFAULT false,_oldest boolean DEFAULT false,_cursor_time timestamptz DEFAULT NULL,_cursor_id uuid DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=public AS $$ DECLARE o uuid; result jsonb; BEGIN
+ SELECT org_id INTO o FROM public.complaints WHERE id=_case;
+ IF o IS NULL OR NOT public.can_read_mention_case(o,_case,auth.uid()) THEN RAISE EXCEPTION 'Case access denied'; END IF;
+ WITH filtered AS (
+ SELECT e.* FROM public.complaint_events e LEFT JOIN public.complaint_attachments a ON a.complaint_id=e.complaint_id AND a.org_id=e.org_id AND a.storage_path=e.detail->>'path'
+ WHERE e.complaint_id=_case AND e.org_id=o AND (cardinality(_groups)=0 OR public.timeline_group(e.kind)=ANY(_groups) OR ('qa'=ANY(_groups) AND e.kind='letter_sent' AND e.detail->>'qa' IS NOT NULL)) AND (NOT _mine OR e.detail->'mentions' @> to_jsonb(ARRAY[auth.uid()::text])) AND (coalesce(_query,'')='' OR (e.kind='note' AND strpos(lower(coalesce(e.detail->>'text','')),lower(left(_query,200)))>0) OR (e.kind IN ('attachment','attachment_removed') AND strpos(lower(coalesce(a.file_name,e.detail->>'name','')),lower(left(_query,200)))>0))
+ ), page AS (SELECT * FROM filtered WHERE _cursor_time IS NULL OR CASE WHEN _oldest THEN (created_at,id)>(_cursor_time,_cursor_id) ELSE (created_at,id)<(_cursor_time,_cursor_id) END ORDER BY CASE WHEN _oldest THEN created_at END ASC,CASE WHEN _oldest THEN id END ASC,CASE WHEN NOT _oldest THEN created_at END DESC,CASE WHEN NOT _oldest THEN id END DESC LIMIT 50)
+ SELECT jsonb_build_object('total',(SELECT count(*) FROM public.complaint_events WHERE org_id=o AND complaint_id=_case),'matching',(SELECT count(*) FROM filtered),'events',coalesce((SELECT jsonb_agg(to_jsonb(page)) FROM page),'[]'::jsonb)) INTO result;
+ RETURN result; END $$;
+CREATE OR REPLACE FUNCTION public.privacy_anonymise_case(_org uuid,_case uuid,_reason text,_actor uuid,_retention boolean DEFAULT false) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $fn$
+DECLARE c public.complaints; years integer;
+BEGIN
+ SELECT * INTO c FROM public.complaints WHERE id=_case AND org_id=_org FOR UPDATE;
+ IF c.id IS NULL THEN RAISE EXCEPTION 'Complaint not found'; END IF;
+ IF c.anonymised_at IS NOT NULL THEN RETURN; END IF;
+ IF c.closed_at IS NULL OR c.status<>'closed' OR c.legal_hold OR NOT c.privacy_processing THEN RAISE EXCEPTION 'Complaint must be claimed and eligible'; END IF;
+ SELECT retention_years INTO years FROM public.organisations WHERE id=_org;
+ IF _retention AND c.closed_at+make_interval(years=>years)>now() THEN RAISE EXCEPTION 'Retention has not elapsed'; END IF;
+ IF length(trim(COALESCE(_reason,'')))<10 THEN RAISE EXCEPTION 'A lawful basis is required'; END IF;
+ DELETE FROM public.letters WHERE complaint_id=_case AND org_id=_org;
+ DELETE FROM public.complaint_events WHERE complaint_id=_case AND org_id=_org AND kind IN ('note','attachment');
+ UPDATE public.complaint_events SET detail=CASE WHEN kind='qa_returned' THEN detail-'reason'-'comment' ELSE detail-'reason' END WHERE complaint_id=_case AND org_id=_org;
+ UPDATE public.qa_reviews SET comments=NULL,scorecard='{}'::jsonb WHERE complaint_id=_case AND org_id=_org;
+ DELETE FROM public.notifications WHERE complaint_id=_case AND org_id=_org;
+ UPDATE public.complaints SET complainant_name='Anonymised complainant',complainant_email=NULL,complainant_phone=NULL,customer_ref=NULL,vulnerable_note=NULL,summary='Personal data removed',desired_outcome=NULL,holding_reason=NULL,root_cause_note=NULL,root_cause_category=NULL,anonymised_at=now(),privacy_processing=false WHERE id=_case AND org_id=_org;
+ INSERT INTO public.privacy_operations(org_id,actor,complaint_id,kind,detail) VALUES(_org,CASE WHEN _retention THEN NULL ELSE _actor END,_case,CASE WHEN _retention THEN 'retention_anonymisation' ELSE 'working_record_erasure' END,jsonb_build_object('reason',_reason,'historical_audit_retained',true));
+END $fn$;
+NOTIFY pgrst,'reload schema';

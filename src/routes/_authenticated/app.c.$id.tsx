@@ -73,7 +73,7 @@ export const Route = createFileRoute("/_authenticated/app/c/$id")({
 });
 
 type Patch = Database["public"]["Tables"]["complaints"]["Update"];
-type Detail = { changes?: Record<string,{old:unknown;new:unknown}>; channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; path?: string; name?: string };
+type Detail = { changes?: Record<string,{old:unknown;new:unknown}>; channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; comment?: string; path?: string; name?: string };
 
 const OUTCOMES = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" } as const;
 
@@ -235,6 +235,7 @@ function EventLine({ e, nameOf, letterId, onLetter }: { e: Ev; nameOf: (u: strin
     case "outcome": return <p>Outcome updated: {d.after?.outcome ? OUTCOMES[d.after.outcome as keyof typeof OUTCOMES] : "—"}</p>;
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
     case "letter_sent": return <p>{letterId ? <a href={`#letter-${letterId}`} className="text-primary hover:underline" onClick={event => { event.preventDefault(); onLetter(letterId); }}>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></a> : <>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></>}</p>;
+    case "qa_returned": return <p className="whitespace-pre-wrap">Final response returned by QA{d.comment ? `: ${d.comment}` : ''}</p>;
     case "note": return <p className="whitespace-pre-wrap rounded bg-muted px-2 py-1">{d.text}</p>;
     case "attachment": return <p>Attachment added</p>;
     case "attachment_removed": return <p>Attachment removed</p>;

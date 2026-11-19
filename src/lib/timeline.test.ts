@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { EVENT_GROUPS, eventGroup, parseTimelineSearch, mentionAt, mentionSegments } from './timeline';
+import { EVENT_GROUPS, eventGroup, eventGroups, parseTimelineSearch, mentionAt, mentionSegments } from './timeline';
 describe('timeline filters', () => {
   it('maps every known event once and future kinds to System', () => {
     for (const [kind, group] of Object.entries(EVENT_GROUPS)) expect(eventGroup(kind)).toBe(group);
@@ -15,6 +15,16 @@ describe('timeline filters', () => {
     expect(parseTimelineSearch({ tl:'notes,letters,notes,invalid', q:'evidence', mentions:'true', oldest:true })).toEqual({tl:'notes,letters',q:'evidence',mentions:true,oldest:true});
     expect(parseTimelineSearch({ tl:[],q:4,mentions:'false',oldest:'no' })).toEqual({});
     expect(parseTimelineSearch({q:'x'.repeat(300)}).q?.length).toBe(200);
+  });
+  it('includes QA-approved letters in both groups without inventing QA event kinds', () => {
+    expect(eventGroups('letter_sent', { qa: 'approved' })).toEqual(['letters', 'qa']);
+    expect(eventGroups('letter_sent', { qa: null })).toEqual(['letters']);
+    expect(eventGroups('letter_sent', {})).toEqual(['letters']);
+    expect(eventGroups('letter_drafted', { qa: 'approved' })).toEqual(['letters']);
+    expect(eventGroups('qa_returned')).toEqual(['qa']);
+    for (const kind of ['qa_passed', 'qa_failed', 'qa_pending', 'qa_sample', 'qa_decided', 'qa_review', 'qa_approved']) {
+      expect(eventGroup(kind)).toBe('system');
+    }
   });
   it('roundtrips a shared URL without IDs', () => {
     const params = new URLSearchParams('tl=notes,letters&q=refund&mentions=true');

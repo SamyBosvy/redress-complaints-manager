@@ -1,9 +1,13 @@
 export const TIMELINE_GROUPS = { notes: 'Notes', letters: 'Letters', status: 'Status and deadlines', attachments: 'Attachments', qa: 'QA', adr: 'ADR', system: 'System' } as const;
 export type TimelineGroup = keyof typeof TIMELINE_GROUPS;
 export const EVENT_GROUPS: Record<string, TimelineGroup> = {
-  note: 'notes', letter_sent: 'letters', letter_drafted: 'letters', status: 'status', deadline: 'status', deadline_recalculated: 'status', reopened: 'status', attachment: 'attachments', attachment_removed: 'attachments', qa_approved: 'qa', qa_returned: 'qa', qa_passed: 'qa', qa_failed: 'qa', qa_pending: 'qa', qa_sample: 'qa', qa_decided: 'qa', qa_review: 'qa', adr_escalated: 'adr', adr_decision: 'adr', created: 'system', reassigned: 'system', outcome: 'system', priority: 'system', details_edited: 'system',
+  note: 'notes', letter_sent: 'letters', letter_drafted: 'letters', status: 'status', deadline: 'status', deadline_recalculated: 'status', reopened: 'status', attachment: 'attachments', attachment_removed: 'attachments', qa_returned: 'qa', adr_escalated: 'adr', adr_decision: 'adr', created: 'system', reassigned: 'system', outcome: 'system', priority: 'system', details_edited: 'system',
 };
 export const eventGroup = (kind: string): TimelineGroup => EVENT_GROUPS[kind] ?? 'system';
+export function eventGroups(kind: string, detail: unknown = null): TimelineGroup[] {
+  const qa = detail !== null && typeof detail === 'object' && 'qa' in detail ? detail.qa : null;
+  return kind === 'letter_sent' && qa !== null && qa !== undefined ? ['letters', 'qa'] : [eventGroup(kind)];
+}
 export type TimelineSearch = { tl?: string | undefined; q?: string | undefined; mentions?: boolean | undefined; oldest?: boolean | undefined };
 export function parseTimelineSearch(value: Record<string, unknown>): TimelineSearch {
   const groups = typeof value['tl'] === 'string' ? [...new Set(value['tl'].split(',').filter(group => group in TIMELINE_GROUPS))] : [];

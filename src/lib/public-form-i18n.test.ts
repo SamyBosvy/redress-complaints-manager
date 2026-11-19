@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { PUBLIC_FORM_I18N, PUBLIC_FORM_LANGUAGES, resolvePublicFormLanguage, publicFormIssueMessage, publicFormServerError } from './public-form-i18n';
+import { SUPPORT_KEYS, PUBLIC_FORM_I18N, PUBLIC_FORM_LANGUAGES, resolvePublicFormLanguage, publicFormIssueMessage, publicFormServerError } from './public-form-i18n';
 import { PRODUCTS, CATEGORIES, LANGUAGES } from './complaints';
 import { COUNTRIES } from './countries';
 import { publicComplaintSchema } from './public-forms';
 
 describe('Public form languages', () => {
   for (const lang of PUBLIC_FORM_LANGUAGES) {
+    it(`${lang} has all ten nonempty support keys`, () => {
+      expect(SUPPORT_KEYS).toHaveLength(10);
+      for (const key of SUPPORT_KEYS) expect(PUBLIC_FORM_I18N[lang][key as keyof typeof PUBLIC_FORM_I18N.en]).toEqual(expect.stringMatching(/\S/));
+    });
     it(`${lang} has every dictionary and option key`, () => {
       const t = PUBLIC_FORM_I18N[lang];
       expect(Object.keys(t).sort()).toEqual(Object.keys(PUBLIC_FORM_I18N.en).sort());

@@ -1,3 +1,5 @@
+import type { QueueSearch } from './queue';
+import { auditDateBoundary } from './audit';
 import { firmDate } from './reopening';
 import type { Holiday, PeriodRange, ReportRow } from './reports';
 
@@ -38,4 +40,20 @@ export function responseMetrics(rows: ReportRow[], range: PeriodRange, holidays:
   return { ackCohort, onTime, acknowledged, received, holding, resolvedHolding, within, overdue, holdingLetters,
     onTimePct:pct(onTime.length,ackCohort.length), median:days.length ? days.length%2 ? days[mid] ?? null : ((days[mid-1] ?? 0)+(days[mid] ?? 0))/2 : null,
     holdingPct:pct(holding.length,received.length), extendedPct:pct(within.length,resolvedHolding.length) };
+}
+/** Filter-only links: acknowledgement deadline cohort, never a receipt cohort. */
+export function acknowledgementSearch(metric: 'on_time' | 'late' | 'overdue', range: PeriodRange, zone: string, today: string): QueueSearch {
+  return { tab: 'all', ack_metric: metric, ack_from: metric === 'overdue' ? undefined : range.from, ack_to: metric === 'overdue' ? undefined : range.to, ack_zone: zone, ack_today: metric === 'overdue' ? today : undefined };
+}
+export function acknowledgementFilter(from: string, to: string, zone: string) {
+  const start = auditDateBoundary(from, zone), end = auditDateBoundary(to, zone, true);
+  return `and(ack_due.gte.${from},ack_due.lte.${to}),and(acknowledged_at.gte.${start},acknowledged_at.lt.${end})`;
+}
+export function matchesAcknowledgement(r: Pick<ReportRow, 'ack_due' | 'acknowledged_at'>, s: QueueSearch) {
+  if (!s.ack_metric) return true;
+  if (s.ack_metric === 'overdue') return !!r.ack_due && !!s.ack_today && r.ack_due < s.ack_today && !r.acknowledged_at;
+  if (!s.ack_from || !s.ack_to || !s.ack_zone || !r.ack_due || !r.acknowledged_at) return false;
+  const date = responseDate(r.acknowledged_at, s.ack_zone);
+  const cohort = (r.ack_due >= s.ack_from && r.ack_due <= s.ack_to) || (date >= s.ack_from && date <= s.ack_to);
+  return cohort && date <= s.ack_to && (date <= r.ack_due) === (s.ack_metric === 'on_time');
 }

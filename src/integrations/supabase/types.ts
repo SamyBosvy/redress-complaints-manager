@@ -1494,6 +1494,7 @@ export type Database = {
       complaint_queue: {
         Row: {
           ack_due: string | null
+          acknowledged_at: string | null
           adr_award_amount: number | null
           adr_award_currency: string | null
           adr_decision: string | null
@@ -1543,6 +1544,7 @@ export type Database = {
           updated_at: string | null
           vulnerable: boolean | null
           vulnerable_note: string | null
+          acknowledgement_on_time: boolean | null
         }
         Relationships: [
           {
@@ -1571,6 +1573,12 @@ export type Database = {
     }
     Functions: {
       accept_org_invite: { Args: { _hash: string }; Returns: string }
+      acknowledgement_on_time: {
+        Args: { "": Database["public"]["Views"]["complaint_queue"]["Row"] }
+        Returns: {
+          error: true
+        } & "the function public.acknowledgement_on_time with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
+      }
       add_business_days: {
         Args: { _country: string; _n: number; _org: string; _start: string }
         Returns: string

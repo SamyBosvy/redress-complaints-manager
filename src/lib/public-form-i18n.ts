@@ -1,6 +1,6 @@
 import type { ZodIssue } from 'zod';
 import type { PRODUCTS, CATEGORIES } from './complaints';
-import { SUPPORT_TEXT } from './vulnerability';
+import { ADJUSTMENTS, SUPPORT_TEXT } from './vulnerability';
 import STATIC_NAMES from './public-form-names.json';
 import { EXTRA_FORM_TRANSLATIONS } from './public-form-i18n-extra';
 
@@ -64,7 +64,169 @@ function extraDictionary(lang: typeof EXTRA_LANGUAGES[number]): Dictionary {
   return { ...source.strings, products: options(productKeys, source.products), categories: options(categoryKeys, source.categories), countries: STATIC_NAMES[lang].countries, languages: STATIC_NAMES[lang].languages };
 }
 const ALL_I18N = { ...BASE_I18N, ...Object.fromEntries(EXTRA_LANGUAGES.map(lang => [lang, extraDictionary(lang)])) as Record<typeof EXTRA_LANGUAGES[number], Dictionary> };
-export const PUBLIC_FORM_I18N = Object.fromEntries(PUBLIC_FORM_LANGUAGES.map(lang=>[lang,{...ALL_I18N[lang],...SUPPORT_TEXT}])) as Record<PublicFormLanguage,Dictionary & typeof SUPPORT_TEXT>;
+export const SUPPORT_KEYS = ['supportNeeds', 'supportHint', 'supportConsent', ...Object.keys(ADJUSTMENTS).map(key => `adjustment.${key}`)] as const;
+type SupportKey = keyof typeof SUPPORT_TEXT | `adjustment.${keyof typeof ADJUSTMENTS}`;
+type SupportText = Record<SupportKey, string>;
+const SUPPORT_I18N = {
+  "fr": {
+    "supportNeeds": "Besoins d’accompagnement",
+    "supportHint": "Décrivez l’accompagnement dont vous avez besoin, sans détails médicaux.",
+    "supportConsent": "J’accepte que l’entreprise enregistre que j’ai besoin d’un accompagnement supplémentaire.",
+    "adjustment.extra_time": "Plus de temps pour répondre",
+    "adjustment.alternative_format": "Gros caractères ou format audio",
+    "adjustment.preferred_channel": "Téléphone, courrier ou e-mail",
+    "adjustment.language_support": "Aide linguistique",
+    "adjustment.trusted_third_party": "Aide d’une personne de confiance",
+    "adjustment.simplified_language": "Langage plus simple",
+    "adjustment.other": "Autre accompagnement"
+  },
+  "es": {
+    "supportNeeds": "Necesidades de apoyo",
+    "supportHint": "Describa el apoyo que necesita, sin detalles médicos.",
+    "supportConsent": "Acepto que la empresa registre que necesito apoyo adicional.",
+    "adjustment.extra_time": "Más tiempo para responder",
+    "adjustment.alternative_format": "Letra grande o audio",
+    "adjustment.preferred_channel": "Teléfono, correo postal o correo electrónico",
+    "adjustment.language_support": "Apoyo lingüístico",
+    "adjustment.trusted_third_party": "Ayuda de una persona de confianza",
+    "adjustment.simplified_language": "Lenguaje más sencillo",
+    "adjustment.other": "Otro tipo de apoyo"
+  },
+  "pt": {
+    "supportNeeds": "Necessidades de apoio",
+    "supportHint": "Descreva o apoio de que necessita, sem pormenores médicos.",
+    "supportConsent": "Aceito que a empresa registe que necessito de apoio adicional.",
+    "adjustment.extra_time": "Mais tempo para responder",
+    "adjustment.alternative_format": "Letra grande ou áudio",
+    "adjustment.preferred_channel": "Telefone, correio ou e-mail",
+    "adjustment.language_support": "Apoio linguístico",
+    "adjustment.trusted_third_party": "Ajuda de uma pessoa de confiança",
+    "adjustment.simplified_language": "Linguagem mais simples",
+    "adjustment.other": "Outro tipo de apoio"
+  },
+  "pl": {
+    "supportNeeds": "Potrzebne wsparcie",
+    "supportHint": "Opisz, jakiego wsparcia potrzebujesz, bez szczegółów medycznych.",
+    "supportConsent": "Zgadzam się, aby firma odnotowała, że potrzebuję dodatkowego wsparcia.",
+    "adjustment.extra_time": "Więcej czasu na odpowiedź",
+    "adjustment.alternative_format": "Duży druk lub wersja audio",
+    "adjustment.preferred_channel": "Telefon, poczta lub e-mail",
+    "adjustment.language_support": "Wsparcie językowe",
+    "adjustment.trusted_third_party": "Pomoc zaufanej osoby",
+    "adjustment.simplified_language": "Prostszy język",
+    "adjustment.other": "Inne wsparcie"
+  },
+  "nl": {
+    "supportNeeds": "Benodigde ondersteuning",
+    "supportHint": "Beschrijf welke ondersteuning u nodig hebt, zonder medische details.",
+    "supportConsent": "Ik ga ermee akkoord dat het bedrijf vastlegt dat ik extra ondersteuning nodig heb.",
+    "adjustment.extra_time": "Meer tijd om te reageren",
+    "adjustment.alternative_format": "Grote letters of audio",
+    "adjustment.preferred_channel": "Telefoon, post of e-mail",
+    "adjustment.language_support": "Taalondersteuning",
+    "adjustment.trusted_third_party": "Hulp van een vertrouwenspersoon",
+    "adjustment.simplified_language": "Eenvoudigere taal",
+    "adjustment.other": "Andere ondersteuning"
+  },
+  "de": {
+    "supportNeeds": "Unterstützungsbedarf",
+    "supportHint": "Beschreiben Sie, welche Unterstützung Sie benötigen, ohne medizinische Details.",
+    "supportConsent": "Ich bin damit einverstanden, dass das Unternehmen festhält, dass ich zusätzliche Unterstützung benötige.",
+    "adjustment.extra_time": "Mehr Zeit zum Antworten",
+    "adjustment.alternative_format": "Großdruck oder Audio",
+    "adjustment.preferred_channel": "Telefon, Post oder E-Mail",
+    "adjustment.language_support": "Sprachliche Unterstützung",
+    "adjustment.trusted_third_party": "Hilfe durch eine Vertrauensperson",
+    "adjustment.simplified_language": "Einfachere Sprache",
+    "adjustment.other": "Andere Unterstützung"
+  },
+  "it": {
+    "supportNeeds": "Esigenze di supporto",
+    "supportHint": "Descrivi il supporto di cui hai bisogno, senza dettagli medici.",
+    "supportConsent": "Acconsento che l’azienda registri che ho bisogno di ulteriore supporto.",
+    "adjustment.extra_time": "Più tempo per rispondere",
+    "adjustment.alternative_format": "Caratteri grandi o audio",
+    "adjustment.preferred_channel": "Telefono, posta o e-mail",
+    "adjustment.language_support": "Supporto linguistico",
+    "adjustment.trusted_third_party": "Aiuto da una persona di fiducia",
+    "adjustment.simplified_language": "Linguaggio più semplice",
+    "adjustment.other": "Altro supporto"
+  },
+  "lt": {
+    "supportNeeds": "Pagalbos poreikiai",
+    "supportHint": "Aprašykite, kokios pagalbos jums reikia, nenurodydami medicininių detalių.",
+    "supportConsent": "Sutinku, kad įmonė užregistruotų, jog man reikalinga papildoma pagalba.",
+    "adjustment.extra_time": "Daugiau laiko atsakyti",
+    "adjustment.alternative_format": "Didelis šriftas arba garso įrašas",
+    "adjustment.preferred_channel": "Telefonu, paštu arba el. paštu",
+    "adjustment.language_support": "Kalbinė pagalba",
+    "adjustment.trusted_third_party": "Patikimo asmens pagalba",
+    "adjustment.simplified_language": "Paprastesnė kalba",
+    "adjustment.other": "Kita pagalba"
+  },
+  "sv": {
+    "supportNeeds": "Behov av stöd",
+    "supportHint": "Beskriv vilket stöd du behöver, utan medicinska detaljer.",
+    "supportConsent": "Jag samtycker till att företaget registrerar att jag behöver extra stöd.",
+    "adjustment.extra_time": "Mer tid att svara",
+    "adjustment.alternative_format": "Stor stil eller ljud",
+    "adjustment.preferred_channel": "Telefon, post eller e-post",
+    "adjustment.language_support": "Språkstöd",
+    "adjustment.trusted_third_party": "Hjälp från en person du litar på",
+    "adjustment.simplified_language": "Enklare språk",
+    "adjustment.other": "Annat stöd"
+  },
+  "da": {
+    "supportNeeds": "Behov for støtte",
+    "supportHint": "Beskriv, hvilken støtte du har brug for, uden medicinske detaljer.",
+    "supportConsent": "Jeg accepterer, at virksomheden registrerer, at jeg har brug for ekstra støtte.",
+    "adjustment.extra_time": "Mere tid til at svare",
+    "adjustment.alternative_format": "Stor skrift eller lyd",
+    "adjustment.preferred_channel": "Telefon, post eller e-mail",
+    "adjustment.language_support": "Sproglig støtte",
+    "adjustment.trusted_third_party": "Hjælp fra en person, du har tillid til",
+    "adjustment.simplified_language": "Enklere sprog",
+    "adjustment.other": "Anden støtte"
+  },
+  "cs": {
+    "supportNeeds": "Potřebná podpora",
+    "supportHint": "Popište, jakou podporu potřebujete, bez lékařských podrobností.",
+    "supportConsent": "Souhlasím s tím, aby společnost zaznamenala, že potřebuji další podporu.",
+    "adjustment.extra_time": "Více času na odpověď",
+    "adjustment.alternative_format": "Velké písmo nebo zvukový záznam",
+    "adjustment.preferred_channel": "Telefon, pošta nebo e-mail",
+    "adjustment.language_support": "Jazyková podpora",
+    "adjustment.trusted_third_party": "Pomoc důvěryhodné osoby",
+    "adjustment.simplified_language": "Jednodušší jazyk",
+    "adjustment.other": "Jiná podpora"
+  },
+  "ro": {
+    "supportNeeds": "Nevoi de sprijin",
+    "supportHint": "Descrieți sprijinul de care aveți nevoie, fără detalii medicale.",
+    "supportConsent": "Sunt de acord ca firma să consemneze că am nevoie de sprijin suplimentar.",
+    "adjustment.extra_time": "Mai mult timp pentru a răspunde",
+    "adjustment.alternative_format": "Caractere mari sau format audio",
+    "adjustment.preferred_channel": "Telefon, poștă sau e-mail",
+    "adjustment.language_support": "Sprijin lingvistic",
+    "adjustment.trusted_third_party": "Ajutorul unei persoane de încredere",
+    "adjustment.simplified_language": "Limbaj mai simplu",
+    "adjustment.other": "Alt tip de sprijin"
+  },
+  "ga": {
+    "supportNeeds": "Riachtanais tacaíochta",
+    "supportHint": "Déan cur síos ar an tacaíocht atá uait, gan sonraí leighis.",
+    "supportConsent": "Aontaím go bhféadfaidh an chuideachta a thaifeadadh go bhfuil tacaíocht bhreise de dhíth orm.",
+    "adjustment.extra_time": "Tuilleadh ama le freagairt",
+    "adjustment.alternative_format": "Cló mór nó fuaim",
+    "adjustment.preferred_channel": "Fón, post nó ríomhphost",
+    "adjustment.language_support": "Tacaíocht teanga",
+    "adjustment.trusted_third_party": "Cabhair ó dhuine iontaofa",
+    "adjustment.simplified_language": "Teanga níos simplí",
+    "adjustment.other": "Tacaíocht eile"
+  }
+} satisfies Record<Exclude<PublicFormLanguage, 'en'>, SupportText>;
+const ENGLISH_SUPPORT = { ...SUPPORT_TEXT, ...Object.fromEntries(Object.entries(ADJUSTMENTS).map(([key, label]) => [`adjustment.${key}`, label])) } as SupportText;
+export const PUBLIC_FORM_I18N = Object.fromEntries(PUBLIC_FORM_LANGUAGES.map(lang=>[lang,{...ALL_I18N[lang],...(lang === 'en' ? ENGLISH_SUPPORT : SUPPORT_I18N[lang])}])) as Record<PublicFormLanguage,Dictionary & SupportText>;
 export const PUBLIC_FORM_KEYS = keys;
 export function isPublicFormLanguage(value: unknown): value is PublicFormLanguage { return typeof value === 'string' && PUBLIC_FORM_LANGUAGES.some(lang => lang === value); }
 export function resolvePublicFormLanguage(urlLanguage?: unknown, browserLanguages: readonly string[] = []): PublicFormLanguage {

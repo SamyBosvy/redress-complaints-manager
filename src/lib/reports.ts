@@ -1,5 +1,6 @@
+import { auditDateBoundary } from './audit';
 import { adjustmentShares } from './vulnerability';
-import { acknowledgedAt, responseDate, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
+import { acknowledgementFilter, matchesAcknowledgement, acknowledgedAt, responseDate, responseMetrics, RESPONSE_METHODOLOGY, type ResponseLetter, type ResponseEvent } from './response-metrics';
 import {REOPEN_REASONS,reopeningMetrics,type ReopeningRow} from './reopening';
 import { ADR_DECISIONS, adrMetrics, type AdrReportRow } from './adr';
 import { queryOptions } from "@tanstack/react-query";
@@ -366,6 +367,7 @@ export function buildDrillDownSearch(metric: string, group: string | undefined, 
   return s;
 }
 export function matchesReportFilters(r: ReportRow, s: QueueSearch): boolean {
+  if (!matchesAcknowledgement(r, s)) return false;
   if (s.adr_metric && !evalFilterOps(r as unknown as Record<string, unknown>, reportFilterOps(s))) return false;
   const date = r.received_at.slice(0, 10);
   const resolved = !!r.closed_at && (!s.received_to || r.closed_at.slice(0, 10) <= s.received_to);
@@ -404,9 +406,15 @@ export function reportBuckets(range: PeriodRange) {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const nextDay = (d: string) => new Date(Date.parse(d) + DAY).toISOString().slice(0, 10);
 /** Server-side filter operations on complaint_queue equivalent to matchesReportFilters (status/product/category/country/agent are applied by the queue's existing filters). */
-export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte' | 'in'; col: string; v?: string | boolean };
+export type FilterOp = { op: 'gte' | 'lt' | 'eq' | 'is_null' | 'not_null' | 'null_or_gte' | 'in' | 'or'; col: string; v?: string | boolean };
 export function reportFilterOps(s: QueueSearch): FilterOp[] {
   const ops: FilterOp[] = [];
+  if (s.ack_metric === 'overdue' && s.ack_today) ops.push({op:'is_null',col:'acknowledged_at'},{op:'lt',col:'ack_due',v:s.ack_today});
+  else if (s.ack_metric && s.ack_from && s.ack_to && s.ack_zone) {
+    ops.push({op:'not_null',col:'ack_due'},{op:'eq',col:'acknowledgement_on_time',v:s.ack_metric==='on_time'},
+      {op:'lt',col:'acknowledged_at',v:auditDateBoundary(s.ack_to,s.ack_zone,true)},
+      {op:'or',col:'',v:acknowledgementFilter(s.ack_from,s.ack_to,s.ack_zone)});
+  }
   if(s.holding)ops.push({op:s.holding==='yes'?'not_null':'is_null',col:'holding_sent_at'});
   if(s.holding_by)ops.push({op:'lt',col:'holding_sent_at',v:s.holding_by});
   if(s.receipt_start)ops.push({op:'gte',col:'received_at',v:s.receipt_start});
@@ -441,6 +449,15 @@ export function reportFilterOps(s: QueueSearch): FilterOp[] {
 /** Reference evaluation of reportFilterOps against a row shaped like complaint_queue (used by tests). */
 export function evalFilterOps(row: Record<string, unknown>, ops: FilterOp[]) {
   return ops.every(({ op, col, v }) => {
+    if (op === 'or') {
+      return String(v).split('),and(').some(group => [...group.matchAll(/(ack_due|acknowledged_at)\.(gte|lte|lt)\.([^,)]+)/g)].every(match => {
+        const value = row[match[1] ?? ''];
+        if (value == null) return false;
+        const bound = match[3] ?? '';
+        const actual = match[1] === 'acknowledged_at' ? new Date(String(value)).toISOString() : String(value);
+        return match[2] === 'gte' ? actual >= bound : match[2] === 'lte' ? actual <= bound : actual < bound;
+      }));
+    }
     const x = row[col] as string | boolean | null | undefined;
     if (op === 'in') return String(v).split(',').includes(String(x));
     if (op === 'is_null') return x == null; if (op === 'not_null') return x != null;

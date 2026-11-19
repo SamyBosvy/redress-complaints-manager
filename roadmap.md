@@ -22,7 +22,6 @@
 
 - [x] Item #40: acknowledgement/holding metrics, local dates, exports/chart/comparison and masking regression tests; no schema or billing changes. Full suites: 511/512 in each zone initially; repaired masking and 24/24 targeted tests passed in each zone; automatic typecheck/build passed.
 - [ ] Item #40 signed-in report/export/mobile verification — no auth users; session minting confirmed unavailable.
-- [ ] Item #40 exact acknowledgement drill-downs — existing queue has no derived acknowledgement timestamp; requires an explicitly approved view change.
 
 - [x] Item #33 part 1: URL periods/comparison, currency-safe summaries, regulatory PDF cover/tables/methodology/footer and matching CSV.
 - [ ] Item #33: signed-in export/mobile verification — needs a usable account and organisation.
@@ -132,5 +131,7 @@
 - [x] Item #32: managed migration 0023 with journal/snapshot/types; restricted structured support needs, privacy wipe, summary sync/backfill, case/intake/report/My day UI; 14 public correspondence languages and static names. Final complete suites: 686/686 tests in UTC and Sydney; automatic typecheck/build clean; hosted RLS/policies/triggers/function checks passed. Sensitive drivers/notes omitted from new audit records for all readers (stronger minimisation); legacy audit values masked for non-admins.
 - [ ] Item #32 signed-in case support save/readback, real public submission, report exports and My day phone/dark verification — no auth users or cases; session minting confirmed unavailable. Irish unavailable-form desktop/phone check has no hydration errors or horizontal overflow; populated country lists checked in simulated different Intl environments, not on a live firm form.
 - [ ] Item #32 adjustment reporting completeness for Read-only — restricted support records are not readable; UI reports that adjustment details are restricted, not a fabricated zero. Existing legacy vulnerable_note retained as deprecated, not erased from historical records.
-- [ ] Needs translation (all non-English public forms): supportNeeds, supportHint, supportConsent, adjustment.extra_time, adjustment.alternative_format, adjustment.preferred_channel, adjustment.language_support, adjustment.trusted_third_party, adjustment.simplified_language, adjustment.other.
 - [x] complaints.vulnerable_note deprecated; new writes use complaint_vulnerability.adjustments_note.
+
+- [x] Three leftovers: managed 0030 preserves queue columns/invoker access, derives acknowledgement evidence and enables exact firm-local filter-only links; anonymous template history revoked; supplied public support translations applied, staff English unchanged. Final full suites: 788 tests in UTC and Australia/Sydney; automatic build/typecheck clean; hosted columns/grants verified.
+- [ ] Three leftovers signed-in report drill-down and populated public-form visual verification — hosted database has no auth users; no accounts or tenant records created.

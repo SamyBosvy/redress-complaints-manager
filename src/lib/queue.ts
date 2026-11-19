@@ -44,6 +44,7 @@ export interface QueueSearch {
   day_section?: DaySection | undefined;
   day_date?: string | undefined;
   day_zone?: string | undefined;
+  ack_metric?: 'on_time' | 'late' | 'overdue' | undefined; ack_from?: string | undefined; ack_to?: string | undefined; ack_zone?: string | undefined; ack_today?: string | undefined;
   holding?: string | undefined; holding_by?: string | undefined; receipt_start?: string | undefined; receipt_end?: string | undefined;
   reopened?: string | undefined; reopen_from?: string | undefined; reopen_to?: string | undefined; reopen_reason?: string | undefined;
   adr_from?: string | undefined; adr_to?: string | undefined;
@@ -84,6 +85,9 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
     day_section: DAY_SECTIONS.includes(s['day_section'] as DaySection) ? s['day_section'] as DaySection : undefined,
     day_date: date(s['day_date']),
     day_zone: (()=>{try{if(typeof s['day_zone']==='string'){new Intl.DateTimeFormat('en',{timeZone:s['day_zone']});return s['day_zone'];}}catch{}return undefined;})(),
+    ack_metric: ['on_time','late','overdue'].includes(String(s['ack_metric'])) ? s['ack_metric'] as QueueSearch['ack_metric'] : undefined,
+    ack_from:date(s['ack_from']),ack_to:date(s['ack_to']),ack_today:date(s['ack_today']),
+    ack_zone:(()=>{try{if(typeof s['ack_zone']==='string'){new Intl.DateTimeFormat('en',{timeZone:s['ack_zone']});return s['ack_zone'];}}catch{}return undefined;})(),
     holding:yesNo(s['holding']), holding_by:instant(s['holding_by']),receipt_start:instant(s['receipt_start']),receipt_end:instant(s['receipt_end']),
     reopened:yesNo(s['reopened']),reopen_from:date(s['reopen_from']),reopen_to:date(s['reopen_to']),reopen_reason:['new_evidence','customer_disagreed','handling_error','regulator_adr_request','other'].includes(String(s['reopen_reason']))?String(s['reopen_reason']):undefined,
     adr_from:date(s['adr_from']),adr_to:date(s['adr_to']),
@@ -234,7 +238,7 @@ function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
   if (p.vulnerable) q = q.eq("vulnerable", p.vulnerable === "true");
   for (const f of reportFilterOps(p)) {
     if (f.op === 'in') q = q.in(f.col, String(f.v).split(',')); else if (f.op === 'gte') q = q.gte(f.col, String(f.v)); else if (f.op === 'lt') q = q.lt(f.col, String(f.v));
-    else if (f.op === 'eq') q = q.eq(f.col, f.v as string | boolean); else if (f.op === 'is_null') q = q.is(f.col, null);
+    else if (f.op === 'or') q = q.or(String(f.v)); else if (f.op === 'eq') q = q.eq(f.col, f.v as string | boolean); else if (f.op === 'is_null') q = q.is(f.col, null);
     else if (f.op === 'not_null') q = q.not(f.col, 'is', null); else q = q.or(`${f.col}.is.null,${f.col}.gte.${String(f.v)}`);
   }
   const needle = (p.q ?? "").trim().replace(/[%,_()."\\]/g, " ").trim();

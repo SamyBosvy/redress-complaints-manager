@@ -134,6 +134,56 @@ export type Database = {
           },
         ]
       }
+      agent_capacity: {
+        Row: {
+          accepting_new: boolean
+          away_from: string | null
+          away_until: string | null
+          languages: string[]
+          last_assigned_at: string | null
+          last_auto_assigned_at: string | null
+          max_open_cases: number | null
+          org_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          accepting_new?: boolean
+          away_from?: string | null
+          away_until?: string | null
+          languages?: string[]
+          last_assigned_at?: string | null
+          last_auto_assigned_at?: string | null
+          max_open_cases?: number | null
+          org_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          accepting_new?: boolean
+          away_from?: string | null
+          away_until?: string | null
+          languages?: string[]
+          last_assigned_at?: string | null
+          last_auto_assigned_at?: string | null
+          max_open_cases?: number | null
+          org_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_capacity_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -429,6 +479,7 @@ export type Database = {
           adr_rights_given: boolean
           anonymised_at: string | null
           assigned_to: string | null
+          assignment_source: string
           category: Database["public"]["Enums"]["complaint_category"]
           channel: Database["public"]["Enums"]["complaint_channel"]
           closed_at: string | null
@@ -477,6 +528,7 @@ export type Database = {
           adr_rights_given?: boolean
           anonymised_at?: string | null
           assigned_to?: string | null
+          assignment_source?: string
           category: Database["public"]["Enums"]["complaint_category"]
           channel: Database["public"]["Enums"]["complaint_channel"]
           closed_at?: string | null
@@ -525,6 +577,7 @@ export type Database = {
           adr_rights_given?: boolean
           anonymised_at?: string | null
           assigned_to?: string | null
+          assignment_source?: string
           category?: Database["public"]["Enums"]["complaint_category"]
           channel?: Database["public"]["Enums"]["complaint_channel"]
           closed_at?: string | null
@@ -959,6 +1012,9 @@ export type Database = {
       }
       organisations: {
         Row: {
+          auto_assign_match_language: boolean
+          auto_assign_mode: Database["public"]["Enums"]["auto_assign_mode"]
+          auto_assign_sources: string[]
           base_currency: string
           complaints_email: string | null
           created_at: string
@@ -979,6 +1035,9 @@ export type Database = {
           trial_ends_at: string
         }
         Insert: {
+          auto_assign_match_language?: boolean
+          auto_assign_mode?: Database["public"]["Enums"]["auto_assign_mode"]
+          auto_assign_sources?: string[]
           base_currency?: string
           complaints_email?: string | null
           created_at?: string
@@ -999,6 +1058,9 @@ export type Database = {
           trial_ends_at?: string
         }
         Update: {
+          auto_assign_match_language?: boolean
+          auto_assign_mode?: Database["public"]["Enums"]["auto_assign_mode"]
+          auto_assign_sources?: string[]
           base_currency?: string
           complaints_email?: string | null
           created_at?: string
@@ -1605,6 +1667,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      pick_assignee: {
+        Args: { _complaint: string; _org: string }
+        Returns: string
+      }
       privacy_anonymise_case: {
         Args: {
           _actor: string
@@ -1644,6 +1710,10 @@ export type Database = {
         Returns: undefined
       }
       public_form_details: { Args: { _id: string }; Returns: Json }
+      rebalance_complaint: {
+        Args: { _complaint: string; _org: string }
+        Returns: string
+      }
       recalculate_complaint: {
         Args: { _case: string; _org: string; _reason: string }
         Returns: undefined
@@ -1714,6 +1784,25 @@ export type Database = {
         Returns: undefined
       }
       valid_time_zone: { Args: { _zone: string }; Returns: boolean }
+      workload_summary: {
+        Args: { _org: string }
+        Returns: {
+          accepting_new: boolean
+          ack_overdue: number
+          agent_name: string
+          away_from: string
+          away_until: string
+          due_soon: number
+          high_priority_open: number
+          languages: string[]
+          max_open_cases: number
+          open_cases: number
+          overdue: number
+          received_30: number
+          user_id: string
+          vulnerable_open: number
+        }[]
+      }
     }
     Enums: {
       app_role:
@@ -1727,6 +1816,7 @@ export type Database = {
         | "firm_document"
         | "correspondence"
         | "other"
+      auto_assign_mode: "off" | "least_loaded" | "round_robin"
       complaint_category:
         | "unauthorised_transaction"
         | "fraud_or_scam"
@@ -1922,6 +2012,7 @@ export const Constants = {
         "correspondence",
         "other",
       ],
+      auto_assign_mode: ["off", "least_loaded", "round_robin"],
       complaint_category: [
         "unauthorised_transaction",
         "fraud_or_scam",

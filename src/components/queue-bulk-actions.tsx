@@ -13,7 +13,7 @@ import type { QueueItem } from '@/lib/queue';
 import type { AppRole } from '@/lib/org';
 
 type Handler = { user_id: string; name: string };
-type Action = 'reassign' | 'priority';
+type Action = 'reassign' | 'priority' | 'rebalance';
 export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, onBusy }: {
   rows: QueueItem[]; orgId: string; role: AppRole | null; handlers: Handler[]; members: Handler[];
   clear: () => void; onBusy: (busy: boolean) => void;
@@ -27,7 +27,7 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
   const label = action === 'priority' ? (value === 'high' ? 'High' : 'Standard') : value === 'none' ? 'Unassign' : handlers.find(h => h.user_id === value)?.name ?? 'Unknown';
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!action || !(action === 'reassign' ? permissions.reassign : permissions.priority)) throw new Error('You do not have permission to make this change.');
+      if (!action || !(action !== 'priority' ? permissions.reassign : permissions.priority)) throw new Error('You do not have permission to make this change.');
       if (action === 'reassign' && value !== 'none' && !handlers.some(h => h.user_id === value)) throw new Error('Choose an active handler.');
       const { eligible, skipped } = splitClosed(rows);
       const outcome: BulkResult = { updated: 0, failed: [], skipped: skipped.map(r => r.reference ?? r.id ?? 'Unknown') };
@@ -39,6 +39,11 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
           if (!row.id) return;
           const reference = row.reference ?? row.id;
           try {
+            if(action==='rebalance'){
+              if(row.assigned_to!==null)throw new Error('Only unassigned cases can be rebalanced.');
+              const {data,error}=await supabase.rpc('rebalance_complaint',{_org:orgId,_complaint:row.id});if(error)throw error;
+              if(!data)throw new Error('No eligible agent, assignment disabled, or case no longer unassigned.');outcome.updated++;return;
+            }
             // Same RLS update and trigger-written activity/audit path as a single case.
             const { data, error } = await supabase.from('complaints').update(patch)
               .eq('org_id', orgId).eq('id', row.id).neq('status', 'closed').select('id');
@@ -64,6 +69,7 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
       setAction(null);
       if (outcome.updated) await Promise.all([
         qc.invalidateQueries({ queryKey: ['queue', orgId] }), qc.invalidateQueries({ queryKey: ['queue-counts', orgId] }),
+        qc.invalidateQueries({queryKey:['workload',orgId]}),qc.invalidateQueries({queryKey:['timeline',orgId]}),
         ...rows.filter(r => r.id).map(r => qc.invalidateQueries({ queryKey: ['case', r.id] })),
       ]);
     },
@@ -83,6 +89,7 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
       <div className="flex flex-wrap items-center gap-2">
         <strong className="w-full text-sm tabular sm:w-auto sm:mr-auto">{rows.length} selected</strong>
         {permissions.reassign && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => {setValue('none'); setAction('reassign');}}><UserRound aria-hidden="true" className="h-4 w-4"/>Reassign</Button>}
+        {permissions.reassign && rows.every(row=>row.assigned_to===null)&&<Button size="sm" variant="outline" disabled={mutation.isPending} onClick={()=>setAction('rebalance')}><UserRound aria-hidden="true" className="h-4 w-4"/>Rebalance</Button>}
         {permissions.priority && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => {setValue('standard'); setAction('priority');}}><Flag aria-hidden="true" className="h-4 w-4"/>Change priority</Button>}
         <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={exportSelected}><Download aria-hidden="true" className="h-4 w-4"/>Export</Button>
         <Button size="sm" variant="ghost" disabled={mutation.isPending} onClick={clear}><X aria-hidden="true" className="h-4 w-4"/>Clear</Button>
@@ -94,12 +101,12 @@ export function QueueBulkActions({ rows, orgId, role, handlers, members, clear, 
     </div>
     <Dialog open={action !== null} onOpenChange={open => { if (!open && !mutation.isPending) setAction(null); }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{action === 'reassign' ? 'Reassign complaints' : 'Change priority'}</DialogTitle><DialogDescription>{rows.length} selected. Closed cases will be skipped.</DialogDescription></DialogHeader>
-        <Select value={value} onValueChange={setValue} disabled={mutation.isPending}>
+        <DialogHeader><DialogTitle>{action === 'rebalance'?'Rebalance unassigned complaints':action === 'reassign' ? 'Reassign complaints' : 'Change priority'}</DialogTitle><DialogDescription>{rows.length} selected. Closed cases will be skipped.</DialogDescription></DialogHeader>
+        {action!=='rebalance'&&<Select value={value} onValueChange={setValue} disabled={mutation.isPending}>
           <SelectTrigger aria-label={action === 'reassign' ? 'Active handler' : 'Priority'}><SelectValue/></SelectTrigger>
           <SelectContent>{action === 'reassign' ? <><SelectItem value="none">Unassign</SelectItem>{handlers.map(h => <SelectItem key={h.user_id} value={h.user_id}>{h.name}</SelectItem>)}</> : <><SelectItem value="standard">Standard</SelectItem><SelectItem value="high">High</SelectItem></>}</SelectContent>
-        </Select>
-        <p className="break-words text-sm">Confirm {action === 'reassign' ? 'assignment' : 'priority'}: {label} for {rows.length} complaints.</p>
+        </Select>}
+        <p className="break-words text-sm">{action==='rebalance'?'Assign using the configured auto-assignment mode and current agent availability.':`Confirm ${action === 'reassign' ? 'assignment' : 'priority'}: ${label} for ${rows.length} complaints.`}</p>
         <DialogFooter className="gap-2"><Button variant="outline" disabled={mutation.isPending} onClick={() => setAction(null)}>Cancel</Button><Button className="min-h-12" disabled={mutation.isPending} onClick={() => mutation.mutate()}>Confirm change</Button></DialogFooter>
       </DialogContent>
     </Dialog>

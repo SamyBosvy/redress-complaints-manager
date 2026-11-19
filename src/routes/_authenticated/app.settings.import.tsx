@@ -32,5 +32,5 @@ function ImportPage() {
 function ImportContent({ orgId, userId }: { orgId: string; userId: string }) {
   const { data: members } = useSuspenseQuery(importMembersQuery(orgId));
   const queryClient = useQueryClient();
-  return <ComplaintImport key={orgId} orgId={orgId} userId={userId} members={members} insert={rows => supabase.from('complaints').insert(rows)} onComplete={() => { void queryClient.invalidateQueries({ queryKey: ['queue'] }); }} />;
+  return <ComplaintImport key={orgId} orgId={orgId} userId={userId} members={members} insert={rows => supabase.from('complaints').insert(rows.map(row=>({...row,assignment_source:'import'})))} onComplete={() => { void queryClient.invalidateQueries({ queryKey: ['queue'] }); void queryClient.invalidateQueries({queryKey:['workload',orgId]}); }} />;
 }

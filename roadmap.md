@@ -126,7 +126,8 @@
 - [ ] Item #37 signed-in audit paging/export/mobile verification — requires a usable account and audit records.
 - [x] Item24: 8 more languages (form UI, case languages, import matching, template Start from English, English-fallback warning, PDF glyph test)
 - [x] Item24 public correspondence languages expanded in migration 0023.
-- [ ] Item #28: workload/capacity, atomic auto-assignment and rebalance, QA cache refresh, migration 0029 and regression checks.
+- [x] Item #28: workload/capacity, auto-assignment and atomic RLS-preserving rebalance, QA cache refresh, managed 0029; 770 tests pass in UTC/Sydney, build clean, hosted assignment guard unchanged.
+- [ ] Item #28 signed-in workload/settings/Account/rebalance/mobile readback and independent PostgreSQL-session concurrency verification — no auth users; PGlite overlapping requests are serialized, not independent transactions. Existing correspondence catalogue contains 14 languages, reused without inventing a fifteenth.
 
 - [x] Item #32: managed migration 0023 with journal/snapshot/types; restricted structured support needs, privacy wipe, summary sync/backfill, case/intake/report/My day UI; 14 public correspondence languages and static names. Final complete suites: 686/686 tests in UTC and Sydney; automatic typecheck/build clean; hosted RLS/policies/triggers/function checks passed. Sensitive drivers/notes omitted from new audit records for all readers (stronger minimisation); legacy audit values masked for non-admins.
 - [ ] Item #32 signed-in case support save/readback, real public submission, report exports and My day phone/dark verification — no auth users or cases; session minting confirmed unavailable. Irish unavailable-form desktop/phone check has no hydration errors or horizontal overflow; populated country lists checked in simulated different Intl environments, not on a live firm form.

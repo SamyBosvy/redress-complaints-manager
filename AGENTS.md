@@ -16,7 +16,8 @@
 - Signed-in pages live under src/routes/_authenticated/; /app requires a completed setup, otherwise redirects to /setup.
 - Complaint reference and deadline dates are set by DB triggers on insert; remaining business days come from the complaint_queue view. Why: one source of truth for regulatory clocks.
 - Clock colour/at-risk thresholds live in src/lib/complaints.ts (clockTone, isAtRisk) with tests next to it.
-- Case timeline uses keyset RPC pages; notes/mentions are atomic writes, other events trigger-written; QA-approved letters belong to both Letters and QA. Why: scalable history and consistent filters.
+- Timeline uses keyset RPCs and atomic notes; approved letters belong to Letters and QA. Why: consistent history.
+- Auto-assignment locks firm/capacity rows; rebalance preserves RLS. Why: atomic caps.
 - Attachment metadata controls private signed links; only retention/erasure deletes files. Why: case access and legal holds.
 - Letter merge/ADR check/status-after-send rules live in src/lib/letters.ts with tests.
 - PWA: service worker registers only outside iframes/preview hosts; it never caches /~oauth or /api.

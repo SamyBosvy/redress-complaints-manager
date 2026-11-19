@@ -1,4 +1,5 @@
 import { fourEyes, FOUR_EYES, workflowError } from '@/lib/workflow';
+import {refreshQaDecision} from '@/lib/qa-refresh';
 import { EmptyState } from '@/components/empty-state';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { CheckCheck } from 'lucide-react';
@@ -60,7 +61,7 @@ function QaContent({membership:m}:{membership:NonNullable<ReturnType<typeof useM
   const [comments, setComments] = useState("");
   const [card, setCard] = useState<Scorecard>(emptyScorecard());
 
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["qa-reviews", orgId] }), qc.invalidateQueries({ queryKey: ["queue"] }), qc.invalidateQueries({ queryKey: ["case"] })]);
+  const refresh = () => refreshQaDecision(qc,orgId);
 
   async function decide(r: ReviewRow, status: "approved" | "returned", note: string) {
     const { error } = await supabase.from("qa_reviews").update({ status, comments: note || null, reviewer: m.user.id, decided_at: new Date().toISOString() }).eq("id", r.id);

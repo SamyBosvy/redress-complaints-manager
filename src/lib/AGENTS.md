@@ -39,6 +39,7 @@
 - QA analytics shares pure attribution/local-date metrics and URL predicates; org-scoped review reads paginate with stable ordering, available-column filters run in PostgREST and derived handler filters run after paging. Why: exact scalable drill-downs without schema or four-eyes changes.
 
 ## Personal caseload
+- Workload queue links share validated metric/date predicates; automatic selection locks firm/capacity rows and rebalance uses invoker updates. Why: exact drill-downs and atomic caps without changing assignment permissions.
 - My day uses caller-scoped queue predicates shared with filter-only queue links; only acknowledgement evidence is derived across up to 200 candidates with paged letters/events. Why: bounded personal reads without migrations or hidden caps.
 - Mention reads/counts use recipient RLS with current case-access checks; My day exposes a mentions-only view for non-handlers. Why: retain history but hide mentions after unassignment.
 

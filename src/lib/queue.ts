@@ -5,6 +5,10 @@ import { reportFilterOps } from "./reports";
 import type { AppRole } from './org';
 import { DAY_SECTIONS, type DaySection } from './my-day';
 import { fetchDaySection } from './my-day-query';
+import { WORKLOAD_METRICS, workloadOps, type WorkloadMetric } from './workload';
+import { nextBusinessDate } from './my-day';
+import { auditDateBoundary } from './audit';
+import { COUNTRIES } from './countries';
 
 export function queueEmptyState(orgTotal: number, matchingTotal: number, role: AppRole | null) {
   if (orgTotal === 0) return { kind: 'empty' as const, canLog: role !== null && role !== 'read_only', canShare: role === 'org_admin' };
@@ -35,6 +39,8 @@ export function stoppedStatuses(): Status[] {
 }
 
 export interface QueueSearch {
+  workload?: WorkloadMetric | undefined;
+  workload_date?: string | undefined;
   day_section?: DaySection | undefined;
   day_date?: string | undefined;
   day_zone?: string | undefined;
@@ -73,6 +79,8 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const instant=(v:unknown)=>typeof v==='string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(v)&&Number.isFinite(Date.parse(v))?v:undefined;
   const yesNo = (v: unknown) => v === 'yes' || v === 'no' ? v : undefined;
   return {
+    workload: typeof s['workload']==='string' && Object.hasOwn(WORKLOAD_METRICS,s['workload']) ? s['workload'] as WorkloadMetric : undefined,
+    workload_date: date(s['workload_date']),
     day_section: DAY_SECTIONS.includes(s['day_section'] as DaySection) ? s['day_section'] as DaySection : undefined,
     day_date: date(s['day_date']),
     day_zone: (()=>{try{if(typeof s['day_zone']==='string'){new Intl.DateTimeFormat('en',{timeZone:s['day_zone']});return s['day_zone'];}}catch{}return undefined;})(),
@@ -103,6 +111,9 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
 
 export interface QueueParams extends QueueSearch {
   userId: string;
+  workload_or?: string | undefined;
+  workload_from?: string | undefined;
+  workload_until?: string | undefined;
 }
 
 /** The complaint_queue columns selected for the queue table (see QUEUE_SELECT). */
@@ -191,6 +202,7 @@ const QUEUE_SELECT =
   "id, reference, complainant_name, customer_ref, category, product, country_code, status, assigned_to, vulnerable, priority, days_left, current_due, ack_due, received_at";
 
 interface QueueFilterable {
+  neq(c: string, v: string): this;
   eq(c: string, v: string | boolean): this;
   is(c: string, v: null): this;
   in(c: string, v: readonly string[]): this;
@@ -203,6 +215,9 @@ interface QueueFilterable {
 
 /** Applies tab, column filters and text search shared by the page and count queries. */
 function applyFilters<Q extends QueueFilterable>(q: Q, p: QueueParams): Q {
+  if(p.workload&&p.workload_date){for(const op of workloadOps(p.workload,p.workload_date)){
+    if(op.op==='neq')q=q.neq(op.column,String(op.value));else if(op.op==='lt')q=q.lt(op.column,String(op.value));else if(op.op==='eq')q=q.eq(op.column,op.value);
+  }if(p.workload_or)q=q.or(p.workload_or);if(p.workload_from)q=q.gte('received_at',p.workload_from);if(p.workload_until)q=q.lt('received_at',p.workload_until);}
   const tab = p.tab ?? "team";
   if (tab === "mine") q = q.eq("assigned_to", p.userId);
   if (tab === "team") q = q.in("status", CLOCK_RUNNING);
@@ -243,6 +258,19 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 }
 
 export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
+  if(p.workload&&p.workload_date){
+    const workloadDate=p.workload_date;
+    if(p.workload==='soon'){
+      const data:{country_code:string;holiday_date:string}[]=[];
+      for(let offset=0;;offset+=500){const result=await supabase.from('holidays').select('country_code,holiday_date').eq('org_id',orgId).gte('holiday_date',workloadDate).order('id').range(offset,offset+499);if(result.error)throw result.error;data.push(...result.data);if(result.data.length<500)break;}
+      p={...p,workload_or:Object.keys(COUNTRIES).map(country=>`and(country_code.eq.${country},final_due.gte.${p.workload_date},final_due.lte.${nextBusinessDate(p.workload_date??'',3,(data??[]).filter(h=>h.country_code===country).map(h=>h.holiday_date))})`).join(',')};
+    }
+    if(p.workload==='recent'){
+      const {data,error}=await supabase.from('organisations').select('time_zone').eq('id',orgId).single();if(error)throw error;
+      const date=new Date(p.workload_date+'T12:00:00Z');date.setUTCDate(date.getUTCDate()-29);
+      p={...p,workload_from:auditDateBoundary(date.toISOString().slice(0,10),data.time_zone),workload_until:auditDateBoundary(workloadDate,data.time_zone,true)};
+    }
+  }
   if(p.day_section&&p.day_date&&p.day_zone)return fetchDaySection(orgId,p.userId,p.day_section,p.day_date,p.day_zone,p.page??1,PAGE_SIZE);
   const size = PAGE_SIZE;
   const sort = p.sort ?? "time_left";

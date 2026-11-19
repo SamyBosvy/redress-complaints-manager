@@ -77,7 +77,7 @@ function AppLayout() {
     finally {setBusy(false);}
   }
 
-  const icons = { day: CalendarDays, queue: Inbox, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
+  const icons = { day: CalendarDays, queue: Inbox, workload: BarChart3, new: FilePlus, qa: CheckCheck, reports: BarChart3, audit: History, templates: FileText, forms: Globe, privacy: ShieldCheck, settings: Settings };
   const fullName = m?.user.user_metadata?.['full_name'];
   const displayName = typeof fullName === 'string' && fullName.trim()
     ? fullName.trim() : m?.user.email ?? 'Account';

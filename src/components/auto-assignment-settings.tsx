@@ -1,0 +1,11 @@
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import type { Organisation } from '@/lib/org';
+import { supabase } from '@/integrations/supabase/client';
+import { Pick, Field } from './settings/controls';
+import { Checkbox } from './ui/checkbox';
+import { Button } from './ui/button';
+export function AutoAssignmentSettings({org}:{org:Organisation}){const [mode,setMode]=useState(org.auto_assign_mode);const [match,setMatch]=useState(org.auto_assign_match_language);const [sources,setSources]=useState(org.auto_assign_sources);const [busy,setBusy]=useState(false);const qc=useQueryClient();
+  return <section className="max-w-3xl space-y-4 border-t pt-6"><h2 className="font-semibold">Auto-assignment</h2><Field label="Assignment mode"><Pick value={mode} onChange={v=>{if(v==='off'||v==='least_loaded'||v==='round_robin')setMode(v);}} options={{off:'Off',least_loaded:'Least loaded',round_robin:'Round robin'}}/></Field><p className="text-sm text-muted-foreground">Off leaves new cases unassigned. Least loaded chooses the eligible agent with fewest open cases. Round robin chooses the agent whose last automatic assignment was longest ago. Capacity and away dates are respected.</p><label className="flex items-center gap-2 text-sm"><Checkbox checked={match} onCheckedChange={v=>setMatch(v===true)}/>Prefer matching correspondence languages, with fallback to other eligible agents</label><fieldset><legend className="mb-2 text-sm font-medium">Sources</legend><div className="flex flex-wrap gap-4">{Object.entries({manual:'Manual intake',public_form:'Public form',import:'Import'}).map(([key,label])=><label key={key} className="flex items-center gap-2 text-sm"><Checkbox checked={sources.includes(key)} onCheckedChange={v=>setSources(previous=>v===true?[...previous,key]:previous.filter(x=>x!==key))}/>{label}</label>)}</div></fieldset><Button disabled={busy} onClick={async()=>{setBusy(true);const {error}=await supabase.from('organisations').update({auto_assign_mode:mode,auto_assign_match_language:match,auto_assign_sources:sources}).eq('id',org.id);setBusy(false);if(error){toast.error(error.message);return;}await qc.invalidateQueries({queryKey:['membership']});toast.success('Auto-assignment saved.');}}>Save auto-assignment</Button></section>;
+}

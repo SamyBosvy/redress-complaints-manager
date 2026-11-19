@@ -32,6 +32,7 @@ import { Route as AuthenticatedAppQaRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
 import { Route as AuthenticatedAppTemplatesRouteImport } from './routes/_authenticated/app.templates'
+import { Route as AuthenticatedAppWorkloadRouteImport } from './routes/_authenticated/app.workload'
 import { Route as AuthenticatedAppCIdRouteImport } from './routes/_authenticated/app.c.$id'
 import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
 import { Route as AuthenticatedAppSettingsCalendarsRouteImport } from './routes/_authenticated/app.settings.calendars'
@@ -158,6 +159,12 @@ const AuthenticatedAppTemplatesRoute =
     path: '/templates',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppWorkloadRoute =
+  AuthenticatedAppWorkloadRouteImport.update({
+    id: '/workload',
+    path: '/workload',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCIdRoute = AuthenticatedAppCIdRouteImport.update({
   id: '/c/$id',
   path: '/c/$id',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
+  '/app/workload': typeof AuthenticatedAppWorkloadRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
@@ -264,6 +272,7 @@ export interface FileRoutesByTo {
   '/app/qa': typeof AuthenticatedAppQaRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/templates': typeof AuthenticatedAppTemplatesRoute
+  '/app/workload': typeof AuthenticatedAppWorkloadRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
@@ -299,6 +308,7 @@ export interface FileRoutesById {
   '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/_authenticated/app/templates': typeof AuthenticatedAppTemplatesRoute
+  '/_authenticated/app/workload': typeof AuthenticatedAppWorkloadRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/c/$id': typeof AuthenticatedAppCIdRoute
   '/_authenticated/app/settings/calendars': typeof AuthenticatedAppSettingsCalendarsRoute
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/settings'
     | '/app/templates'
+    | '/app/workload'
     | '/app/'
     | '/app/c/$id'
     | '/app/settings/calendars'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/app/qa'
     | '/app/reports'
     | '/app/templates'
+    | '/app/workload'
     | '/app'
     | '/app/c/$id'
     | '/app/settings/calendars'
@@ -399,6 +411,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/reports'
     | '/_authenticated/app/settings'
     | '/_authenticated/app/templates'
+    | '/_authenticated/app/workload'
     | '/_authenticated/app/'
     | '/_authenticated/app/c/$id'
     | '/_authenticated/app/settings/calendars'
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppTemplatesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/workload': {
+      id: '/_authenticated/app/workload'
+      path: '/workload'
+      fullPath: '/app/workload'
+      preLoaderRoute: typeof AuthenticatedAppWorkloadRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/c/$id': {
       id: '/_authenticated/app/c/$id'
       path: '/c/$id'
@@ -693,6 +713,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
   AuthenticatedAppTemplatesRoute: typeof AuthenticatedAppTemplatesRoute
+  AuthenticatedAppWorkloadRoute: typeof AuthenticatedAppWorkloadRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppCIdRoute: typeof AuthenticatedAppCIdRoute
 }
@@ -707,6 +728,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
   AuthenticatedAppTemplatesRoute: AuthenticatedAppTemplatesRoute,
+  AuthenticatedAppWorkloadRoute: AuthenticatedAppWorkloadRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppCIdRoute: AuthenticatedAppCIdRoute,
 }

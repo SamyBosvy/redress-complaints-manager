@@ -4,11 +4,11 @@ import type { AppRole } from './org';
 
 describe('app shell navigation visibility', () => {
   const cases: [AppRole, string[][]][] = [
-    ['org_admin', [['My day', 'Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Public form', 'Privacy & data', 'Settings']]],
-    ['complaints_manager', [['My day', 'Queue', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Settings']]],
+    ['org_admin', [['My day', 'Queue', 'Workload', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Public form', 'Privacy & data', 'Settings']]],
+    ['complaints_manager', [['My day', 'Queue', 'Workload', 'New complaint', 'QA review'], ['Reports', 'Audit log'], ['Templates', 'Settings']]],
     ['agent', [['My day', 'Queue', 'New complaint', 'QA review'], ['Templates']]],
-    ['qa_reviewer', [['My day', 'Queue', 'New complaint', 'QA review'], ['Templates']]],
-    ['read_only', [['My day', 'Queue', 'QA review'], ['Reports', 'Audit log']]],
+    ['qa_reviewer', [['My day', 'Queue', 'Workload', 'New complaint', 'QA review'], ['Templates']]],
+    ['read_only', [['My day', 'Queue', 'Workload', 'QA review'], ['Reports', 'Audit log']]],
   ];
   it.each(cases)('keeps existing links and exposes role-scoped QA analytics for %s', (role, expected) => {
     expect(appNavigation(role).map(group => group.links.map(link => link.label))).toEqual(expected);

@@ -1,4 +1,6 @@
 import { DAY_LABELS } from '@/lib/my-day';
+import { canDecideRequests, pendingRequestsCountQuery } from '@/lib/reopen-requests';
+import { ReopenRequestList } from '@/components/reopen-request-list';
 import { SetupProgress } from '@/components/setup-progress';
 import { EmptyState } from '@/components/empty-state';
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { shortcutsBlocked } from '@/lib/shortcuts';
 import { TableSkeleton } from '@/components/table-skeleton';
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -51,12 +53,16 @@ const ALL = "__all";
 const FILTER_KEYS = ["ack_metric", "ack_from", "ack_to", "ack_zone", "ack_today", "workload", "workload_date", "day_section", "day_date", "day_zone", "holding", "holding_by", "receipt_start", "receipt_end", "reopened", "reopen_from", "reopen_to", "reopen_reason", "status", "category", "product", "country", "agent", "vulnerable", "received_from", "received_to", "outcome", "root_cause", "resolved", "within_deadline", "channel", "report_ids", "report_basis", "adr_from", "adr_to", "adr_metric", "adr_decision", "adr_currency"] as const;
 
 function Queue() {
-  const m = useMembership()!;
-  const orgId = m.org!.id;
+  const membership = useMembership();
+  if (!membership?.org) return null;
+  return <QueueContent m={membership} orgId={membership.org.id}/>;
+}
+function QueueContent({m,orgId}:{m:NonNullable<ReturnType<typeof useMembership>>;orgId:string}) {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/app" });
-  const tab: QueueTab = search.tab ?? (m.role === "agent" ? "mine" : "team");
-  const params = { ...search, userId: m.user.id };
+  const tab: QueueTab = search.tab === 'reopen_requests' && !canDecideRequests(m.role) ? 'mine' : search.tab ?? (m.role === "agent" ? "mine" : "team");
+  const requests = useQuery({...pendingRequestsCountQuery(orgId),enabled:canDecideRequests(m.role)});
+  const params = { ...search, tab, userId: m.user.id };
   const { data: page } = useSuspenseQuery(queueQuery(orgId, params));
   const { data: counts } = useSuspenseQuery(queueCountsQuery(orgId, m.user.id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
@@ -182,9 +188,11 @@ function Queue() {
           <TabsTrigger value="ack">Ack overdue <span className="ml-1 tabular text-destructive">{counts.ackOverdue}</span></TabsTrigger>
           <TabsTrigger value="adr">ADR</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
+          {canDecideRequests(m.role)&&<TabsTrigger value="reopen_requests">Reopen requests <span className="ml-1 tabular">{requests.data??'—'}</span></TabsTrigger>}
         </TabsList>
       </Tabs>
 
+      {tab==='reopen_requests'?<ReopenRequestList org={orgId}/>:<>
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="relative w-full sm:w-64">
           <Search aria-hidden="true" className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -292,6 +300,7 @@ function Queue() {
           </div>
         </div>
       </div>
+      </>}
     </div>
   );
 }

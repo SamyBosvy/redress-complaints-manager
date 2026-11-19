@@ -18,7 +18,7 @@ export function queueEmptyState(orgTotal: number, matchingTotal: number, role: A
 
 export const PAGE_SIZE = 50;
 
-export const QUEUE_TABS = ["mine", "team", "risk", "overdue", "ack", "adr", "all"] as const;
+export const QUEUE_TABS = ["mine", "team", "risk", "overdue", "ack", "adr", "all", "reopen_requests"] as const;
 export type QueueTab = (typeof QUEUE_TABS)[number];
 
 export const QUEUE_SORTS = ["time_left", "reference", "customer", "status", "agent"] as const;
@@ -262,6 +262,8 @@ async function countRows(orgId: string, p: QueueParams, segment?: readonly Statu
 }
 
 export async function fetchQueuePage(orgId: string, p: QueueParams): Promise<QueuePage> {
+  // The reopening tab reads paginated requests separately, not the complaints list.
+  if (p.tab === 'reopen_requests') return { rows: [], total: 0, page: p.page ?? 1, pageSize: PAGE_SIZE };
   if(p.workload&&p.workload_date){
     const workloadDate=p.workload_date;
     if(p.workload==='soon'){

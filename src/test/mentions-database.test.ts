@@ -26,6 +26,9 @@ beforeAll(async()=>{
     CREATE TABLE notifications(org_id uuid,user_id uuid,kind text,title text,complaint_id uuid);
     ALTER TABLE complaints ADD COLUMN status text, ADD COLUMN reference text;`);
   await db.exec(readFileSync('drizzle/migrations/0028_qa_timeline_events.sql','utf8'));
+  const mapping=readFileSync('drizzle/migrations/0038_agent_reopen_requests.sql','utf8').match(/CREATE OR REPLACE FUNCTION public.timeline_group[\s\S]*?\$\$;/)?.[0];
+  if(!mapping)throw new Error('Missing latest timeline mapping');
+  await db.exec(mapping);
 },30000);
 beforeEach(async()=>{await db.exec('RESET ROLE;TRUNCATE note_mentions,complaint_events,complaints,organisations,org_members,audit_log CASCADE;');await db.query('INSERT INTO organisations VALUES($1),($2)',[org,other]);await db.query('INSERT INTO complaints(id,org_id,assigned_to) VALUES($1,$2,$3)',[id,org,agent]);await db.query("INSERT INTO org_members VALUES($1,$2,'org_admin',true),($1,$3,'agent',true)",[org,author,agent]);await db.query("SELECT set_config('test.user',$1,false)",[author]);});
 afterAll(()=>db.close());

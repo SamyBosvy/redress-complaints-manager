@@ -29,6 +29,9 @@ beforeAll(async () => {
   if (!guard) throw new Error('Missing original QA guard');
   await db.exec(guard);
   await db.exec(readFileSync('drizzle/migrations/0028_qa_timeline_events.sql', 'utf8'));
+  const mapping = readFileSync('drizzle/migrations/0038_agent_reopen_requests.sql', 'utf8').match(/CREATE OR REPLACE FUNCTION public.timeline_group[\s\S]*?\$\$;/)?.[0];
+  if (!mapping) throw new Error('Missing current timeline mapping');
+  await db.exec(mapping);
   await db.exec(`CREATE TRIGGER qa_guard BEFORE INSERT OR UPDATE ON qa_reviews FOR EACH ROW EXECUTE FUNCTION qa_reviews_guard();
     CREATE TRIGGER qa_decided AFTER UPDATE ON qa_reviews FOR EACH ROW EXECUTE FUNCTION qa_reviews_after_decide();`);
 }, 30000);

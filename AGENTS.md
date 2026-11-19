@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Reopen requests use complaint-first locking and RPC-only transitions; approval calls the unchanged reopening RPC atomically. Closing assignment is evidenced by the latest closure audit snapshot. Why: prevent self-approval, stale attribution and expiry races.
 - Tenancy: every app table carries org_id; RLS uses security-definer helpers is_org_member / has_org_role. Why: hard isolation between firms.
 - Roles live in org_members (one role per user per org), never on profiles. Why: prevents privilege escalation.
 - Organisation creation goes through the create_organisation RPC, which also seeds the default rule set. Why: atomic setup, creator becomes Org Admin.

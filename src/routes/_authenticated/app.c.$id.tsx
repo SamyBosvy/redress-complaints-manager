@@ -5,6 +5,7 @@ import { CaseAttachments } from '@/components/case-attachments';
 import { SupportNeeds } from '@/components/support-needs';
 import { AuditHistory } from '@/components/audit-history';
 import { CaseReopen } from '@/components/case-reopen';
+import { CaseReopenRequests } from '@/components/case-reopen-requests';
 import { CaseAdr } from '@/components/case-adr';
 import { EditComplaintDetails } from '@/components/edit-complaint-details';
 import { canEditDetails } from '@/lib/complaint-details';
@@ -146,6 +147,7 @@ function CaseView() {
         <div className="flex flex-wrap gap-2">{c.id && c.org_id && canEditDetails(m.role,m.user.id,c) && <EditComplaintDetails c={{...c,id:c.id,org_id:c.org_id}} countries={configuredCountries.map(x=>x.country_code)} onSaved={refresh}/>} {canEdit && <Button onClick={() => setLetterOpen(true)}>Generate letter</Button>}</div>
       </div>
 
+      <CaseReopenRequests org={orgId} id={id} user={m.user.id} role={m.role} defaultMode={m.org?.reopen_deadline_mode??'restart'} onSaved={refresh}/>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
           <Card title="Handling">
@@ -235,6 +237,7 @@ type Ev = { kind: string; detail: unknown };
 function EventLine({ e, types, nameOf, letterId, onLetter }: { e: Ev; types: CustomLetterType[]; nameOf: (u: string | null) => string; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
+    case "reopen_requested": case "reopen_request_approved": case "reopen_request_rejected": return <p className="whitespace-pre-wrap break-words">{d.text || e.kind.replaceAll('_',' ')}</p>;
     case "adr_escalated": case "adr_decision": return <p>{d.text || "ADR working record removed"}</p>;
     case "details_edited": return <div><p>Details updated: {d.reason}</p><ul className="mt-1 space-y-1">{Object.entries(d.changes??{}).map(([key,value])=><li key={key} className="break-words">{key.replace(/_/g," ")}: {String(value.old??"—")} → {String(value.new??"—")}</li>)}</ul></div>;
     case "created": return <p>Complaint logged via {CHANNELS[d.channel as keyof typeof CHANNELS] ?? d.channel}</p>;

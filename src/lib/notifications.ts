@@ -1,10 +1,10 @@
 import { queryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-export const NOTIFICATION_KINDS = { mention:'Mentions', assigned:'Assignments', qa_pending:'QA awaiting review', qa_returned:'QA returned', qa_sample:'QA sampling', reopened:'Reopened cases', deadline_at_risk:'Deadlines at risk', deadline_overdue:'Overdue deadlines' } as const;
+export const NOTIFICATION_KINDS = { mention:'Mentions', assigned:'Assignments', qa_pending:'QA awaiting review', qa_returned:'QA returned', qa_sample:'QA sampling', reopened:'Reopened cases', reopen_requested:'Reopening requests', reopen_approved:'Reopening approved', reopen_rejected:'Reopening rejected', deadline_at_risk:'Deadlines at risk', deadline_overdue:'Overdue deadlines' } as const;
 export type NotificationKind = keyof typeof NOTIFICATION_KINDS;
 export type NotificationRow = Database['public']['Tables']['notifications']['Row'];
-export const alwaysOn = (kind: string) => kind === 'mention' || kind === 'qa_returned';
+export const alwaysOn = (kind: string) => ['mention','qa_returned','reopen_approved','reopen_rejected'].includes(kind);
 export type NotificationSearch = { kind?: NotificationKind | undefined; unread?: boolean | undefined; page?: number | undefined };
 export function parseNotificationSearch(s: Record<string, unknown>): NotificationSearch {
   const page = Number(s['page']);

@@ -1,6 +1,7 @@
 export const TIMELINE_GROUPS = { notes: 'Notes', letters: 'Letters', status: 'Status and deadlines', attachments: 'Attachments', qa: 'QA', adr: 'ADR', system: 'System' } as const;
 export type TimelineGroup = keyof typeof TIMELINE_GROUPS;
 export const EVENT_GROUPS: Record<string, TimelineGroup> = {
+  reopen_requested: 'status', reopen_request_approved: 'status', reopen_request_rejected: 'status',
   note: 'notes', letter_sent: 'letters', letter_drafted: 'letters', status: 'status', deadline: 'status', deadline_recalculated: 'status', reopened: 'status', attachment: 'attachments', attachment_removed: 'attachments', qa_returned: 'qa', adr_escalated: 'adr', adr_decision: 'adr', created: 'system', reassigned: 'system', outcome: 'system', priority: 'system', details_edited: 'system',
 };
 export const eventGroup = (kind: string): TimelineGroup => EVENT_GROUPS[kind] ?? 'system';

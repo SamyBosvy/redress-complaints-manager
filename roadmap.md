@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Agent reopen requests: single managed 0038; RPC-only request/decision/withdrawal, latest closing-assignment evidence, automatic expiry, case banner/dialogs, paged manager Queue tab/count and agent My day history, mandatory decision alerts and timeline parity. All 902 tests passed in UTC and Australia/Sydney; automatic build clean. Hosted RPC anonymous denial verified; reopen_complaint definition unchanged. Reopening history reason capacity widened to 2200 to retain the full 2000-character request plus attribution. Billing/public form/email unchanged.
+- [ ] Agent reopen requests signed-in request/approve/reject/withdraw readback and mobile/dark dialog verification — hosted auth has no users; protected pages redirect safely without runtime errors.
+
 - [x] Per-language public-form privacy notices: managed 0037, Admin translation tabs/count/copy/delete/update attribution, localized fallback, server-resolved receipt language/hash, staff language display; SAR already selects all receipt fields. All 874 tests passed in UTC and Australia/Sydney; automatic build clean; hosted table/grants/columns verified. Default notice, erasure/retention, other form fields, billing, notifications and email unchanged.
 - [ ] Per-language privacy notices populated public-form submission/readback and signed-in Admin/staff phone/dark checks — no auth users; session minting unavailable. Public unavailable-form language switching/mobile and staff sign-in redirect verified without runtime errors; translations await owner review.
 

@@ -1434,6 +1434,70 @@ export type Database = {
           },
         ]
       }
+      reopen_requests: {
+        Row: {
+          category: string
+          complaint_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          org_id: string
+          reason: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          category: string
+          complaint_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          org_id: string
+          reason: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          category?: string
+          complaint_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          org_id?: string
+          reason?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reopen_requests_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaint_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reopen_requests_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reopen_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       root_causes: {
         Row: {
           active: boolean
@@ -1800,6 +1864,10 @@ export type Database = {
         Args: { _case: string; _org: string; _user: string }
         Returns: boolean
       }
+      can_request_reopen: {
+        Args: { _case: string; _org: string }
+        Returns: boolean
+      }
       case_mention_members: {
         Args: { _complaint_id: string }
         Returns: {
@@ -1807,6 +1875,10 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }[]
+      }
+      case_reopen_requests: {
+        Args: { _case: string; _org: string }
+        Returns: Json
       }
       case_timeline_page: {
         Args: {
@@ -1848,6 +1920,15 @@ export type Database = {
         Returns: string
       }
       create_organisation: { Args: { _legal_name: string }; Returns: string }
+      decide_reopen_request: {
+        Args: {
+          _decision: string
+          _mode?: string
+          _note?: string
+          _request: string
+        }
+        Returns: undefined
+      }
       edit_complaint_details: {
         Args: { _case: string; _org: string; _patch: Json; _reason: string }
         Returns: undefined
@@ -2000,6 +2081,15 @@ export type Database = {
         Args: { _ids: string[]; _org: string }
         Returns: undefined
       }
+      request_reopen: {
+        Args: {
+          _case: string
+          _category: string
+          _org: string
+          _reason: string
+        }
+        Returns: string
+      }
       resolve_rule_set: {
         Args: { _country: string; _org: string; _product: string }
         Returns: string
@@ -2038,6 +2128,10 @@ export type Database = {
         Returns: undefined
       }
       valid_time_zone: { Args: { _zone: string }; Returns: boolean }
+      withdraw_reopen_request: {
+        Args: { _request: string }
+        Returns: undefined
+      }
       workload_summary: {
         Args: { _org: string }
         Returns: {

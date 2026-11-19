@@ -260,6 +260,13 @@
       "when": 1795080057786,
       "tag": "0036_custom_letter_types_revoke_anon",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795083187865,
+      "tag": "0037_public_form_privacy_notices",
+      "breakpoints": true
     }
   ]
 }

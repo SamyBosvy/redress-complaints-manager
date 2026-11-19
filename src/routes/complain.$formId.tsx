@@ -15,9 +15,10 @@ import { PUBLIC_FORM_I18N, NATIVE_LANGUAGE_NAMES, resolvePublicFormLanguage, isP
 
 export const Route = createFileRoute('/complain/$formId')({
   validateSearch: (search: Record<string, unknown>) => ({ embed: search['embed'] === '1' || search['embed'] === 1 ? '1' : undefined, lang: typeof search['lang'] === 'string' ? search['lang'] : search['lang'] === undefined ? undefined : '' }),
-  loader: async ({ params }) => {
+  loaderDeps: ({ search }) => ({ language: resolvePublicFormLanguage(search.lang) }),
+  loader: async ({ params, deps }) => {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.formId)) return null;
-    try { return await getPublicForm({ data: { id: params.formId } }); } catch { return null; }
+    try { return await getPublicForm({ data: { id: params.formId, language: deps.language } }); } catch { return null; }
   },
   head: ({ loaderData, matches }) => {
     const search = matches[matches.length - 1]?.search as { lang?: string } | undefined;
@@ -56,12 +57,13 @@ function PublicComplaint() {
     return () => { document.documentElement.lang = previous; };
   }, [uiLanguage]);
   useEffect(() => { if (!correspondenceChanged) setV(prev => ({ ...prev, language: correspondenceDefault(uiLanguage) })); }, [uiLanguage, correspondenceChanged]);
+  useEffect(() => { setV(prev => ({ ...prev, privacy_acknowledged: false })); }, [uiLanguage, firm?.privacy_notice_sha256]);
   const switcher = <Choice id="ui-language" label={t.uiLanguage} placeholder={t.select} options={NATIVE_LANGUAGE_NAMES} value={uiLanguage} onChange={value => { if (isPublicFormLanguage(value)) void navigate({ search: prev => ({ ...prev, lang: value }), replace: true }); }} />;
   if (!firm) return <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-5 py-16"><div className="mb-8">{switcher}</div><h1 className="text-2xl font-semibold">{t.unavailable}</h1><p className="mt-3 text-muted-foreground">{t.contactFirm}</p></main>;
   async function submit(e: React.FormEvent) {
     e.preventDefault(); if (!firm || busy) return;
     const id = submissionId || crypto.randomUUID(); setSubmissionId(id);
-    const parsed = publicComplaintSchema.safeParse({ ...v, form_id: firm.id, submission_id: id, privacy_notice: firm.privacy_notice });
+    const parsed = publicComplaintSchema.safeParse({ ...v, form_id: firm.id, submission_id: id, form_language: uiLanguage, privacy_notice: firm.privacy_notice, privacy_notice_sha256: firm.privacy_notice_sha256 });
     if (!parsed.success) { setError(parsed.error.issues[0] ?? null); return; }
     setBusy(true); setError(null);
     try { const result = await send({ data: parsed.data }); setReference(result.reference); }
@@ -93,7 +95,7 @@ function PublicComplaint() {
           <div className="sm:col-span-2"><Field id="outcome" label={t.outcome}><Textarea id="outcome" rows={3} maxLength={5000} value={v.desired_outcome} onChange={e => set('desired_outcome', e.target.value)} /></Field></div>
           <div className="sm:col-span-2"><label className="flex items-start gap-3 text-sm"><Checkbox checked={v.vulnerable} onCheckedChange={x => set('vulnerable', x === true)} className="mt-0.5" />{t.support}</label>{v.vulnerable && <div className="mt-4 space-y-4"><fieldset><legend className="mb-2 text-sm font-medium">{t.supportNeeds}</legend><div className="grid gap-3 sm:grid-cols-2">{(Object.keys(ADJUSTMENTS) as (keyof typeof ADJUSTMENTS)[]).map(key=><label key={key} className="flex items-start gap-3 text-sm"><Checkbox checked={v.adjustments.includes(key)} onCheckedChange={checked=>set('adjustments',checked?[...v.adjustments,key]:v.adjustments.filter(x=>x!==key))}/>{t[`adjustment.${key}`]}</label>)}</div></fieldset><Field id="support" label={t.supportNote}><Textarea id="support" maxLength={500} value={v.adjustments_note} onChange={e=>set('adjustments_note',e.target.value)} aria-describedby="support-hint"/></Field><p id="support-hint" className="text-xs text-muted-foreground">{t.supportHint}</p><label className="flex items-start gap-3 text-sm"><Checkbox checked={v.customer_consented} onCheckedChange={x=>set('customer_consented',x===true)}/>{t.supportConsent}</label></div>}</div>
         </div></fieldset>
-        <section className="mt-8 border-t pt-6"><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" /> {t.privacy}</h2><p className="mt-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">{firm.privacy_notice}</p><label className="mt-5 flex items-start gap-3 text-sm"><Checkbox checked={v.privacy_acknowledged} onCheckedChange={x => set('privacy_acknowledged', x === true)} className="mt-0.5" />{t.acknowledgement}</label></section>
+        <section className="mt-8 border-t pt-6"><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" /> {t.privacy}</h2>{firm.notice_language === null && <p className="mt-3 text-sm text-muted-foreground">{t.privacyFallback}</p>}<p lang={firm.notice_language ?? undefined} className="mt-3 whitespace-pre-wrap break-words text-sm text-muted-foreground">{firm.privacy_notice}</p><label className="mt-5 flex items-start gap-3 text-sm"><Checkbox checked={v.privacy_acknowledged} onCheckedChange={x => set('privacy_acknowledged', x === true)} className="mt-0.5" />{t.acknowledgement}</label></section>
         <div className="hidden" aria-hidden="true"><label htmlFor="website">{t.website}</label><input id="website" tabIndex={-1} autoComplete="off" value={v.website} onChange={e => set('website', e.target.value)} /></div>
         {error && <p role="alert" className="mt-5 break-words text-sm text-destructive">{error === 'server' ? publicFormServerError(uiLanguage) : publicFormIssueMessage(error, uiLanguage)}</p>}
         <Button className="mt-6 min-h-12 w-full sm:w-auto" type="submit" disabled={busy}>{busy ? t.submitting : <><Send aria-hidden="true" className="h-4 w-4" />{t.submit}</>}</Button>

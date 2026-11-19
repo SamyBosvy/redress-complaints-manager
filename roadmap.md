@@ -1,5 +1,8 @@
 # Redress roadmap
 
+- [x] Per-language public-form privacy notices: managed 0037, Admin translation tabs/count/copy/delete/update attribution, localized fallback, server-resolved receipt language/hash, staff language display; SAR already selects all receipt fields. All 874 tests passed in UTC and Australia/Sydney; automatic build clean; hosted table/grants/columns verified. Default notice, erasure/retention, other form fields, billing, notifications and email unchanged.
+- [ ] Per-language privacy notices populated public-form submission/readback and signed-in Admin/staff phone/dark checks — no auth users; session minting unavailable. Public unavailable-form language switching/mobile and staff sign-in redirect verified without runtime errors; translations await owner review.
+
 - [x] Item #30: private atomic note mentions, shared URL timeline filters/search/order, 50-event keyset pages, keyboard picker, My day unread list/mark-read and sidebar badge; 741/741 tests passed in UTC and Sydney, automatic typecheck/build clean. Hosted recipient RLS, audit/no-delete guards and privacy note-delete cascade verified. QA/Read-only get a mentions-only My day view; caseload/default landing unchanged. Billing/public intake unchanged.
 - [ ] Item #30 signed-in note save/readback, picker/filter/paging, unread badge/mark-read and phone/dark verification — no auth users; minting unavailable, filtered case safely redirects to sign-in without runtime errors. Applied 0026 plus corrective 0027 for an ambiguous SQL recipient variable found by PGlite tests; historical migration files preserved.
 

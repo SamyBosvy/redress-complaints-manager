@@ -53,7 +53,13 @@ const caseQuery = (id: string) =>
       if (c.error) throw c.error;
       const {data:privacy,error:privacyError}=await supabase.from('complaints').select('privacy_processing,withdrawal_reason,redress_none,goodwill_none,adr_rights_given,root_cause_id').eq('org_id',c.data.org_id ?? '').eq('id',id).single();
       if(privacyError)throw privacyError;
-      return { c: {...c.data,...privacy} };
+      let noticeReceipt: {privacy_notice_language: string | null} | null = null;
+      if (c.data.channel === 'web_form' && c.data.org_id) {
+        const {data:receipt,error:receiptError} = await supabase.rpc('public_form_notice_receipt', {_org:c.data.org_id,_case:id});
+        if(receiptError)throw receiptError;
+        if(receipt && typeof receipt === 'object' && !Array.isArray(receipt) && ('privacy_notice_language' in receipt)) noticeReceipt = {privacy_notice_language:typeof receipt['privacy_notice_language'] === 'string' ? receipt['privacy_notice_language'] : null};
+      }
+      return { c: {...c.data,...privacy}, noticeReceipt };
     },
   });
 
@@ -85,7 +91,7 @@ function CaseView() {
   const m = useMembership()!;
   const orgId = m.org!.id;
   const qc = useQueryClient();
-  const { data: { c } } = useSuspenseQuery(caseQuery(id));
+  const { data: { c, noticeReceipt } } = useSuspenseQuery(caseQuery(id));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
   const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
   const {data:configuredCountries=[]}=useQuery(countriesQuery(orgId));
@@ -171,6 +177,7 @@ function CaseView() {
               <Item k="Phone" v={c.complainant_phone} />
               <Item k="Customer ID" v={c.customer_ref} />
               <Item k="Language" v={LANGUAGES[c.language as keyof typeof LANGUAGES] ?? c.language} />
+              {noticeReceipt && <Item k="Privacy notice acknowledged" v={noticeReceipt.privacy_notice_language ? (LANGUAGES[noticeReceipt.privacy_notice_language as keyof typeof LANGUAGES] ?? noticeReceipt.privacy_notice_language) : 'Default notice (language unspecified)'} />}
               <Item k="Vulnerable" v={c.vulnerable ? "Yes" : "No"} />
             </dl>
             <h3 className="mt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</h3>

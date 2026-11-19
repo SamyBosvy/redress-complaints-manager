@@ -6,6 +6,9 @@ import { publicComplaintSchema } from './public-forms';
 
 describe('Public form languages', () => {
   for (const lang of PUBLIC_FORM_LANGUAGES) {
+    it(`${lang} provides a privacy fallback notice`, () => {
+      expect(PUBLIC_FORM_I18N[lang].privacyFallback.trim().length).toBeGreaterThan(20);
+    });
     it(`${lang} has all ten nonempty support keys`, () => {
       expect(SUPPORT_KEYS).toHaveLength(10);
       for (const key of SUPPORT_KEYS) expect(PUBLIC_FORM_I18N[lang][key as keyof typeof PUBLIC_FORM_I18N.en]).toEqual(expect.stringMatching(/\S/));

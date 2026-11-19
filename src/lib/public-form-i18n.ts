@@ -226,7 +226,24 @@ const SUPPORT_I18N = {
   }
 } satisfies Record<Exclude<PublicFormLanguage, 'en'>, SupportText>;
 const ENGLISH_SUPPORT = { ...SUPPORT_TEXT, ...Object.fromEntries(Object.entries(ADJUSTMENTS).map(([key, label]) => [`adjustment.${key}`, label])) } as SupportText;
-export const PUBLIC_FORM_I18N = Object.fromEntries(PUBLIC_FORM_LANGUAGES.map(lang=>[lang,{...ALL_I18N[lang],...(lang === 'en' ? ENGLISH_SUPPORT : SUPPORT_I18N[lang])}])) as Record<PublicFormLanguage,Dictionary & SupportText>;
+// Short formal company wording; owner review pending.
+const PRIVACY_FALLBACK: Record<PublicFormLanguage,string> = {
+  en: "This privacy notice is only available in the company's default language.",
+  fr: 'Cette notice de confidentialité est uniquement disponible dans la langue par défaut de l’entreprise.',
+  es: 'Este aviso de privacidad solo está disponible en el idioma predeterminado de la empresa.',
+  pt: 'Este aviso de privacidade só está disponível no idioma predefinido da empresa.',
+  pl: 'Ta informacja o prywatności jest dostępna tylko w domyślnym języku firmy.',
+  nl: 'Deze privacyverklaring is alleen beschikbaar in de standaardtaal van het bedrijf.',
+  de: 'Dieser Datenschutzhinweis ist nur in der Standardsprache des Unternehmens verfügbar.',
+  it: 'Questa informativa sulla privacy è disponibile solo nella lingua predefinita dell’azienda.',
+  lt: 'Šis privatumo pranešimas pateikiamas tik numatytąja įmonės kalba.',
+  sv: 'Detta integritetsmeddelande finns endast på företagets standardspråk.',
+  da: 'Denne privatlivsmeddelelse er kun tilgængelig på virksomhedens standardsprog.',
+  cs: 'Toto oznámení o ochraně soukromí je dostupné pouze ve výchozím jazyce společnosti.',
+  ro: 'Această informare privind confidențialitatea este disponibilă doar în limba implicită a companiei.',
+  ga: 'Níl an fógra príobháideachais seo ar fáil ach i dteanga réamhshocraithe na cuideachta.',
+};
+export const PUBLIC_FORM_I18N = Object.fromEntries(PUBLIC_FORM_LANGUAGES.map(lang=>[lang,{...ALL_I18N[lang],...(lang === 'en' ? ENGLISH_SUPPORT : SUPPORT_I18N[lang]),privacyFallback:PRIVACY_FALLBACK[lang]}])) as Record<PublicFormLanguage,Dictionary & SupportText & {privacyFallback:string}>;
 export const PUBLIC_FORM_KEYS = keys;
 export function isPublicFormLanguage(value: unknown): value is PublicFormLanguage { return typeof value === 'string' && PUBLIC_FORM_LANGUAGES.some(lang => lang === value); }
 export function resolvePublicFormLanguage(urlLanguage?: unknown, browserLanguages: readonly string[] = []): PublicFormLanguage {

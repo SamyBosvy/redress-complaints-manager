@@ -1269,6 +1269,48 @@ export type Database = {
           },
         ]
       }
+      public_form_privacy_notices: {
+        Row: {
+          body: string
+          form_id: string
+          language: string
+          org_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body: string
+          form_id: string
+          language: string
+          org_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          form_id?: string
+          language?: string
+          org_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_form_privacy_notices_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "public_complaint_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_form_privacy_notices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_form_submissions: {
         Row: {
           complaint_id: string
@@ -1276,6 +1318,8 @@ export type Database = {
           id: string
           org_id: string
           privacy_notice: string
+          privacy_notice_language: string | null
+          privacy_notice_sha256: string | null
         }
         Insert: {
           complaint_id: string
@@ -1283,6 +1327,8 @@ export type Database = {
           id: string
           org_id: string
           privacy_notice: string
+          privacy_notice_language?: string | null
+          privacy_notice_sha256?: string | null
         }
         Update: {
           complaint_id?: string
@@ -1290,6 +1336,8 @@ export type Database = {
           id?: string
           org_id?: string
           privacy_notice?: string
+          privacy_notice_language?: string | null
+          privacy_notice_sha256?: string | null
         }
         Relationships: [
           {
@@ -1903,7 +1951,13 @@ export type Database = {
         Args: { _org: string; _years: number }
         Returns: undefined
       }
-      public_form_details: { Args: { _id: string }; Returns: Json }
+      public_form_details:
+        | { Args: { _id: string }; Returns: Json }
+        | { Args: { _id: string; _language: string }; Returns: Json }
+      public_form_notice_receipt: {
+        Args: { _case: string; _org: string }
+        Returns: Json
+      }
       rebalance_complaint: {
         Args: { _complaint: string; _org: string }
         Returns: string

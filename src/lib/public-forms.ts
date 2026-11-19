@@ -11,15 +11,17 @@ export const publicComplaintSchema = z.object({
   complainant_phone: z.string().trim().max(50), customer_ref: z.string().trim().max(100),
   country_code: z.string().regex(/^[A-Z]{2}$/, 'Select your country'),
   language: z.enum(INTAKE_CORRESPONDENCE_LANGUAGES),
+  form_language: z.enum(INTAKE_CORRESPONDENCE_LANGUAGES).optional(),
+  privacy_notice_sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   product: z.enum(Object.keys(PRODUCTS) as [keyof typeof PRODUCTS, ...Array<keyof typeof PRODUCTS>]),
   category: z.enum(Object.keys(CATEGORIES) as [keyof typeof CATEGORIES, ...Array<keyof typeof CATEGORIES>]),
   summary: z.string().trim().min(1, 'Tell us about your complaint').max(10000),
   desired_outcome: z.string().trim().max(5000), vulnerable: z.boolean(), vulnerable_note: z.string().max(0).default(''), adjustments: vulnerabilitySchema.shape.adjustments.default([]), adjustments_note: vulnerabilitySchema.shape.adjustments_note.default(''), customer_consented: z.boolean().default(false),
   privacy_acknowledged: z.literal(true, { errorMap: () => ({ message: 'Please acknowledge the privacy notice' }) }),
-  privacy_notice: z.string().min(1).max(10000), website: z.string().max(0),
+  privacy_notice: z.string().min(1).max(20000), website: z.string().max(0),
 });
 export type PublicComplaintInput = z.infer<typeof publicComplaintSchema>;
-export type PublicFormDetails = { id: string; firm_name: string; privacy_notice: string; logo_url: string | null; countries: string[] };
+export type PublicFormDetails = { id: string; firm_name: string; privacy_notice: string; notice_language: string | null; available_languages: string[]; privacy_notice_sha256: string; logo_url: string | null; countries: string[] };
 const escapeAttribute = (s: string) => s.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 export function formShareLinks(origin: string, id: string, name: string) {
   const url = new URL(`/complain/${z.string().uuid().parse(id)}`, origin).href;

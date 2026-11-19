@@ -27,6 +27,7 @@
 
 - Public intake uses narrow SECURITY DEFINER RPCs: details expose only public firm fields, submission validates and writes Received/web_form atomically with a privacy receipt; no anonymous table reads or generic complaint inserts. Why: isolate tenants and avoid exposing complaint data.
 - Public form retries reuse a submission UUID and return the original reference. Why: prevent duplicate complaints after connection failures.
+- Public notice translations are Admin-managed; public RPCs resolve the form language separately from correspondence and verify the displayed hash before snapshotting, while staff receipt RPCs reveal language only under current case access. Why: preserve exact acknowledgement evidence without trusting client text or widening submission access.
 - Firm logos use private storage with SELECT restricted to the currently published logo path and Org Admin upload policies. Why: workspace disallows public buckets while public forms still need a safe logo.
 - Privacy mutations and exports use authenticated Org Admin server functions, while service-only routines perform anonymisation/purge. Why: client permissions must not allow unrestricted personal-data deletion.
 - Privacy working-record erasure preserves immutable historical audit snapshots; future audit capture minimises customer free text. Why: preserve existing audit integrity without falsely claiming full GDPR erasure.

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import type { Database } from '@/integrations/supabase/types';
 import { publicComplaintSchema, type PublicFormDetails } from './public-forms';
+import { PUBLIC_FORM_LANGUAGES } from './public-form-i18n';
 
 function publicClient(url: string, key: string) {
   return createClient<Database>(url, key, {
@@ -16,13 +17,13 @@ function publicClient(url: string, key: string) {
   });
 }
 export const getPublicForm = createServerFn({ method: 'GET' })
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), language: z.enum(PUBLIC_FORM_LANGUAGES).default('en') }).parse(input))
   .handler(async ({ data }): Promise<PublicFormDetails | null> => {
     const client = publicClient(process.env['SUPABASE_URL']!, process.env['SUPABASE_PUBLISHABLE_KEY']!);
-    const { data: row, error } = await client.rpc('public_form_details', { _id: data.id });
+    const { data: row, error } = await client.rpc('public_form_details', { _id: data.id, _language: data.language });
     if (error) throw new Error('The complaint form could not be loaded. Please try again.');
     if (!row) return null;
-    const parsed = z.object({ id: z.string().uuid(), firm_name: z.string(), privacy_notice: z.string(), logo_path: z.string().nullable(), countries: z.array(z.string()) }).parse(row);
+    const parsed = z.object({ id: z.string().uuid(), firm_name: z.string(), privacy_notice: z.string(), notice_language: z.string().nullable(), available_languages: z.array(z.string()), privacy_notice_sha256: z.string(), logo_path: z.string().nullable(), countries: z.array(z.string()) }).parse(row);
     let logo_url: string | null = null;
     if (parsed.logo_path) {
       const browserStorage = publicClient(process.env['SUPABASE_URL']!, process.env['SUPABASE_PUBLISHABLE_KEY']!);
@@ -34,7 +35,7 @@ export const getPublicForm = createServerFn({ method: 'GET' })
         logo_url = signedUrl.href;
       }
     }
-    return { id: parsed.id, firm_name: parsed.firm_name, privacy_notice: parsed.privacy_notice, countries: parsed.countries, logo_url };
+    return { id: parsed.id, firm_name: parsed.firm_name, privacy_notice: parsed.privacy_notice, notice_language: parsed.notice_language, available_languages: parsed.available_languages, privacy_notice_sha256: parsed.privacy_notice_sha256, countries: parsed.countries, logo_url };
   });
 export const submitPublicComplaint = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => publicComplaintSchema.parse(input))

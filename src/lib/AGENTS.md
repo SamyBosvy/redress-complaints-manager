@@ -55,3 +55,6 @@
 
 ## Notifications
 - Notification writes are trusted triggers only; recipient RLS rechecks current case access, preferences run at insertion, and scheduled deadline/retention RPCs are service-only. Why: prevent spoofing and stale-access leaks without email or realtime.
+
+## Session security
+- Session RPCs scope auth.sessions to caller or shared-org admin and audit via immutable app-owned events; strictest active-org limits govern idle tabs and service-only expiry. Why: keep managed auth storage unchanged while enforcing ownership.

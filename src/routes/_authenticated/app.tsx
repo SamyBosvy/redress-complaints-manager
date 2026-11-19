@@ -1,3 +1,4 @@
+import { IdleSession } from '@/components/idle-session';
 import { useQuery } from '@tanstack/react-query';
 import { unreadMentionsQuery } from '@/lib/mentions-query';
 import { Suspense } from 'react';
@@ -170,6 +171,7 @@ function AppLayout() {
         <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
+      {m?.user&&<IdleSession user={m.user.id}/>}
       <WorkspaceCommand role={m?.role} orgId={m?.org?.id ?? ''} userId={m?.user.id ?? ''} theme={theme} changeTheme={changeTheme} density={density} changeDensity={changeDensity} open={commandOpen} setOpen={setCommandOpen} />
       <Dialog open={setupOpen} onOpenChange={setSetupOpen}><DialogContent aria-describedby={undefined} className="max-h-[90dvh] overflow-y-auto"><DialogTitle>Setup progress</DialogTitle>{setupOpen&&<div onClick={e=>{if((e.target as HTMLElement).closest('a'))setSetupOpen(false);}}><SetupProgress force /></div>}</DialogContent></Dialog>
     </div>

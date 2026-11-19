@@ -13,7 +13,7 @@ import { membershipQuery } from '@/lib/org';
 import { defaultLanding } from '@/lib/my-day';
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>): { mode?: "signup" } => (s["mode"] === "signup" ? { mode: "signup" } : {}),
+  validateSearch: (s: Record<string, unknown>): { mode?: "signup"; reason?: "idle" } => ({...(s["mode"] === "signup" ? {mode:"signup" as const} : {}),...(s["reason"] === "idle" ? {reason:"idle" as const} : {})}),
   head: () => ({
     meta: [
       { title: "Sign in — Redress" },
@@ -34,7 +34,7 @@ const schema = z.object({
 });
 
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, reason } = Route.useSearch();
   const [signup, setSignup] = useState(mode === "signup");
   const [busy, setBusy] = useState(false);
   const [resetOpen,setResetOpen] = useState(false);
@@ -104,6 +104,7 @@ function AuthPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {signup ? "14 days, all Growth features, no card required." : "Welcome back."}
         </p>
+        {reason==='idle'&&<p role="status" className="mt-4 text-sm text-muted-foreground">You were signed out after inactivity. Sign in again to continue. Unsaved changes were not preserved.</p>}
         <Button variant="outline" className="mt-6 w-full" onClick={google}>Continue with Google</Button>
         <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
           <div className="h-px flex-1 bg-border" />or<div className="h-px flex-1 bg-border" />

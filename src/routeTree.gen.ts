@@ -44,6 +44,7 @@ import { Route as AuthenticatedAppSettingsRulesRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppSettingsUsersRouteImport } from './routes/_authenticated/app.settings.users'
 import { Route as ApiPublicJobsNotificationsRouteImport } from './routes/api/public/jobs/notifications'
 import { Route as ApiPublicJobsPrivacyRouteImport } from './routes/api/public/jobs/privacy'
+import { Route as ApiPublicJobsSessionsRouteImport } from './routes/api/public/jobs/sessions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -231,6 +232,11 @@ const ApiPublicJobsPrivacyRoute = ApiPublicJobsPrivacyRouteImport.update({
   path: '/api/public/jobs/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJobsSessionsRoute = ApiPublicJobsSessionsRouteImport.update({
+  id: '/api/public/jobs/sessions',
+  path: '/api/public/jobs/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -266,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/api/public/jobs/sessions': typeof ApiPublicJobsSessionsRoute
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/api/public/jobs/sessions': typeof ApiPublicJobsSessionsRoute
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/_authenticated/app/settings/users': typeof AuthenticatedAppSettingsUsersRoute
   '/api/public/jobs/notifications': typeof ApiPublicJobsNotificationsRoute
   '/api/public/jobs/privacy': typeof ApiPublicJobsPrivacyRoute
+  '/api/public/jobs/sessions': typeof ApiPublicJobsSessionsRoute
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -376,6 +385,7 @@ export interface FileRouteTypes {
     | '/app/settings/users'
     | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
+    | '/api/public/jobs/sessions'
     | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -410,6 +420,7 @@ export interface FileRouteTypes {
     | '/app/settings/users'
     | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
+    | '/api/public/jobs/sessions'
     | '/app/settings'
   id:
     | '__root__'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/settings/users'
     | '/api/public/jobs/notifications'
     | '/api/public/jobs/privacy'
+    | '/api/public/jobs/sessions'
     | '/_authenticated/app/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -463,6 +475,7 @@ export interface RootRouteChildren {
   ComplainFormIdRoute: typeof ComplainFormIdRoute
   ApiPublicJobsNotificationsRoute: typeof ApiPublicJobsNotificationsRoute
   ApiPublicJobsPrivacyRoute: typeof ApiPublicJobsPrivacyRoute
+  ApiPublicJobsSessionsRoute: typeof ApiPublicJobsSessionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -712,6 +725,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/sessions': {
+      id: '/api/public/jobs/sessions'
+      path: '/api/public/jobs/sessions'
+      fullPath: '/api/public/jobs/sessions'
+      preLoaderRoute: typeof ApiPublicJobsSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -807,6 +827,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComplainFormIdRoute: ComplainFormIdRoute,
   ApiPublicJobsNotificationsRoute: ApiPublicJobsNotificationsRoute,
   ApiPublicJobsPrivacyRoute: ApiPublicJobsPrivacyRoute,
+  ApiPublicJobsSessionsRoute: ApiPublicJobsSessionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

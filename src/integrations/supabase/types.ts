@@ -1060,8 +1060,10 @@ export type Database = {
           firm_address: string
           home_country: string | null
           id: string
+          idle_timeout_minutes: number
           legal_name: string
           licence_type: Database["public"]["Enums"]["licence_type"]
+          max_session_hours: number
           qa_required: boolean
           qa_sample_pct: number
           regulator: string | null
@@ -1083,8 +1085,10 @@ export type Database = {
           firm_address?: string
           home_country?: string | null
           id?: string
+          idle_timeout_minutes?: number
           legal_name: string
           licence_type?: Database["public"]["Enums"]["licence_type"]
+          max_session_hours?: number
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
@@ -1106,8 +1110,10 @@ export type Database = {
           firm_address?: string
           home_country?: string | null
           id?: string
+          idle_timeout_minutes?: number
           legal_name?: string
           licence_type?: Database["public"]["Enums"]["licence_type"]
+          max_session_hours?: number
           qa_required?: boolean
           qa_sample_pct?: number
           regulator?: string | null
@@ -1438,6 +1444,44 @@ export type Database = {
           },
         ]
       }
+      session_security_events: {
+        Row: {
+          actor: string
+          created_at: string
+          id: string
+          kind: string
+          org_id: string
+          session_id: string | null
+          target_user: string
+        }
+        Insert: {
+          actor: string
+          created_at?: string
+          id?: string
+          kind: string
+          org_id: string
+          session_id?: string | null
+          target_user: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          session_id?: string | null
+          target_user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_security_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_versions: {
         Row: {
           body: string
@@ -1700,7 +1744,27 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_public_firm_logo: { Args: { _path: string }; Returns: boolean }
+      mask_session_ip: { Args: { _ip: unknown }; Returns: string }
       my_organisations: { Args: never; Returns: Json }
+      my_session_limits: {
+        Args: never
+        Returns: {
+          idle_timeout_minutes: number
+          max_session_hours: number
+        }[]
+      }
+      my_sessions: {
+        Args: never
+        Returns: {
+          aal: string
+          created_at: string
+          id: string
+          ip: string
+          is_current: boolean
+          last_active: string
+          user_agent: string
+        }[]
+      }
       notification_deadline_job: { Args: { _at?: string }; Returns: number }
       notification_retention_job: { Args: never; Returns: number }
       org_member_directory: {
@@ -1712,6 +1776,14 @@ export type Database = {
           id: string
           last_sign_in_at: string
           role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
+      org_session_summary: {
+        Args: { _org: string }
+        Returns: {
+          last_active: string
+          session_count: number
           user_id: string
         }[]
       }
@@ -1804,6 +1876,11 @@ export type Database = {
         Args: { _country: string; _org: string; _product: string }
         Returns: string
       }
+      revoke_member_sessions: {
+        Args: { _org: string; _user: string }
+        Returns: undefined
+      }
+      revoke_my_session: { Args: { _session: string }; Returns: undefined }
       revoke_org_invite: {
         Args: { _invite: string; _org: string }
         Returns: undefined
@@ -1818,6 +1895,7 @@ export type Database = {
         Returns: undefined
       }
       seed_templates: { Args: { _org: string }; Returns: undefined }
+      session_expiry_job: { Args: { _at?: string }; Returns: number }
       set_default_rule: {
         Args: { _org: string; _rule: string }
         Returns: undefined

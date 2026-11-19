@@ -232,6 +232,13 @@
       "when": 1795076613807,
       "tag": "0032_notification_job_query_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795077725020,
+      "tag": "0033_session_security",
+      "breakpoints": true
     }
   ]
 }

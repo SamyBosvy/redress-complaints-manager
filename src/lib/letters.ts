@@ -11,7 +11,44 @@ export const TEMPLATE_KINDS: Record<TemplateKind, string> = {
   final_not_upheld: "Final response — Not upheld",
   information_request: "Information request",
   closure: "Closure",
+  custom: "Custom letter",
 };
+export type BuiltInKind = Exclude<TemplateKind, "custom">;
+export const BUILT_IN_KINDS = (Object.keys(TEMPLATE_KINDS) as TemplateKind[]).filter((k): k is BuiltInKind => k !== "custom");
+export type CustomLetterType = { id: string; name: string; description?: string | null; requires_adr_block: boolean; archived_at: string | null };
+/** Composer/editor choice: a built-in kind or `custom:<type id>`. */
+export type LetterChoice = { kind: TemplateKind; customTypeId: string | null };
+export const CUSTOM_LETTER_NOTE = "Custom letters do not change the complaint status or deadlines.";
+export function choiceValue(kind: TemplateKind, customTypeId: string | null = null) {
+  return kind === "custom" && customTypeId ? `custom:${customTypeId}` : kind;
+}
+export function parseChoice(value: string): LetterChoice {
+  if (value.startsWith("custom:")) return { kind: "custom", customTypeId: value.slice(7) };
+  return { kind: value as TemplateKind, customTypeId: null };
+}
+/** Built-in types first (fixed order), then active custom types alphabetically under "Custom". */
+export function composerGroups(types: readonly CustomLetterType[]) {
+  const custom = types.filter(t => !t.archived_at).slice().sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  return [
+    { label: "Built-in", options: BUILT_IN_KINDS.map(k => ({ value: k as string, label: TEMPLATE_KINDS[k] })) },
+    ...(custom.length ? [{ label: "Custom", options: custom.map(t => ({ value: choiceValue("custom", t.id), label: t.name })) }] : []),
+  ];
+}
+/** Display label; custom letters prefer the current type name, then a snapshot name. */
+export function letterTypeLabel(kind: TemplateKind | string, customTypeId: string | null | undefined, types: readonly CustomLetterType[] = [], snapshot?: string | null) {
+  if (kind === "custom") return types.find(t => t.id === customTypeId)?.name ?? snapshot ?? TEMPLATE_KINDS.custom;
+  return TEMPLATE_KINDS[kind as TemplateKind] ?? kind;
+}
+/** Whether a template of this type must contain the ADR referral block. */
+export function needsAdrBlock(kind: TemplateKind, type?: Pick<CustomLetterType, "requires_adr_block"> | null) {
+  return kind === "custom" ? Boolean(type?.requires_adr_block) : isFinal(kind);
+}
+export function validateLetterTypeName(name: string, others: readonly { id: string; name: string }[], selfId?: string) {
+  const n = name.trim();
+  if (n.length < 2 || n.length > 80) return "Use 2–80 characters.";
+  if (others.some(o => o.id !== selfId && o.name.trim().toLowerCase() === n.toLowerCase())) return "A letter type with this name already exists.";
+  return null;
+}
 
 export const MERGE_FIELDS = [
   "customer_name", "reference", "date_received", "final_deadline",

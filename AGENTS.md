@@ -49,3 +49,4 @@
 
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
 
+- Custom letter types (kind='custom' + org-scoped custom_type_id, archived not deleted) are informational only; workflow, QA, deadline and report SQL must keep matching built-in kinds explicitly so custom letters stay no-ops. Why: regulatory clocks depend only on the seven built-in kinds.

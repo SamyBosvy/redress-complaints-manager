@@ -13,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { membershipQuery, useMembership } from "@/lib/org";
 import { englishStarter, languageLabel } from "@/lib/template-language";
 import { LANGUAGES, countriesQuery, membersQuery } from "@/lib/complaints";
-import { MERGE_GROUPS, MERGE_LABELS, SAMPLE_VALUES, caseMergeValues, mergeTemplate, unknownPlaceholders, insertAtCursor, type MergeValues, TEMPLATE_KINDS, hasAdrBlock, isFinal, type TemplateKind } from "@/lib/letters";
+import { MERGE_GROUPS, MERGE_LABELS, SAMPLE_VALUES, caseMergeValues, mergeTemplate, unknownPlaceholders, insertAtCursor, type MergeValues, TEMPLATE_KINDS, hasAdrBlock, BUILT_IN_KINDS, choiceValue, parseChoice, needsAdrBlock, letterTypeLabel } from "@/lib/letters";
+import { customLetterTypesQuery } from "@/lib/custom-letter-types";
+import { LetterTypes } from "@/components/letter-types";
 import { rootCausesQuery, rootCauseLabel } from '@/lib/root-causes';
 import { loadPdfFont } from '@/lib/pdf-font';
 import { lineDiff, restoreTemplate, templateVersionsQuery } from '@/lib/template-versions';
@@ -44,9 +46,14 @@ function Templates() {
   const { data } = useSuspenseQuery(templatesQuery(orgId));
   const qc = useQueryClient();
   const canEdit = m?.role === "org_admin" || m?.role === "complaints_manager";
-  const [kind, setKind] = useState<TemplateKind>("acknowledgement");
+  const [choice, setChoice] = useState<string>("acknowledgement");
+  const { kind, customTypeId } = parseChoice(choice);
+  const { data: types = [] } = useQuery(customLetterTypesQuery(orgId));
+  const customType = types.find(t => t.id === customTypeId) ?? null;
+  const typeLabel = letterTypeLabel(kind, customTypeId, types);
+  const sameType = (t: { kind: string; custom_type_id: string | null }) => t.kind === kind && (t.custom_type_id ?? null) === customTypeId;
   const [lang, setLang] = useState<string>("en");
-  const current = data.find((t) => t.kind === kind && t.language === lang);
+  const current = data.find((t) => sameType(t) && t.language === lang);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [baseline, setBaseline] = useState({subject:'',body:''});
@@ -61,10 +68,10 @@ function Templates() {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const target = useRef<'subject'|'body'>('body');
   const [fromEnglish, setFromEnglish] = useState(false);
-  const starter = !current && lang !== 'en' ? englishStarter(data, kind) : null;
+  const starter = !current && lang !== 'en' ? englishStarter(data, kind, customTypeId) : null;
   const dirty = restoredFrom !== null || subject !== baseline.subject || body !== baseline.body;
   useBlocker({ shouldBlockFn: () => dirty && !window.confirm('Discard unsaved template changes?'), enableBeforeUnload: dirty });
-  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId('');setFromEnglish(false); }, [current?.id, kind, lang]);
+  useEffect(() => { const next={subject:current?.subject??'',body:current?.body??''}; setSubject(next.subject);setBody(next.body);setBaseline(next);setRestoredFrom(null);setVersionId('');setFromEnglish(false); }, [current?.id, choice, lang]);
   useEffect(() => {const timer=setTimeout(()=>setDebounced(caseSearch.trim()),250);return()=>clearTimeout(timer);},[caseSearch]);
   const {data:countries=[]}=useQuery(countriesQuery(orgId));
   const {data:members=[]}=useQuery(membersQuery(orgId));
@@ -77,13 +84,15 @@ function Templates() {
     if(error)throw error;return data;
   }});
   const unknown=unknownPlaceholders(subject+'\n'+body);
-  const missingAdr=isFinal(kind)&&!hasAdrBlock(body);
-  const valid=unknown.length===0&&!missingAdr;
+  const missingAdr=needsAdrBlock(kind,customType)&&!hasAdrBlock(body);
+  const archivedNew=!current&&Boolean(customType?.archived_at);
+  const valid=unknown.length===0&&!missingAdr&&!archivedNew;
   async function save() {
     if(!canEdit||!valid||busy)return;
     setBusy(true);
     try {
-      const {error}=await supabase.from('templates').upsert({org_id:orgId,kind,language:lang,subject,body,restored_from:restoredFrom,updated_at:new Date().toISOString()},{onConflict:'org_id,kind,language'});
+      const now=new Date().toISOString();
+      const {error}=current?await supabase.from('templates').update({subject,body,restored_from:restoredFrom,updated_at:now}).eq('id',current.id).eq('org_id',orgId):await supabase.from('templates').insert({org_id:orgId,kind,custom_type_id:customTypeId,language:lang,subject,body,restored_from:restoredFrom,updated_at:now});
       if(error)throw error;
       setBaseline({subject,body});setRestoredFrom(null);
       await qc.invalidateQueries({queryKey:['templates',orgId]});await qc.invalidateQueries({queryKey:['template-versions',orgId]});toast.success('Template saved.');
@@ -108,19 +117,28 @@ function Templates() {
     <div className="mx-auto max-w-7xl" onKeyDown={e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();void save();}}}>
       <h1 className="text-2xl font-semibold">Templates</h1>
       <p className="mt-1 text-sm text-muted-foreground">{canEdit ? "Letter and email templates, one version per language." : "Read-only. Ask a Complaints Manager to change templates."}</p>
+      <LetterTypes orgId={orgId} types={types} canEdit={canEdit} />
       <div className="mt-6 grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)]">
         <div className="space-y-1">
-          {(Object.keys(TEMPLATE_KINDS) as TemplateKind[]).map((k) => (
-            <Button variant="ghost" key={k} onClick={() => changeTemplate(()=>setKind(k))}
-              className={cn("block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted", k === kind && "bg-accent text-accent-foreground font-medium")}>
+          <p className="px-3 pb-1 text-xs font-semibold uppercase text-muted-foreground">Built-in</p>
+          {BUILT_IN_KINDS.map((k) => (
+            <Button variant="ghost" key={k} onClick={() => changeTemplate(()=>setChoice(k))}
+              className={cn("block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-muted", k === choice && "bg-accent text-accent-foreground font-medium")}>
               {TEMPLATE_KINDS[k]}
             </Button>
           ))}
+          {types.length>0&&<p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase text-muted-foreground">Custom</p>}
+          {types.map((t) => { const v=choiceValue('custom',t.id); return (
+            <Button variant="ghost" key={t.id} onClick={() => changeTemplate(()=>setChoice(v))}
+              className={cn("block h-auto w-full whitespace-normal rounded-md px-3 py-2 text-left text-sm hover:bg-muted", v === choice && "bg-accent text-accent-foreground font-medium")}>
+              {t.name}{t.archived_at && <span className="ml-1 opacity-60">(archived)</span>}
+            </Button>
+          ); })}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap gap-1">
             {Object.entries(LANGUAGES).map(([code, name]) => {
-              const filled = data.some((t) => t.kind === kind && t.language === code && t.body.trim());
+              const filled = data.some((t) => sameType(t) && t.language === code && t.body.trim());
               return (
                 <Button key={code} size="sm" variant={code === lang ? "default" : "outline"} onClick={() => changeTemplate(()=>setLang(code))}>
                   {name}{!filled && <span className="ml-1 opacity-60">(empty)</span>}
@@ -128,13 +146,15 @@ function Templates() {
               );
             })}
           </div>
-          {!current && !fromEnglish && <EmptyState icon={FileText} title={`No template in ${languageLabel(lang)} yet`} description={`${TEMPLATE_KINDS[kind]} · ${languageLabel(lang)}`} />}
+          {!current && !fromEnglish && <EmptyState icon={FileText} title={`No template in ${languageLabel(lang)} yet`} description={`${typeLabel} · ${languageLabel(lang)}`} />}
           {!current && !fromEnglish && starter && canEdit && <Button className="mt-3" variant="outline" onClick={() => { setSubject(starter.subject); setBody(starter.body); setFromEnglish(true); }}>Start from English</Button>}
           {fromEnglish && <div role="status" className="mt-4 flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"><AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-warning" />This is the English text — translate before saving.</div>}
+          {kind==='custom'&&<p className="mt-4 text-sm text-muted-foreground">Custom letters do not change the complaint status or deadlines.</p>}
+          {archivedNew&&<p role="status" className="mt-4 text-sm text-warning">This letter type is archived. Restore it to add new language versions.</p>}
           {missingAdr && (
             <div className="mt-4 flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
               <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-warning" />
-              Final responses must include the ADR referral block with {"{adr_body_name}"} and {"{adr_body_contact}"}.
+              {kind==='custom'?'This letter type requires':'Final responses must include'} the ADR referral block with {"{adr_body_name}"} and {"{adr_body_contact}"}.
             </div>
           )}
           <div className="mt-5 grid min-w-0 gap-6 xl:grid-cols-2"><section className="min-w-0"><div className="space-y-1.5">

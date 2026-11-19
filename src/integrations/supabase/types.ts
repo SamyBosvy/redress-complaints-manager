@@ -645,6 +645,50 @@ export type Database = {
           },
         ]
       }
+      custom_letter_types: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          requires_adr_block: boolean
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          requires_adr_block?: boolean
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          requires_adr_block?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_letter_types_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           country_code: string
@@ -682,6 +726,7 @@ export type Database = {
           approved_by: string | null
           body: string
           complaint_id: string
+          custom_type_id: string | null
           id: string
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
@@ -695,6 +740,7 @@ export type Database = {
           approved_by?: string | null
           body: string
           complaint_id: string
+          custom_type_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
@@ -708,6 +754,7 @@ export type Database = {
           approved_by?: string | null
           body?: string
           complaint_id?: string
+          custom_type_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["template_kind"]
           language?: string
@@ -731,6 +778,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "complaints"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letters_custom_type_fkey"
+            columns: ["org_id", "custom_type_id"]
+            isOneToOne: false
+            referencedRelation: "custom_letter_types"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "letters_org_id_fkey"
@@ -1485,6 +1539,7 @@ export type Database = {
       template_versions: {
         Row: {
           body: string
+          custom_type_id: string | null
           id: string
           org_id: string
           restored_from: string | null
@@ -1495,6 +1550,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          custom_type_id?: string | null
           id?: string
           org_id: string
           restored_from?: string | null
@@ -1505,6 +1561,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          custom_type_id?: string | null
           id?: string
           org_id?: string
           restored_from?: string | null
@@ -1514,6 +1571,13 @@ export type Database = {
           template_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "template_versions_custom_type_fkey"
+            columns: ["org_id", "custom_type_id"]
+            isOneToOne: false
+            referencedRelation: "custom_letter_types"
+            referencedColumns: ["org_id", "id"]
+          },
           {
             foreignKeyName: "template_versions_org_id_fkey"
             columns: ["org_id"]
@@ -1533,6 +1597,7 @@ export type Database = {
       templates: {
         Row: {
           body: string
+          custom_type_id: string | null
           id: string
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
@@ -1543,6 +1608,7 @@ export type Database = {
         }
         Insert: {
           body?: string
+          custom_type_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["template_kind"]
           language: string
@@ -1553,6 +1619,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          custom_type_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["template_kind"]
           language?: string
@@ -1562,6 +1629,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "templates_custom_type_fkey"
+            columns: ["org_id", "custom_type_id"]
+            isOneToOne: false
+            referencedRelation: "custom_letter_types"
+            referencedColumns: ["org_id", "id"]
+          },
           {
             foreignKeyName: "templates_org_id_fkey"
             columns: ["org_id"]
@@ -1998,6 +2072,7 @@ export type Database = {
         | "final_not_upheld"
         | "information_request"
         | "closure"
+        | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2200,6 +2275,7 @@ export const Constants = {
         "final_not_upheld",
         "information_request",
         "closure",
+        "custom",
       ],
     },
   },

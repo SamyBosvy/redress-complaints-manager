@@ -1,0 +1,1 @@
+REVOKE ALL ON public.custom_letter_types FROM anon;

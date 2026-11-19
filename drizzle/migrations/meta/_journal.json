@@ -239,6 +239,27 @@
       "when": 1795077725020,
       "tag": "0033_session_security",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795079676605,
+      "tag": "0034_custom_letter_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795079864911,
+      "tag": "0035_custom_letter_type_guard_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795080057786,
+      "tag": "0036_custom_letter_types_revoke_anon",
+      "breakpoints": true
     }
   ]
 }

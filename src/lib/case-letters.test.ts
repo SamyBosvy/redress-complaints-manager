@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newestLetters, letterSender, letterFilename, matchLetterEvent, type CaseLetter } from './case-letters';
 
-const letter = (id: string, sent_at: string, kind: CaseLetter['kind'] = 'holding'): CaseLetter => ({ id, sent_at, kind, org_id: 'org', complaint_id: 'case', language: 'en', subject: 'Subject', body: 'Body', sent_by: 'sender', status: 'sent', approved_by: null });
+const letter = (id: string, sent_at: string, kind: CaseLetter['kind'] = 'holding'): CaseLetter => ({ id, sent_at, kind, org_id: 'org', complaint_id: 'case', language: 'en', subject: 'Subject', body: 'Body', sent_by: 'sender', status: 'sent', approved_by: null, custom_type_id: null });
 
 describe('case letters', () => {
   it('orders every letter newest first without mutating input', () => {

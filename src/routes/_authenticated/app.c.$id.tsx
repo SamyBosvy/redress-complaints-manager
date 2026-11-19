@@ -37,7 +37,9 @@ import { membershipQuery, useMembership } from "@/lib/org";
 import { COUNTRIES } from "@/lib/countries";
 import { letterTemplateFor } from "@/lib/template-language";
 import { CATEGORIES, CHANNELS, LANGUAGES, PRODUCTS, STATUSES, countriesQuery, membersQuery, type Status } from "@/lib/complaints";
-import { TEMPLATE_KINDS, caseMergeValues, formatDate, hasAdrBlock, isFinal, mergeTemplate, statusAfterLetter, type TemplateKind } from "@/lib/letters";
+import { CUSTOM_LETTER_NOTE, caseMergeValues, composerGroups, formatDate, hasAdrBlock, isFinal, letterTypeLabel, mergeTemplate, needsAdrBlock, parseChoice, statusAfterLetter, type CustomLetterType } from "@/lib/letters";
+import { customLetterTypesQuery } from "@/lib/custom-letter-types";
+import { SelectGroup, SelectLabel } from "@/components/ui/select";
 import { templatesQuery } from "./app.templates";
 import type { Database } from "@/integrations/supabase/types";
 import { CURRENCIES } from '@/lib/currencies';
@@ -73,7 +75,7 @@ export const Route = createFileRoute("/_authenticated/app/c/$id")({
 });
 
 type Patch = Database["public"]["Tables"]["complaints"]["Update"];
-type Detail = { changes?: Record<string,{old:unknown;new:unknown}>; channel?: string; before?: any; after?: any; reason?: string; template?: string; text?: string; comment?: string; path?: string; name?: string };
+type Detail = { changes?: Record<string,{old:unknown;new:unknown}>; channel?: string; before?: any; after?: any; reason?: string; template?: string; custom_type_id?: string; custom_type_name?: string; text?: string; comment?: string; path?: string; name?: string };
 
 const OUTCOMES = { upheld: "Upheld", partially_upheld: "Partially upheld", not_upheld: "Not upheld", withdrawn: "Withdrawn" } as const;
 
@@ -96,6 +98,7 @@ function CaseView() {
   const [expandedLetters, setExpandedLetters] = useState<Set<string>>(new Set());
   const [revealLetter, setRevealLetter] = useState<string | null>(null);
   const lettersResult = useQuery(caseLettersQuery(orgId, id, Boolean(c.anonymised_at)));
+  const { data: letterTypes = [] } = useQuery(customLetterTypesQuery(orgId));
   const letters = c.anonymised_at ? [] : lettersResult.data ?? [];
   const toggleLetter = (letterId: string) => setExpandedLetters(current => {
     const next = new Set(current);
@@ -181,7 +184,7 @@ function CaseView() {
           <SupportNeeds org={orgId} id={id} role={m.role} user={m.user.id} assigned={c.assigned_to} locked={Boolean(c.anonymised_at||c.privacy_processing||c.legal_hold||status==='closed')} zone={m.org?.time_zone??'Europe/Dublin'} onSaved={refresh}/>
           <OutcomeCard causes={causes} c={c} baseCurrency={m.org?.base_currency ?? 'EUR'} canEdit={canEdit} onSave={update} />
           <CaseAdr timeZone={m.org?.time_zone??'Europe/Dublin'} orgId={orgId} id={id} role={m.role} userId={m.user.id} c={c} body={configuredCountries.find(x=>x.country_code===c.country_code)?.adr_name ?? ''} currency={m.org?.base_currency ?? 'EUR'} onSaved={refresh}/>
-          <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
+          <CaseLetters letters={letters} loading={lettersResult.isPending} error={lettersResult.isError} anonymised={Boolean(c.anonymised_at)} members={members} reference={c.reference ?? ''} firm={m.org?.legal_name ?? ''} address={m.org?.firm_address} expanded={expandedLetters} onToggle={toggleLetter} revealId={revealLetter} customTypes={letterTypes} onGenerate={canEdit ? () => setLetterOpen(true) : undefined} />
 
           <CaseAttachments org={orgId} id={id} user={m.user.id} role={m.role} assigned={c.assigned_to} anonymised={Boolean(c.anonymised_at)} processing={Boolean(c.privacy_processing)} legalHold={Boolean(c.legal_hold)} members={members} onSaved={refresh}/>
           <Card title="Internal notes">
@@ -208,7 +211,7 @@ function CaseView() {
 
           <CustomerHistory orgId={orgId} currentId={id} identity={c.anonymised_at ? {} : { customerRef: c.customer_ref, email: c.complainant_email }} />
 
-          <CaseTimeline org={orgId} id={id} user={m.user.id} search={Route.useSearch()} onSearch={search => { void navigate({ search, replace: true }); }} nameOf={nameOf} renderEvent={e => <EventLine e={e} nameOf={nameOf} letterId={matchLetterEvent(e, letters)} onLetter={showLetter}/>}/>
+          <CaseTimeline org={orgId} id={id} user={m.user.id} search={Route.useSearch()} onSearch={search => { void navigate({ search, replace: true }); }} nameOf={nameOf} renderEvent={e => <EventLine e={e} types={letterTypes} nameOf={nameOf} letterId={matchLetterEvent(e, letters)} onLetter={showLetter}/>}/>
 
         </div>
       </div>
@@ -222,7 +225,7 @@ function CaseView() {
 }
 
 type Ev = { kind: string; detail: unknown };
-function EventLine({ e, nameOf, letterId, onLetter }: { e: Ev; nameOf: (u: string | null) => string; letterId?: string | undefined; onLetter: (id: string) => void }) {
+function EventLine({ e, types, nameOf, letterId, onLetter }: { e: Ev; types: CustomLetterType[]; nameOf: (u: string | null) => string; letterId?: string | undefined; onLetter: (id: string) => void }) {
   const d = (e.detail ?? {}) as Detail;
   switch (e.kind) {
     case "adr_escalated": case "adr_decision": return <p>{d.text || "ADR working record removed"}</p>;
@@ -234,7 +237,7 @@ function EventLine({ e, nameOf, letterId, onLetter }: { e: Ev; nameOf: (u: strin
     case "deadline_recalculated": return <p>Deadlines recalculated{d.reason ? `: ${d.reason}` : ''}</p>;
     case "outcome": return <p>Outcome updated: {d.after?.outcome ? OUTCOMES[d.after.outcome as keyof typeof OUTCOMES] : "—"}</p>;
     case "priority": return <p>Priority: {d.before} → <strong>{d.after}</strong></p>;
-    case "letter_sent": return <p>{letterId ? <a href={`#letter-${letterId}`} className="text-primary hover:underline" onClick={event => { event.preventDefault(); onLetter(letterId); }}>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></a> : <>Letter sent: <strong>{TEMPLATE_KINDS[d.template as TemplateKind]}</strong></>}</p>;
+    case "letter_sent": { const label = letterTypeLabel(String(d.template), d.custom_type_id, types, d.custom_type_name); return <p>{letterId ? <a href={`#letter-${letterId}`} className="text-primary hover:underline" onClick={event => { event.preventDefault(); onLetter(letterId); }}>Letter sent: <strong>{label}</strong></a> : <>Letter sent: <strong>{label}</strong></>}</p>; }
     case "qa_returned": return <p className="whitespace-pre-wrap">Final response returned by QA{d.comment ? `: ${d.comment}` : ''}</p>;
     case "note": return <p className="whitespace-pre-wrap rounded bg-muted px-2 py-1">{d.text}</p>;
     case "attachment": return <p>Attachment added</p>;
@@ -301,7 +304,11 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   const { data: templates } = useSuspenseQuery(templatesQuery(orgId));
   const { data: countries } = useSuspenseQuery(countriesQuery(orgId));
   const { data: members } = useSuspenseQuery(membersQuery(orgId));
-  const [kind, setKind] = useState<TemplateKind>(c.status === "received" ? "acknowledgement" : "holding");
+  const { data: types = [] } = useQuery(customLetterTypesQuery(orgId));
+  const [choice, setChoice] = useState<string>(c.status === "received" ? "acknowledgement" : "holding");
+  const { kind, customTypeId } = parseChoice(choice);
+  const customType = types.find(t => t.id === customTypeId) ?? null;
+  const sameType = (x: { kind: string; custom_type_id: string | null }) => x.kind === kind && (x.custom_type_id ?? null) === customTypeId;
   const [lang, setLang] = useState<string>(c.language ?? "en");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -311,23 +318,23 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
   const agent = members.find((x) => x.user_id === (c.assigned_to ?? m.user.id));
   const {data:causes=[]}=useQuery(rootCausesQuery(orgId));
 
-  const key = `${kind}:${lang}`;
+  const key = `${choice}:${lang}`;
   if (loadedKey !== key) {
-    const t = templates.find((x) => x.kind === kind && x.language === lang) ?? templates.find((x) => x.kind === kind && x.language === "en");
+    const t = templates.find((x) => sameType(x) && x.language === lang) ?? templates.find((x) => sameType(x) && x.language === "en");
     const values = caseMergeValues(c, { firm: m.org?.legal_name ?? '', address: m.org?.firm_address, firmEmail:m.org?.complaints_email, agent: agent?.name, agentEmail:agent?.email, adrName: adr?.adr_name, adrContact: [adr?.adr_contact, adr?.adr_website].filter(Boolean).join(', '), language:lang, extended:kind==='holding', rootCause:causes.find(x=>x.id===c.root_cause_id)?.name??c.root_cause_category??'' });
     setSubject(mergeTemplate(t?.subject ?? "", values));
     setBody(mergeTemplate(t?.body ?? "", values));
     setLoadedKey(key);
   }
-  const tpl = templates.find((x) => x.kind === kind && x.language === lang);
-  const adrMissing = isFinal(kind) && tpl && !hasAdrBlock(tpl.body);
+  const tpl = templates.find((x) => sameType(x) && x.language === lang);
+  const adrMissing = needsAdrBlock(kind, customType) && tpl && !hasAdrBlock(tpl.body);
 
   const finalBlocked = isFinal(kind) && !["acknowledged","under_investigation","holding_response_sent","reopened"].includes(c.status);
   const draft = isFinal(kind) && m.org?.qa_required;
   async function markSent() {
     if(finalBlocked)return;
     if (kind === "holding" && !reason.trim()) { toast.error("Record the reason for the delay."); return; }
-    const { error } = await supabase.from("letters").insert({ org_id: orgId, complaint_id: c.id, kind, language: lang, subject, body, sent_by: m.user.id });
+    const { error } = await supabase.from("letters").insert({ org_id: orgId, complaint_id: c.id, kind, custom_type_id: customTypeId, language: lang, subject, body, sent_by: m.user.id });
     if (error) { toast.error(workflowError(error.message)); return; }
     const next = statusAfterLetter(kind, c.status, m.org!.qa_required);
     const patch: Patch = {};
@@ -347,7 +354,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
       if (!m.org) return;
       const { letterPdf } = await import('@/lib/letter-pdf');
       const font = await loadPdfFont();
-      letterPdf({ firm: m.org.legal_name, address: m.org.firm_address, date: new Date().toLocaleDateString('en-GB'), subject, body }, font).save(`${c.reference}-${kind}.pdf`);
+      letterPdf({ firm: m.org.legal_name, address: m.org.firm_address, date: new Date().toLocaleDateString('en-GB'), subject, body }, font).save(`${c.reference}-${kind === 'custom' ? (customType?.name ?? 'custom').replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase() : kind}.pdf`);
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not generate PDF.'); }
   }
 
@@ -357,19 +364,21 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
         <DialogHeader><DialogTitle>Generate letter</DialogTitle></DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select value={kind} onValueChange={(v) => setKind(v as TemplateKind)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{Object.entries(TEMPLATE_KINDS).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+            <Select value={choice} onValueChange={setChoice}>
+              <SelectTrigger aria-label="Letter type"><SelectValue /></SelectTrigger>
+              <SelectContent>{composerGroups(types).map(g => <SelectGroup key={g.label}><SelectLabel>{g.label}</SelectLabel>{g.options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectGroup>)}</SelectContent>
             </Select>
             <Select value={lang} onValueChange={setLang}>
               <SelectTrigger aria-label="Letter language"><SelectValue /></SelectTrigger>
               <SelectContent>{Object.entries(LANGUAGES).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          {letterTemplateFor(templates, kind, lang).warning && <p role="status" className="text-sm text-warning">{letterTemplateFor(templates, kind, lang).warning}</p>}
+          {letterTemplateFor(templates, kind, lang, customTypeId).warning && <p role="status" className="text-sm text-warning">{letterTemplateFor(templates, kind, lang, customTypeId).warning}</p>}
+          {kind === "custom" && <p className="text-sm text-muted-foreground">{CUSTOM_LETTER_NOTE}</p>}
+          {kind === "custom" && !tpl && !templates.some(x => sameType(x)) && <p className="text-sm text-warning">No template saved for this letter type yet.</p>}
           {draft && <p className="text-sm text-warning">Draft — pending QA</p>}
           {finalBlocked && <p className="text-sm text-warning">A final response cannot be re-sent while awaiting QA or after it has been sent.</p>}
-          {adrMissing && <p className="text-sm text-warning">This final response template has no ADR referral block.</p>}
+          {adrMissing && <p className="text-sm text-warning">This {kind === "custom" ? "letter" : "final response"} template has no ADR referral block.</p>}
           {!adr?.adr_name && isFinal(kind) && <p className="text-sm text-warning">No ADR body is set for this customer's country.</p>}
           <Input aria-label="Letter subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
           <Textarea aria-label="Letter body" rows={14} value={body} onChange={(e) => setBody(e.target.value)} />

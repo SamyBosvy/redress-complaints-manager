@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { erasureSchema, retentionYearsSchema, type PrivacyRow } from './privacy';
+import { erasureSchema, retentionYearsSchema, type PrivacyRow, withLetterTypeNames } from './privacy';
 
 export const getPrivacyOverview = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const { privacyAdmin, allRows } = await import('./privacy.server');
@@ -51,6 +51,7 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
   const ids = new Set(complaints.map(c => String(c['id'])));
   const tables: Record<string, PrivacyRow[]> = { complaints };
   for (const table of ['complaint_events','letters','qa_reviews','public_form_submissions','adr_cases','complaint_vulnerability','complaint_attachments'] as const) tables[table] = (await allRows(context.supabase, table, org.id)).filter(r => ids.has(String(r['complaint_id'])));
+  tables['letters'] = withLetterTypeNames(tables['letters'] ?? [], await allRows(context.supabase, 'custom_letter_types', org.id));
   tables['audit_log'] = (await allRows(context.supabase, 'audit_log', org.id)).filter(r => ids.has(String(r['row_id'])) || ids.has(String((r['after'] as Record<string, unknown> | null)?.['complaint_id'])) || ids.has(String((r['before'] as Record<string, unknown> | null)?.['complaint_id'])));
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const activePaths = new Set((tables['complaint_attachments'] ?? []).filter(row => !row['removed_at'] && row['file_name'] !== 'removed').map(row => String(row['storage_path'])));
@@ -65,6 +66,8 @@ export const exportOrganisationData = createServerFn({ method: 'POST' }).middlew
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const tables: Record<string, PrivacyRow[]> = { organisations: [org] };
   for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','privacy_operations','audit_log','adr_cases','complaint_vulnerability','complaint_attachments'] as const) tables[table] = await allRows(supabaseAdmin, table, org.id);
+  tables['custom_letter_types'] = await allRows(supabaseAdmin, 'custom_letter_types', org.id);
+  tables['letters'] = withLetterTypeNames(tables['letters'] ?? [], tables['custom_letter_types']);
   const userIds = (tables['org_members'] ?? []).map(r => String(r['user_id']));
   tables['profiles'] = [];
   for (let i=0;i<userIds.length;i+=100) {

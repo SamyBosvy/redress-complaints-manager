@@ -307,25 +307,27 @@ export function regulatoryCsvRows(report: RegulatoryReport, previous?: Regulator
 }
 
 /** Paginated, org-scoped history: no silent report row cap. */
-export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/Dublin') => queryOptions({
-  queryKey: ['regulatory-report', orgId, end, timeZone],
-  queryFn: async () => {
+export async function fetchReportData(client: typeof supabase, orgId: string) {
     const fetchPages = async <T,>(fetchPage: (offset: number) => PromiseLike<{ data: T[] | null; error: unknown }>) => {
       const rows: T[] = [];
       for (let offset = 0; ; offset += 500) { const { data, error } = await fetchPage(offset); if (error) throw error; rows.push(...(data ?? [])); if ((data?.length ?? 0) < 500) break; }
       return rows;
     };
     const [rows, causes, events, holidays, adr, reopenings, letters, support] = await Promise.all([
-      fetchPages(offset => supabase.from('complaints').select(COLS).eq('org_id', orgId).order('id').range(offset, offset + 499)),
-      fetchPages(offset => supabase.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
-      fetchPages(offset => supabase.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
-      fetchPages(offset => supabase.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
-      fetchPages(offset => supabase.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).lte('escalated_on',end).order('id').range(offset,offset+499)),
-      fetchPages(offset=>supabase.from('complaint_reopenings').select('complaint_id,reopened_at,reason_category').eq('org_id',orgId).lt('reopened_at',isoDay(new Date(Date.parse(end)+DAY))+'T00:00:00Z').order('id').range(offset,offset+499)),
-      fetchPages(offset=>supabase.from('letters').select('complaint_id,kind,sent_at').eq('org_id',orgId).eq('status','sent').in('kind',['acknowledgement','holding']).order('id').range(offset,offset+499)),
-      fetchPages(offset=>supabase.from('complaint_vulnerability').select('complaint_id,adjustments').eq('org_id',orgId).order('id').range(offset,offset+499)),
+      fetchPages(offset => client.from('complaints').select(COLS).eq('org_id', orgId).order('id').range(offset, offset + 499)),
+      fetchPages(offset => client.from('root_causes').select('id,name').eq('org_id', orgId).order('id').range(offset, offset + 499)),
+      fetchPages(offset => client.from('complaint_events').select('complaint_id,created_at,detail').eq('org_id', orgId).eq('kind', 'status').order('created_at').order('id').range(offset, offset + 499)),
+      fetchPages(offset => client.from('holidays').select('country_code,holiday_date').eq('org_id', orgId).order('id').range(offset, offset + 499)),
+      fetchPages(offset => client.from('adr_cases').select('complaint_id,escalated_on,decision,decision_on,award_amount,award_currency').eq('org_id',orgId).order('id').range(offset,offset+499)),
+      fetchPages(offset=>client.from('complaint_reopenings').select('complaint_id,reopened_at,reason_category').eq('org_id',orgId).order('id').range(offset,offset+499)),
+      fetchPages(offset=>client.from('letters').select('complaint_id,kind,sent_at').eq('org_id',orgId).eq('status','sent').in('kind',['acknowledgement','holding']).order('id').range(offset,offset+499)),
+      fetchPages(offset=>client.from('complaint_vulnerability').select('complaint_id,adjustments').eq('org_id',orgId).order('id').range(offset,offset+499)),
     ]);
-    const projected = rows.map(row => {
+    return { rows: rows as ReportRow[], causes, events, holidays, adr, reopenings, letters, support };
+}
+export function projectReportRows(data: Awaited<ReturnType<typeof fetchReportData>>, end: string, timeZone: string) {
+    const { rows, causes, events, letters, support } = data;
+    return rows.map(row => {
       const history = events.filter(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) <= end);
       const statusOf = (e: typeof events[number], key: string) => e.detail && typeof e.detail === 'object' && !Array.isArray(e.detail) ? String(e.detail[key] ?? '') : '';
       const latest = history.at(-1);
@@ -336,8 +338,13 @@ export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/D
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
       return { ...row, support_adjustments:support.find(s=>s.complaint_id===row.id)?.adjustments, acknowledged_at:acknowledgedAt(row.id,letters as ResponseLetter[],events as ResponseEvent[]), holding_letters:letters.filter(l=>l.complaint_id===row.id && l.kind==='holding' && l.sent_at).map(l=>String(l.sent_at)), status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
     });
-    return { rows: projected as ReportRow[], holidays, adr, reopenings };
-  },
+ }
+export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/Dublin') => queryOptions({
+ queryKey: ['regulatory-report', orgId, end, timeZone],
+ queryFn: async () => {
+   const data = await fetchReportData(supabase, orgId);
+   return { rows: projectReportRows(data,end,timeZone), holidays:data.holidays, adr:data.adr.filter(r=>r.escalated_on<=end), reopenings:data.reopenings.filter(r=>r.reopened_at<isoDay(new Date(Date.parse(end)+DAY))+'T00:00:00Z') };
+ },
 });
 
 /** Drill-downs use receipt cohorts; snapshot IDs preserve historical status membership. */

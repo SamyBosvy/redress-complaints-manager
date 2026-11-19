@@ -1,5 +1,7 @@
 # Redress roadmap
 
+- [ ] Board report: managed 0039 issued snapshots/versioning, shared aggregate calculations/comparisons/suppression, Reports tab, commentary, stored-snapshot PDF/CSV, tests in UTC and Australia/Sydney.
+
 - [x] Agent reopen requests: single managed 0038; RPC-only request/decision/withdrawal, latest closing-assignment evidence, automatic expiry, case banner/dialogs, paged manager Queue tab/count and agent My day history, mandatory decision alerts and timeline parity. All 902 tests passed in UTC and Australia/Sydney; automatic build clean. Hosted RPC anonymous denial verified; reopen_complaint definition unchanged. Reopening history reason capacity widened to 2200 to retain the full 2000-character request plus attribution. Billing/public form/email unchanged.
 - [ ] Agent reopen requests signed-in request/approve/reject/withdraw readback and mobile/dark dialog verification — hosted auth has no users; protected pages redirect safely without runtime errors.
 

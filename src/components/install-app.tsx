@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { installPlatform } from "@/lib/device";
 import { cn } from "@/lib/utils";
 
 type BIP = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -27,22 +28,13 @@ if (typeof window !== "undefined") {
   }
 }
 
-function platform() {
-  const ua = navigator.userAgent;
-  const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (ios) return /CriOS|FxiOS|EdgiOS/.test(ua) ? "ios-other" : "ios-safari";
-  if (/SamsungBrowser/.test(ua)) return "samsung";
-  if (/Firefox/.test(ua)) return "firefox";
-  if (/Android/.test(ua)) return "android";
-  return "desktop";
-}
-
-const STEPS: Record<string, { title: string; steps: string[] }> = {
+const STEPS: Record<ReturnType<typeof installPlatform>, { title: string; steps: string[] }> = {
   "ios-safari": { title: "iPhone or iPad (Safari)", steps: ["Tap the Share button.", "Choose “Add to Home Screen”.", "Tap Add."] },
   "ios-other": { title: "iPhone or iPad", steps: ["Open this page in Safari first.", "Tap the Share button.", "Choose “Add to Home Screen”."] },
   android: { title: "Android (Chrome)", steps: ["Tap the ⋮ menu.", "Choose “Install app” or “Add to Home screen”.", "Confirm."] },
   samsung: { title: "Samsung Internet", steps: ["Tap the menu (☰).", "Choose “Add page to” → “Home screen”."] },
   firefox: { title: "Firefox", steps: ["On Android: tap ⋮ → “Install”.", "On desktop, Firefox does not install apps. Use Chrome or Edge."] },
+  "mac-safari": { title: "Safari on Mac", steps: ["In Safari 17 or later: open File → Add to Dock.", "Confirm Add.", "On older Safari, open this page in Chrome or Edge to install it."] },
   desktop: { title: "Chrome or Edge on desktop", steps: ["Click the install icon at the right of the address bar,", "or open the ⋮ menu and choose “Install Redress”."] },
 };
 
@@ -57,7 +49,6 @@ export function InstallAppButton({ className, variant = "outline" }: { className
     listeners.add(l);
     return () => { listeners.delete(l); };
   }, []);
-  if (installed) return null;
 
   async function click() {
     if (deferred) {
@@ -69,7 +60,10 @@ export function InstallAppButton({ className, variant = "outline" }: { className
     }
     setOpen(true);
   }
-  const p = typeof navigator !== "undefined" ? STEPS[platform()]! : STEPS["desktop"]!;
+  const [platform, setPlatform] = useState<ReturnType<typeof installPlatform>>("desktop");
+  useEffect(() => { setPlatform(installPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)); }, []);
+  const p = STEPS[platform];
+  if (installed) return null;
 
   return (
     <>

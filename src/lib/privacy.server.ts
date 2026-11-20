@@ -2,8 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 import type { PrivacyRow } from './privacy';
 type Client = SupabaseClient<Database>;
-export async function privacyAdmin(client: Client, userId: string) {
-  const { data, error } = await client.from('org_members').select('org_id, role, organisations(*)').eq('user_id', userId).maybeSingle();
+export async function privacyAdmin(client: Client, userId: string, orgId: string) {
+  const { data, error } = await client.from('org_members').select('org_id, role, organisations(*)').eq('user_id', userId).eq('org_id', orgId).eq('active', true).maybeSingle();
   if (error) throw error;
   if (!data || data.role !== 'org_admin' || !data.organisations) throw new Error('Only Org Admins can manage personal data.');
   return data.organisations;

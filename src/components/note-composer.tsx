@@ -40,7 +40,7 @@ export function NoteComposer({ org, id, onSaved }: { org: string; id: string; on
     finally { setBusy(false); }
   }
   return <div className="space-y-2">
-    <Textarea ref={field} aria-label="Internal note" aria-autocomplete="list" aria-controls={options.length ? 'note-member-picker' : undefined} aria-expanded={Boolean(options.length)} aria-activedescendant={options[highlighted] ? `note-member-${highlighted}` : undefined} rows={3} maxLength={5000} disabled={busy} value={text} onChange={event => { setText(event.target.value); setCursor(event.target.selectionStart); setIndex(0); setDismissed(false); }} onSelect={event => setCursor(event.currentTarget.selectionStart)} onKeyDown={event => {
+    <Textarea ref={field} aria-label="Internal note" aria-autocomplete="list" aria-controls={options.length ? 'note-member-picker' : undefined} aria-activedescendant={options[highlighted] ? `note-member-${highlighted}` : undefined} rows={3} maxLength={5000} disabled={busy} value={text} onChange={event => { setText(event.target.value); setCursor(event.target.selectionStart); setIndex(0); setDismissed(false); }} onSelect={event => setCursor(event.currentTarget.selectionStart)} onKeyDown={event => {
       if (!options.length) return;
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setIndex((highlighted + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length); }
       if (event.key === 'Enter') { event.preventDefault(); const member = options[highlighted]; if (member) choose(member); }

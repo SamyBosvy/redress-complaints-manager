@@ -401,7 +401,7 @@ function LetterDialog({ c, onClose, onSent }: { c: any; onClose: () => void; onS
           )}
         </div>
         <DialogFooter className="flex-wrap gap-2">
-          <Button disabled={!!draft} variant="outline" onClick={() => { void navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
+          <Button disabled={!!draft} variant="outline" onClick={async () => { try { await navigator.clipboard.writeText(`${subject}\n\n${body}`); toast.success("Copied."); } catch { toast.error("Copy unavailable. Select and copy the text."); } }}><Copy aria-hidden="true" className="h-4 w-4" /> Copy</Button>
           <Button disabled={!!draft} variant="outline" onClick={pdf}><FileDown aria-hidden="true" className="h-4 w-4" /> Download PDF</Button>
           <Button disabled={finalBlocked} onClick={markSent}>{draft ? "Submit for QA" : "Mark as sent"}</Button>
         </DialogFooter>

@@ -7,6 +7,7 @@ import { complaintSearchQuery } from '@/lib/queue';
 import { createShortcutHandler, palettePages, shortcutsBlocked } from '@/lib/shortcuts';
 import type { AppRole } from '@/lib/org';
 import type { ThemePreference } from '@/lib/theme';
+import { useShortcutLabel } from '@/lib/device';
 import type { DensityPreference } from '@/lib/density';
 
 export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, density, changeDensity, open, setOpen }: {
@@ -15,6 +16,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, dens
   density: DensityPreference; changeDensity: (density: DensityPreference) => void;
   open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const shortcut = useShortcutLabel();
   const navigate = useNavigate();
   const [help, setHelp] = useState(false);
   const [text, setText] = useState('');
@@ -82,7 +84,7 @@ export function WorkspaceCommand({ role, orgId, userId, theme, changeTheme, dens
         <DialogTitle>Keyboard shortcuts</DialogTitle>
         <DialogDescription>Workspace shortcuts</DialogDescription>
         <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-3 text-sm">
-          <dt><kbd>⌘K / Ctrl+K</kbd></dt><dd>Search</dd>
+          {shortcut && <><dt className="keyboard-hint"><kbd>{shortcut}</kbd></dt><dd className="keyboard-hint">Search</dd></>}
           {canNew && <><dt><kbd>N</kbd></dt><dd>New complaint</dd></>}
           <dt><kbd>G then Q</kbd></dt><dd>Queue</dd>
           {pages.some(page=>page.to==='/app/my-day') && <><dt><kbd>G then D</kbd></dt><dd>My day</dd></>}

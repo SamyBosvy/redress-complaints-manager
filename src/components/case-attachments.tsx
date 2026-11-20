@@ -54,10 +54,16 @@ export function CaseAttachments({ org, id, user, role, assigned, anonymised, pro
     await refresh(); setBusy(false);
   }
   async function open(row: Attachment) {
-    const { data, error } = await supabase.storage.from('attachments').createSignedUrl(row.storage_path, 60);
-    if (error || !data) { toast.error("Couldn't open this attachment."); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    const w = window.open('', '_blank');
+    if (!w) { toast.error("Couldn't open this attachment. Allow pop-ups and try again."); return; }
+    w.opener = null;
+    try {
+      const { data, error } = await supabase.storage.from('attachments').createSignedUrl(row.storage_path, 60);
+      if (error || !data) throw new Error('Signed URL unavailable');
+      w.location.href = data.signedUrl;
+    } catch { w.close(); toast.error("Couldn't open this attachment."); }
   }
+
   async function remove() {
     if (!removing) return;
     setBusy(true);

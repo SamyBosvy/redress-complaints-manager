@@ -86,12 +86,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap",
-      },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
@@ -128,12 +122,6 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    // Public routes own their main landmark; account flows use their first content wrapper.
-    const target = document.querySelector('main') ?? document.querySelector('#page-content');
-    if (target instanceof HTMLElement) { target.id = 'main-content'; target.tabIndex = -1; }
-  }, [router.state.location.pathname]);
-
-  useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
@@ -146,7 +134,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div id="page-content"><Outlet /></div>
+        <div id="page-content" tabIndex={-1}><Outlet /></div>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

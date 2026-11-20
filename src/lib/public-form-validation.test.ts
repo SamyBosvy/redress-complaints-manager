@@ -1,0 +1,8 @@
+import { expect, it } from 'vitest';
+import { publicComplaintSchema } from './public-forms';
+import { formValidationSummary } from './public-form-validation';
+import { PUBLIC_FORM_I18N, PUBLIC_FORM_LANGUAGES } from './public-form-i18n';
+const input={form_id:'10000000-0000-4000-8000-000000000001',submission_id:'10000000-0000-4000-8000-000000000002',complainant_name:'',complainant_email:'invalid',complainant_phone:'',customer_ref:'',country_code:'',language:'en',product:'',category:'',summary:'',desired_outcome:'',vulnerable:false,privacy_acknowledged:false,privacy_notice:'Notice',website:''};
+it('lists every invalid visible field in form order',()=>{const r=publicComplaintSchema.safeParse(input);if(r.success)throw new Error('Expected validation failure');expect(formValidationSummary(r.error.issues,'en').map(p=>p.id)).toEqual(['name','email','country','product','category','summary','privacy-acknowledged']);});
+for(const lang of PUBLIC_FORM_LANGUAGES)it(`uses ${lang} errors`,()=>{const r=publicComplaintSchema.safeParse(input);if(r.success)throw new Error('Expected validation failure');const summary=formValidationSummary(r.error.issues,lang);expect(summary[0]?.message).toBe(PUBLIC_FORM_I18N[lang].nameRequired);expect(summary.at(-1)?.message).toBe(PUBLIC_FORM_I18N[lang].privacyRequired);});
+it('deduplicates fields and omits internal server fields',()=>{const r=publicComplaintSchema.safeParse(input);if(r.success)throw new Error('Expected validation failure');expect(formValidationSummary([...r.error.issues,...r.error.issues,{code:'custom',path:['form_id'],message:'Internal'}],'en')).toHaveLength(7);});

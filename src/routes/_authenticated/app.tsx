@@ -1,3 +1,4 @@
+import { useShortcutLabel } from '@/lib/device';
 import { IdleSession } from '@/components/idle-session';
 import { useQuery } from '@tanstack/react-query';
 import { unreadMentionsQuery } from '@/lib/mentions-query';
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/_authenticated/app")({
 });
 
 function AppLayout() {
+  const shortcut = useShortcutLabel();
   const m = useMembership();
   const mentions = useQuery(unreadMentionsQuery(m?.org?.id ?? '', m?.user.id ?? ''));
   const navigate = useNavigate();
@@ -146,7 +148,7 @@ function AppLayout() {
     <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
       <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="px-5 py-4"><Logo className="text-sidebar-accent-foreground" /><p className="mt-1 truncate text-xs">{m?.org?.legal_name}</p></div>
-        <Button variant="outline" className="mx-3 justify-between" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… <kbd className="text-xs text-muted-foreground">⌘K</kbd></Button>
+        <Button variant="outline" className="mx-3 justify-between border-sidebar-border bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… {shortcut && <kbd className="keyboard-hint text-xs">{shortcut}</kbd>}</Button>
         {groupedNav}
         {userMenu}
       </aside>
@@ -154,7 +156,7 @@ function AppLayout() {
         <header className="flex min-w-0 items-center justify-between gap-2 border-b px-4 py-2 md:hidden">
           <Logo />
           <div className="flex shrink-0 items-center gap-1">
-            <Button variant="ghost" size="sm" className="px-1 text-xs" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… <kbd>⌘K</kbd></Button>
+            <Button variant="ghost" size="sm" className="px-1 text-xs" onClick={() => setCommandOpen(true)} aria-label="Search commands and complaints">Search… {shortcut && <kbd className="keyboard-hint">{shortcut}</kbd>}</Button>
             <NotificationBell />
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild><Button variant="ghost" size="icon" aria-label="Open navigation menu"><Menu aria-hidden="true" className="h-5 w-5" /></Button></SheetTrigger>
@@ -162,13 +164,14 @@ function AppLayout() {
                 <SheetTitle className="px-5 pb-1 pt-5 text-left text-sidebar-accent-foreground">Redress</SheetTitle>
                 <p className="truncate px-5 pb-2 pr-12 text-xs">{m?.org?.legal_name}</p>
                 {groupedNav}
+                <InstallAppButton variant="ghost" className="mx-3 min-h-11 justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
                 {userMenu}
               </SheetContent>
             </Sheet>
           </div>
         </header>
         {m?.org && <TrialBanner key={m.org.id} orgId={m.org.id} endsAt={m.org.trial_ends_at} isAdmin={m.role === 'org_admin'} />}
-        <div className="flex items-center justify-end gap-1 border-b px-4 py-2"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
+        <div className="hidden items-center justify-end gap-1 border-b px-4 py-2 md:flex"><span className="hidden md:block"><NotificationBell /></span><InstallAppButton variant="ghost" /></div>
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 md:p-8"><Suspense fallback={<TableSkeleton />}><Outlet /></Suspense></main>
       </div>
       {m?.user&&<IdleSession user={m.user.id}/>}

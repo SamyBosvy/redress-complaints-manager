@@ -53,3 +53,7 @@
 - Density is a local, pre-paint html preference; shared table CSS applies it everywhere. AccessibleField context associates nested controls with labels. Why: consistent density and accessible names without page-specific styling.
 
 - Custom letter types (kind='custom' + org-scoped custom_type_id, archived not deleted) are informational only; workflow, QA, deadline and report SQL must keep matching built-in kinds explicitly so custom letters stay no-ops. Why: regulatory clocks depend only on the seven built-in kinds.
+
+- Fonts are bundled locally with Latin and Latin-extended coverage; never load third-party font hosts. Why: keep visitors’ IP addresses private.
+- Privacy server actions require a validated active organisation ID and an active Org Admin membership in that organisation. Why: multi-firm users must never inherit another firm’s permissions.
+- Platform hints share device.ts; public validation summaries share field IDs and localized issue mapping. Why: consistent cross-device behavior and accessible error navigation.

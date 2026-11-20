@@ -2101,9 +2101,10 @@ export type Database = {
         Args: { _org: string; _years: number }
         Returns: undefined
       }
-      public_form_details:
-        | { Args: { _id: string }; Returns: Json }
-        | { Args: { _id: string; _language: string }; Returns: Json }
+      public_form_details: {
+        Args: { _id: string; _language: string }
+        Returns: Json
+      }
       public_form_notice_receipt: {
         Args: { _case: string; _org: string }
         Returns: Json

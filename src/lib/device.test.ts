@@ -1,0 +1,14 @@
+import { expect, it } from 'vitest';
+import { installPlatform, shortcutLabel } from './device';
+const mac='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15';
+const edge='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36 Edg/130.0';
+it('uses Command on Mac',()=>expect(shortcutLabel(mac)).toBe('⌘K'));
+it('uses Command on keyboard iPad',()=>expect(shortcutLabel('iPad',false)).toBe('⌘K'));
+it('uses Control on Windows',()=>expect(shortcutLabel(edge)).toBe('Ctrl K'));
+it('uses Control on Linux',()=>expect(shortcutLabel('Linux')).toBe('Ctrl K'));
+it('hides touch-only hints',()=>expect(shortcutLabel(mac,true)).toBeNull());
+it('detects Mac Safari',()=>expect(installPlatform(mac,'MacIntel',0)).toBe('mac-safari'));
+it('detects desktop-UA iPad as iOS',()=>expect(installPlatform(mac,'MacIntel',5)).toBe('ios-safari'));
+it('detects iPad Chrome',()=>expect(installPlatform('iPad CriOS/100 Safari')).toBe('ios-other'));
+it('detects Windows Edge',()=>expect(installPlatform(edge,'Win32',0)).toBe('desktop'));
+it('does not mistake Mac Chrome for Safari',()=>expect(installPlatform(mac+' Chrome/130')).toBe('desktop'));

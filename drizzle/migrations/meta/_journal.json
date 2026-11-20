@@ -281,6 +281,13 @@
       "when": 1795137702099,
       "tag": "0039_board_report_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795141237331,
+      "tag": "0040_cross_device_qa_access",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,23 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-400.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-500.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-600.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-ext-400.css";
+@import "@fontsource/ibm-plex-mono/latin-ext-500.css";
+@import "@fontsource-variable/newsreader/index.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Newsreader", Georgia, serif;
+  --font-display: "Newsreader Variable", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -166,3 +177,12 @@ html[data-density="compact"] table :is(th, td) :is(a, button, input, select) { f
 [role^="menuitem"][data-highlighted], [role="option"][data-highlighted] { outline: 2px solid var(--ring); outline-offset: -2px; }
 .skip-link { position: fixed; left: 1rem; top: 1rem; z-index: 100; transform: translateY(-200%); padding: 0.75rem 1rem; background: var(--background); color: var(--foreground); border: 2px solid var(--ring); }
 .skip-link:focus { transform: translateY(0); }
+
+/* Prevent Safari focus zoom, including native controls and compact tables. */
+@media (width < 48rem) {
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select, [data-mobile-select] { font-size: max(1rem, 16px) !important; }
+  [role="switch"] { min-height: 24px; }
+  table [role="checkbox"] { position: relative; }
+  table [role="checkbox"]::before { content: ""; position: absolute; inset: -4px; }
+}
+@media (pointer: coarse) { .keyboard-hint { display: none; } }

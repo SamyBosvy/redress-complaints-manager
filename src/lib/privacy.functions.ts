@@ -3,32 +3,34 @@ import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { erasureSchema, retentionYearsSchema, type PrivacyRow, withLetterTypeNames } from './privacy';
 
-export const getPrivacyOverview = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+const orgInput = z.object({ orgId: z.string().uuid() });
+
+export const getPrivacyOverview = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin, allRows } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { data: settings, error } = await context.supabase.from('org_privacy_settings').select('*').eq('org_id', org.id).maybeSingle();
   if (error) throw error;
   const rows = await allRows(context.supabase, 'complaints', org.id);
   return { org, settings, cases: rows.map(c => ({ id: String(c['id']), reference: String(c['reference']), complainant_name: String(c['complainant_name']), complainant_email: c['complainant_email'] as string | null, customer_ref: c['customer_ref'] as string | null, status: String(c['status']), closed_at: c['closed_at'] as string | null, legal_hold: Boolean(c['legal_hold']), anonymised_at: c['anonymised_at'] as string | null })) };
 });
-export const setPrivacyRetention = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => retentionYearsSchema.parse(v)).handler(async ({ context, data }) => {
+export const setPrivacyRetention = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.extend({ years: retentionYearsSchema }).parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
-  const { error } = await context.supabase.rpc('privacy_set_retention', { _org: org.id, _years: data });
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
+  const { error } = await context.supabase.rpc('privacy_set_retention', { _org: org.id, _years: data.years });
   if (error) throw error;
   return { ok: true };
 });
-export const setCaseLegalHold = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => z.object({ caseId: z.string().uuid(), held: z.boolean() }).parse(v)).handler(async ({ context, data }) => {
+export const setCaseLegalHold = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.extend({ caseId: z.string().uuid(), held: z.boolean() }).parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { error } = await supabaseAdmin.rpc('privacy_change_hold', { _org: org.id, _case: data.caseId, _held: data.held, _actor: context.userId });
   if (error) throw new Error('Could not change the legal hold; privacy processing may already be in progress.');
   return { ok: true };
 });
-export const eraseWorkingRecords = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => erasureSchema.parse(v)).handler(async ({ context, data }) => {
+export const eraseWorkingRecords = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => erasureSchema.merge(orgInput).parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin, removeFiles } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { data: c, error } = await context.supabase.from('complaints').select('reference,status,closed_at,legal_hold,anonymised_at').eq('org_id', org.id).eq('id', data.caseId).single();
   if (error || !c || c.reference !== data.reference) throw new Error('Enter the exact complaint reference.');
   if (c.status !== 'closed' || !c.closed_at || c.legal_hold || c.anonymised_at) throw new Error('Only closed, non-anonymised complaints without a legal hold are eligible.');
@@ -41,9 +43,9 @@ export const eraseWorkingRecords = createServerFn({ method: 'POST' }).middleware
   if (erased) throw erased;
   return { ok: true };
 });
-export const exportPersonalData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => z.object({ caseId: z.string().uuid() }).parse(v)).handler(async ({ context, data }) => {
+export const exportPersonalData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.extend({ caseId: z.string().uuid() }).parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin, allRows, exportFiles } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const all = await allRows(context.supabase, 'complaints', org.id);
   const selected = all.find(c => c['id'] === data.caseId);
   if (!selected) throw new Error('Complaint not found.');
@@ -60,9 +62,9 @@ export const exportPersonalData = createServerFn({ method: 'POST' }).middleware(
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, scope: 'Selected complaint plus exact matching customer ID or email; review identity matches and redact third-party/internal information before disclosure.', tables, attachments };
 });
-export const exportOrganisationData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+export const exportOrganisationData = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin, allRows } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const tables: Record<string, PrivacyRow[]> = { organisations: [org] };
   for (const table of ['org_members','org_countries','holidays','rule_sets','rule_set_assignments','complaints','complaint_events','letters','templates','notifications','qa_reviews','public_complaint_forms','public_form_submissions','org_privacy_settings','privacy_operations','audit_log','adr_cases','complaint_vulnerability','complaint_attachments'] as const) tables[table] = await allRows(supabaseAdmin, table, org.id);
@@ -81,16 +83,16 @@ export const exportOrganisationData = createServerFn({ method: 'POST' }).middlew
   if (error) throw error;
   return { generatedAt: new Date().toISOString(), firm: org.legal_name, tables, attachments };
 });
-export const requestOrganisationDeletion = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => z.object({ confirmation: z.string().min(1).max(200) }).parse(v)).handler(async ({ context, data }) => {
+export const requestOrganisationDeletion = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.extend({ confirmation: z.string().min(1).max(200) }).parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { error } = await context.supabase.rpc('privacy_request_org_deletion', { _org: org.id, _confirm: data.confirmation });
   if (error) throw error;
   return { ok: true };
 });
-export const cancelOrganisationDeletion = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+export const cancelOrganisationDeletion = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => orgInput.parse(v)).handler(async ({ context, data }) => {
   const { privacyAdmin } = await import('./privacy.server');
-  const org = await privacyAdmin(context.supabase, context.userId);
+  const org = await privacyAdmin(context.supabase, context.userId, data.orgId);
   const { error } = await context.supabase.rpc('privacy_cancel_org_deletion', { _org: org.id });
   if (error) throw error;
   return { ok: true };

@@ -131,7 +131,7 @@ function Templates() {
           {types.map((t) => { const v=choiceValue('custom',t.id); return (
             <Button variant="ghost" key={t.id} onClick={() => changeTemplate(()=>setChoice(v))}
               className={cn("block h-auto w-full whitespace-normal rounded-md px-3 py-2 text-left text-sm hover:bg-muted", v === choice && "bg-accent text-accent-foreground font-medium")}>
-              {t.name}{t.archived_at && <span className="ml-1 opacity-60">(archived)</span>}
+              {t.name}{t.archived_at && <span className="ml-1 text-muted-foreground">(archived)</span>}
             </Button>
           ); })}
         </div>
@@ -141,7 +141,7 @@ function Templates() {
               const filled = data.some((t) => sameType(t) && t.language === code && t.body.trim());
               return (
                 <Button key={code} size="sm" variant={code === lang ? "default" : "outline"} onClick={() => changeTemplate(()=>setLang(code))}>
-                  {name}{!filled && <span className="ml-1 opacity-60">(empty)</span>}
+                  {name}{!filled && <span className="ml-1 text-muted-foreground">(empty)</span>}
                 </Button>
               );
             })}

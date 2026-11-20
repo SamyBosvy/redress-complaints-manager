@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/empty-state';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { QueueBulkActions } from '@/components/queue-bulk-actions';
-import { Checkbox } from '@/components/ui/checkbox';
+import { TableSelectCell } from '@/components/table-select-cell';
 import { selectAllMatching, selectRange } from '@/lib/bulk-actions';
 import { eligibleHandler } from '@/lib/settings';
 import { supabase } from '@/integrations/supabase/client';
@@ -232,7 +232,7 @@ function QueueContent({m,orgId}:{m:NonNullable<ReturnType<typeof useMembership>>
         <table ref={tableRef} className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th scope="col" className="w-10 px-3 py-2.5"><Checkbox aria-label="Select all on this page" disabled={busy || selecting || !pageIds.length} checked={wholePage ? true : pageIds.some(id => selectedIds.has(id)) ? 'indeterminate' : false} onCheckedChange={checked => {
+              <th scope="col" className="w-10 px-3 py-2.5"><TableSelectCell aria-label="Select all on this page" disabled={busy || selecting || !pageIds.length} checked={wholePage ? true : pageIds.some(id => selectedIds.has(id)) ? 'indeterminate' : false} onCheckedChange={checked => {
                 setSelected(current => checked === true ? selectAllMatching([...current,...page.rows]) : current.filter(r => !r.id || !pageIds.includes(r.id)));
                 anchor.current = -1;
               }}/></th>
@@ -254,7 +254,7 @@ function QueueContent({m,orgId}:{m:NonNullable<ReturnType<typeof useMembership>>
                   onClick={() => openCase(id)}
                   onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) { e.preventDefault(); openCase(id); } }}
                   className="cursor-pointer border-b last:border-0 hover:bg-muted/40 focus:bg-accent focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring">
-                  <td className="px-3 py-3" onClick={e => e.stopPropagation()}><Checkbox aria-label={`Select complaint ${r.reference}`} checked={selectedIds.has(id)} disabled={busy || selecting} onClick={e => {e.stopPropagation(); toggleRow(index, !selectedIds.has(id), e.shiftKey);}} /></td>
+                  <td className="px-3 py-3" onClick={e => e.stopPropagation()}><TableSelectCell aria-label={`Select complaint ${r.reference}`} checked={selectedIds.has(id)} disabled={busy || selecting} onClick={e => {e.stopPropagation(); toggleRow(index, !selectedIds.has(id), e.shiftKey);}} /></td>
                   <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
                     <Link to="/app/c/$id" params={{ id }} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
                       {r.reference}

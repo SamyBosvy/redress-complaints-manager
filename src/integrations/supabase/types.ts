@@ -220,6 +220,75 @@ export type Database = {
         }
         Relationships: []
       }
+      board_reports: {
+        Row: {
+          commentary: Json
+          created_at: string
+          created_by: string
+          id: string
+          issued_at: string | null
+          issued_by: string | null
+          org_id: string
+          period_end: string
+          period_start: string
+          previous_report_id: string | null
+          snapshot: Json
+          snapshot_sha256: string | null
+          status: string
+          title: string
+          version: number
+        }
+        Insert: {
+          commentary?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          org_id: string
+          period_end: string
+          period_start: string
+          previous_report_id?: string | null
+          snapshot?: Json
+          snapshot_sha256?: string | null
+          status?: string
+          title: string
+          version?: number
+        }
+        Update: {
+          commentary?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          org_id?: string
+          period_end?: string
+          period_start?: string
+          previous_report_id?: string | null
+          snapshot?: Json
+          snapshot_sha256?: string | null
+          status?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_reports_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_reports_previous_report_id_fkey"
+            columns: ["previous_report_id"]
+            isOneToOne: false
+            referencedRelation: "board_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaint_attachments: {
         Row: {
           category: Database["public"]["Enums"]["attachment_category"]

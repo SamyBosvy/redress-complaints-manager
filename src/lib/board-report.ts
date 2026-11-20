@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { periodRange, previousPeriod, comparison, regulatoryReport, computeMetrics, resolutionDays, projectReportRows, type fetchReportData, type PeriodRange, type ReportRow } from './reports';
 import { responseMetrics } from './response-metrics';
 import { firmDate } from './reopening';
-import { qaAnalytics, type QaAnalyticsRow } from './qa-analytics';
+import { qaAnalytics, qaCriterion, type QaAnalyticsRow } from './qa-analytics';
+import { adrMetrics } from './adr';
+import { reopeningMetrics } from './reopening';
 export const boardWriter = (role: string | null) => role === 'org_admin' || role === 'complaints_manager';
 export const boardReader = (role: string | null) => boardWriter(role) || role === 'read_only' || role === 'qa_reviewer';
 export const commentarySchema = z.object({ keyThemes:z.string().max(2000), actionsTaken:z.string().max(2000), actionsPlanned:z.string().max(2000) }).strict();
@@ -61,9 +63,11 @@ export function buildBoardSnapshot(data:Data,qa:QaAnalyticsRow[],range:PeriodRan
  const ages=open.map(r=>resolutionDays({...r,closed_at:range.to},data.holidays)??0);
  tables.push({title:'Resolution and ageing',headers:['Measure','Value'],rows:[['Average business days to final response',current.metric('Average days to resolve')],['90th percentile business days',durations.length?durations[Math.ceil(durations.length*.9)-1]??null:null],['Holding responses issued',responseMetrics(current.rows,range,data.holidays,zone).holdingLetters.length],...[[0,15],[16,35],[36,Infinity]].map(([min,max])=>{const n=ages.filter(d=>d>=Number(min)&&d<=Number(max)).length;return [min===36?'>35 business days':`${min}–${max} business days`,smallCell(n,n)];})]});
  const support=current.cohort.filter(r=>r.vulnerable),supportPack=regulatoryReport(current.rows.filter(r=>r.vulnerable),range,data.holidays,[],[],zone);
- tables.push({title:'Vulnerable customers',headers:['Measure','Value'],rows:[['Complaints with support needs',smallCell(support.length,support.length)],['Share of complaints %',smallCell(current.cohort.length?support.length/current.cohort.length*100:null,support.length)],['Within deadline — support needs %',smallCell(supportPack.summary.find(s=>s.label==='Resolved within deadline')?.value??null,support.length)],['Within deadline — all %',current.metric('Resolved within deadline')]]});
+ tables.push({title:'Vulnerable customers',headers:['Measure','Value'],rows:[['Complaints with support needs',smallCell(support.length,support.length)],['Share of complaints %',smallCell(current.cohort.length?support.length/current.cohort.length*100:null,support.length)],['Within deadline — support needs %',smallCell(supportPack.summary.find(s=>s.label==='Resolved within deadline')?.value??null,current.resolved.filter(r=>r.vulnerable&&r.final_due!==null).length)],['Within deadline — all %',current.metric('Resolved within deadline')]]});
  const failure=current.quality.failures[0];
- tables.push({title:'Escalations and quality',headers:['Measure','Value'],rows:[...['Escalated to ADR','ADR decisions','ADR overturn rate','Reopened','Reopen rate'].map(label=>[label,current.metric(label)]),['QA pass rate %',smallCell(current.quality.passRate,new Set(current.quality.rows.map(r=>r.complaint_id)).size)],['Most-failed scorecard item',failure?smallCell(failure.failed,failure.failed)==='<3'?'<3':failure.label:null]]});
+ const am=adrMetrics(data.adr,range),rm=reopeningMetrics(data.reopenings,range,current.resolved.length);
+ const affected=new Set(current.quality.rows.filter(r=>failure&&qaCriterion(r,failure.key)['result']==='fail').map(r=>r.complaint_id)).size;
+ tables.push({title:'Escalations and quality',headers:['Measure','Value'],rows:[...['Escalated to ADR','ADR decisions','ADR overturn rate','Reopened','Reopen rate'].map(label=>{const count=label==='Escalated to ADR'?new Set(am.escalated.map(r=>r.complaint_id)).size:label.startsWith('ADR')?new Set(am.decided.map(r=>r.complaint_id)).size:rm.count;return [label,smallCell(current.metric(label),count)];}),['QA pass rate %',smallCell(current.quality.passRate,new Set(current.quality.rows.map(r=>r.complaint_id)).size)],['Most-failed scorecard item',failure?affected<3?'<3':failure.label:null]]});
  return {schema:1,firm,logo,title,range,previousRange:prior,yearRange:year,headlines,tables,commentary:commentarySchema.parse(commentary),methodology:[
   'Figures reuse the existing regulatory report, response, QA, ADR and reopening calculations. Received cohorts use UTC dates, as in the existing pack; quarter selection and acknowledgement/QA evidence use the firm time zone.',
   'Resolved includes final response, closure or ADR escalation. Historical status uses event evidence; classifications, outcomes, deadlines and payments reflect current working records. Issued versions freeze the rendered figures.',

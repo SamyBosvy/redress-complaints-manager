@@ -1,4 +1,7 @@
 import { acknowledgementSearch, responseMetrics } from '@/lib/response-metrics';
+import { BoardReport } from '@/components/board-report';
+import { boardReader } from '@/lib/board-report';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { auditDateBoundary } from '@/lib/audit';
 import { firmDate } from '@/lib/reopening';
 import { Chart, ReportCharts, reportLink, ViewComplaints } from '@/components/report-charts';
@@ -46,7 +49,12 @@ function Reports() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   if (!m?.org) return null;
-  return <ReportsContent membership={{...m, org: m.org}} search={search} navigate={navigate} />;
+  return <ReportViews membership={{...m, org:m.org}} search={search} navigate={navigate}/>;
+}
+
+function ReportViews({membership:m,search,navigate}:{membership:NonNullable<ReturnType<typeof useMembership>>&{org:NonNullable<NonNullable<ReturnType<typeof useMembership>>['org']>};search:ReturnType<typeof Route.useSearch>;navigate:ReturnType<typeof Route.useNavigate>}){
+ const [view,setView]=useState('reports');const {data:members}=useSuspenseQuery(membersQuery(m.org.id));
+ return <div className="min-w-0"><Tabs value={view} onValueChange={setView} className="mb-6"><TabsList><TabsTrigger value="reports">Reports</TabsTrigger>{boardReader(m.role)&&<TabsTrigger value="board">Board report</TabsTrigger>}</TabsList></Tabs>{view==='board'?<BoardReport org={m.org.id} zone={m.org.time_zone} role={m.role} user={m.user.id} nameOf={id=>members.find(m=>m.user_id===id)?.name??'Former member'}/>:<ReportsContent membership={m} search={search} navigate={navigate}/>}</div>;
 }
 
 function ReportsContent({ membership: m, search, navigate }: { membership: NonNullable<ReturnType<typeof useMembership>> & { org: NonNullable<NonNullable<ReturnType<typeof useMembership>>['org']> }; search: ReturnType<typeof Route.useSearch>; navigate: ReturnType<typeof Route.useNavigate> }) {

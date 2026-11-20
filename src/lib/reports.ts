@@ -325,7 +325,7 @@ export async function fetchReportData(client: typeof supabase, orgId: string) {
     ]);
     return { rows: rows as ReportRow[], causes, events, holidays, adr, reopenings, letters, support };
 }
-export function projectReportRows(data: Awaited<ReturnType<typeof fetchReportData>>, end: string, timeZone: string) {
+export function projectReportRows(data: Awaited<ReturnType<typeof fetchReportData>>, end: string, timeZone: string): ReportRow[] {
     const { rows, causes, events, letters, support } = data;
     return rows.map(row => {
       const history = events.filter(e => e.complaint_id === row.id && responseDate(e.created_at,timeZone) <= end);
@@ -337,7 +337,7 @@ export function projectReportRows(data: Awaited<ReturnType<typeof fetchReportDat
       let lastReopened = -1; history.forEach((e, i) => { if (statusOf(e, 'after') === 'reopened') lastReopened = i; });
       const resolution = history.slice(lastReopened + 1).find(e => CLOSED.includes(statusOf(e, 'after') as ReportRow['status']));
       return { ...row, support_adjustments:support.find(s=>s.complaint_id===row.id)?.adjustments, acknowledged_at:acknowledgedAt(row.id,letters as ResponseLetter[],events as ResponseEvent[]), holding_letters:letters.filter(l=>l.complaint_id===row.id && l.kind==='holding' && l.sent_at).map(l=>String(l.sent_at)), status, closed_at: resolved ? resolution?.created_at ?? (row.closed_at && row.closed_at.slice(0, 10) <= end ? row.closed_at : null) : null, root_cause_category: causes.find(c => c.id === row.root_cause_id)?.name ?? row.root_cause_category };
-    });
+    }) as ReportRow[];
  }
 export const regulatoryQuery = (orgId: string, end: string, timeZone = 'Europe/Dublin') => queryOptions({
  queryKey: ['regulatory-report', orgId, end, timeZone],

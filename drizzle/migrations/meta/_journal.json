@@ -274,6 +274,13 @@
       "when": 1795124028009,
       "tag": "0038_agent_reopen_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795137702099,
+      "tag": "0039_board_report_snapshots",
+      "breakpoints": true
     }
   ]
 }
